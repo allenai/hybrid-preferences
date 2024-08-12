@@ -31,7 +31,16 @@ class FeatureExtractor:
             "identity": self._extract_identity,
         }
 
-    def __call__(self, features: list[str], threshold: float = 1.0) -> "pd.DataFrame":
+    def __call__(
+        self, features: list[str], threshold: float = 1.0, skip_if_error: bool = True
+    ) -> "pd.DataFrame":
+        """Extract features from a dataframe
+
+        features (list[str]): list of features to extract.
+        threshold (float): number of active features for an instance to swap with human preferences.
+        skip_if_error (bool): if set, will skip if an extractor encounters an error.
+        RETURN (pd.DataFrame): a dataframe with additional columns 'pref', 'is_swapped', and 'features_used'
+        """
         # boolean matrix of size (n_instances, n_feats)
         result_matrix: list[list[int]] = []
         for feature in features:
