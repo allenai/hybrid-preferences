@@ -96,6 +96,17 @@ class FeatureExtractor:
 
         # TODO: swap features (take note of the features too)
 
+    def save_features(self, output_path: Path, extra_columns: dict[str, Any]):
+        dataset = {
+            "id": self.id,
+            "prompt": self.prompts,
+            "completion_a": self.completions_a,
+            "completion_b": self.completions_b,
+        }
+        dataset.update(extra_columns)
+        output_df = pd.DataFrame(dataset)
+        output_df.to_json(output_path, lines=True, orient="records")
+
     def parse_feature(self, s: str) -> tuple[str, dict[str, Any]]:
         def _convert(v):
             if v.isdigit():
@@ -158,16 +169,10 @@ class FeatureExtractor:
             scores.append(score)
 
         if self.keep_features:
-            df = pd.DataFrame(
-                {
-                    "id": self.id,
-                    "prompt": self.prompts,
-                    "completion_a": self.completions_a,
-                    "completion_b": self.completions_b,
-                    FEATURE_NAME: scores,
-                }
+            self.save_features(
+                output_path=self.keep_features,
+                extra_columns={FEATURE_NAME: scores},
             )
-            df.to_json(self.keep_features, lines=True, orient="records")
 
         logging.info(f"Filtering instances where score > {threshold}")
         return [1 if score >= threshold else 0 for score in scores]
@@ -183,16 +188,10 @@ class FeatureExtractor:
         )["f1"]
 
         if self.keep_features:
-            df = pd.DataFrame(
-                {
-                    "id": self.id,
-                    "prompt": self.prompts,
-                    "completion_a": self.completions_a,
-                    "completion_b": self.completions_b,
-                    FEATURE_NAME: scores,
-                }
+            self.save_features(
+                output_path=self.keep_features,
+                extra_columns={FEATURE_NAME: scores},
             )
-            df.to_json(self.keep_features, lines=True, orient="records")
 
         logging.info(f"Filtering instances where score > {threshold}")
         return [1 if score >= threshold else 0 for score in scores]
@@ -221,16 +220,10 @@ class FeatureExtractor:
 
         scores = [i * j for i, j in zip(bert_scores, length_penalties)]
         if self.keep_features:
-            df = pd.DataFrame(
-                {
-                    "id": self.id,
-                    "prompt": self.prompts,
-                    "completion_a": self.completions_a,
-                    "completion_b": self.completions_b,
-                    FEATURE_NAME: scores,
-                }
+            self.save_features(
+                output_path=self.keep_features,
+                extra_columns={FEATURE_NAME: scores},
             )
-            df.to_json(self.keep_features, lines=True, orient="records")
 
         logging.info(f"Filtering instances where score > {threshold}")
         return [1 if score >= threshold else 0 for score in scores]
@@ -245,16 +238,10 @@ class FeatureExtractor:
             scores.append(score)
 
         if self.keep_features:
-            df = pd.DataFrame(
-                {
-                    "id": self.id,
-                    "prompt": self.prompts,
-                    "completion_a": self.completions_a,
-                    "completion_b": self.completions_b,
-                    FEATURE_NAME: scores,
-                }
+            self.save_features(
+                output_path=self.keep_features,
+                extra_columns={FEATURE_NAME: scores},
             )
-            df.to_json(self.keep_features, lines=True, orient="records")
 
         logging.info(f"Filtering instances where score > {threshold}")
         return [1 if score >= threshold else 0 for score in scores]
@@ -287,16 +274,10 @@ class FeatureExtractor:
         scores = cosine_scores.diag().cpu().numpy().tolist()
 
         if self.keep_features:
-            df = pd.DataFrame(
-                {
-                    "id": self.id,
-                    "prompt": self.prompts,
-                    "completion_a": self.completions_a,
-                    "completion_b": self.completions_b,
-                    FEATURE_NAME: scores,
-                }
+            self.save_features(
+                output_path=self.keep_features,
+                extra_columns={FEATURE_NAME: scores},
             )
-            df.to_json(self.keep_features, lines=True, orient="records")
 
         logging.info(f"Filtering instances where score > {threshold}")
         return [1 if score >= threshold else 0 for score in scores]
