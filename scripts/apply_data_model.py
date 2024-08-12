@@ -25,8 +25,15 @@ Then, it will output a JSONL file in the provided directory containing the follo
 - `is_swapped`: whether that instance fulfilled the features passed.
 - `features_used`: a comma-separated string of features used for this instance.
 
-You can select a number of features by passing arguments to the `--features` option.
-All features will be computed by default.
+You can select a number of features by passing arguments to the `--features`
+option.  All features will be computed by default.  Some features can be
+parametrized. You can do so by first appending a double colon (::), and then
+passing the parameters as a name=value dictionary. Remember that booleans should be 0 or 1.
+
+For example:
+
+    [feature_name]::[param1]=[value1],[param2]=[value2]
+    token_length::size=1024,greedy=1,method=tiktoken
 """
 
     parser = argparse.ArgumentParser(description=description, formatter_class=argparse.RawTextHelpFormatter)
