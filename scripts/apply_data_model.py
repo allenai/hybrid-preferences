@@ -35,7 +35,7 @@ passing the parameters as a name=value dictionary. Remember that booleans should
 For example:
 
     [feature_name]::[param1]=[value1],[param2]=[value2]
-    token_length::size=1024,greedy=1,method=tiktoken
+    entity_sim::threshold=0.95,model_name=en_core_web_lg,n_process=4
 """
 
     parser = argparse.ArgumentParser(description=description, formatter_class=argparse.RawTextHelpFormatter)
@@ -45,7 +45,6 @@ For example:
     parser.add_argument("--features", nargs="*", default=None, help="Features to include. To show all available features, pass --show_all_features.")
     parser.add_argument("--threshold", type=float, default=1.0, help="Percentage of total features to be active in order to swap w/ human preferences.")
     parser.add_argument("--keep_features_dir", type=Path, default=None, help="If set, will store all collected features in this directory.")
-    parser.add_argument("--show_all_features", action="store_true", default=False, help="If set, will just show all available features and exit the CLI.")
     parser.add_argument("--random_seed", type=int, default=42, help="Set the random seed.")
     # fmt: on
     return parser.parse_args()
@@ -55,10 +54,6 @@ def main():
     args = get_args()
 
     random.seed(args.random_seed)
-
-    if args.show_all_features:
-        logging.info("Features you can use")
-
     df = pd.read_json(args.input_path, lines=True)
     if not {"pref_human", "pref_gpt4"}.issubset(set(list(df.columns))):
         logging.error("Columns 'pref_human' and 'pref_gpt4' should be present!")
@@ -74,18 +69,17 @@ def main():
         completion_b_col="response_b",
         keep_features=args.keep_features_dir,
     )
-    # TODO
     features = args.features
     if not features:
         logging.info(
             "Will extract all available features using their default parameters"
         )
         features = list(extractor.REGISTERED_EXTRACTORS.keys())
-    extractor(features=features, threshold=args.threshold)
+    extracted_df = extractor(features=features, threshold=args.threshold)
 
     # Convert to DPO training format
     logging.info("Converting annotations into DPO training format")
-    annotations = df.to_dict(orient="records")
+    annotations = extracted_df.to_dict(orient="records")
     converted_annotations = []
     for annotation in annotations:
         if "model_a" not in annotation:

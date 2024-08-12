@@ -33,7 +33,7 @@ class FeatureExtractor:
         keep_features: Optional[Path] = None,
     ):
         self.columns = list(df.columns)
-        self.id = list[str] = df[id_col].to_list()
+        self.id: list[str] = df[id_col].to_list()
         self.prompts: list[str] = df[prompt_col].to_list()
         self.completions_a: list[str] = df[completion_a_col].to_list()
         self.completions_b: list[str] = df[completion_b_col].to_list()
