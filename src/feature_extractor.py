@@ -11,6 +11,7 @@ import spacy
 from nltk import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from rouge_score import rouge_scorer
+from sentence_transformers import SentenceTransformer, util
 from tqdm import tqdm
 
 
@@ -49,6 +50,8 @@ class FeatureExtractor:
             "entity_sim": self._extract_entity_sim,
             "bertscore": self._extract_bertscore,
             "bertscore_length": self._extract_bertscore_length,
+            "cosine_sim": self._extract_cosine_sim,
+            "rouge": self._extract_rouge,
         }
 
     def __call__(
@@ -256,4 +259,44 @@ class FeatureExtractor:
         logging.info(f"Filtering instances where score > {threshold}")
         return [1 if score >= threshold else 0 for score in scores]
 
-    def _extract_cosine_sim()
+    def _extract_cosine_sim(
+        self,
+        threshold: float = 0.8,
+        model_name: str = "all-distilroberta-v1",
+        device: str = "cuda",
+        **kwargs,
+    ) -> list[bool]:
+        FEATURE_NAME = "cosine_sim"
+
+        model = SentenceTransformer(model_name, device=device)
+        model.max_seq_length = 200
+
+        embeddings_a = model.encode(
+            self.completions_a,
+            convert_to_tensor=True,
+            show_progress_bar=True,
+            device=device,
+        )
+        embeddings_b = model.encode(
+            self.completions_b,
+            convert_to_tensor=True,
+            show_progress_bar=True,
+            device=device,
+        )
+        cosine_scores = util.cos_sim(embeddings_a, embeddings_b)
+        scores = cosine_scores.diag().cpu().numpy().tolist()
+
+        if self.keep_features:
+            df = pd.DataFrame(
+                {
+                    "id": self.id,
+                    "prompt": self.prompts,
+                    "completion_a": self.completions_a,
+                    "completion_b": self.completions_b,
+                    FEATURE_NAME: scores,
+                }
+            )
+            df.to_json(self.keep_features, lines=True, orient="records")
+
+        logging.info(f"Filtering instances where score > {threshold}")
+        return [1 if score >= threshold else 0 for score in scores]
