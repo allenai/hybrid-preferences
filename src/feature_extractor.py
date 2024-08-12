@@ -47,6 +47,8 @@ class FeatureExtractor:
         self.REGISTERED_EXTRACTORS = {
             "identity": self._extract_identity,
             "entity_sim": self._extract_entity_sim,
+            "bertscore": self._extract_bertscore,
+            "bertscore_length": self._extract_bertscore_length,
         }
 
     def __call__(
@@ -215,6 +217,30 @@ class FeatureExtractor:
             length_penalties.append(length_penalty)
 
         scores = [i * j for i, j in zip(bert_scores, length_penalties)]
+        if self.keep_features:
+            df = pd.DataFrame(
+                {
+                    "id": self.id,
+                    "prompt": self.prompts,
+                    "completion_a": self.completions_a,
+                    "completion_b": self.completions_b,
+                    FEATURE_NAME: scores,
+                }
+            )
+            df.to_json(self.keep_features, lines=True, orient="records")
+
+        logging.info(f"Filtering instances where score > {threshold}")
+        return [1 if score >= threshold else 0 for score in scores]
+
+    def _extract_rouge(self, threshold: float = 0.8, **kwargs) -> list[bool]:
+        FEATURE_NAME = "rouge"
+
+        rouge = rouge_scorer.RougeScorer(["rouge1"], use_stemmer=True)
+        scores = []
+        for a, b in tqdm(zip(self.completions_a, self.completions_b)):
+            score = rouge.score(prediction=a, target=b)["rouge1"].fmeasure
+            scores.append(score)
+
         if self.keep_features:
             df = pd.DataFrame(
                 {
