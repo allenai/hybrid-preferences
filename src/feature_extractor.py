@@ -43,16 +43,28 @@ class FeatureExtractor:
         """
         # boolean matrix of size (n_instances, n_feats)
         result_matrix: list[list[int]] = []
+        n_features = 0
         for feature in features:
             key, params = self.parse_feature(feature)
             if key in self.REGISTERED_EXTRACTORS:
                 logging.info(f"Extracting '{key}' with params: {params}")
                 fn = self.REGISTERED_EXTRACTORS[key]
-                results = fn(**params)
-                result_matrix.append(results)
+
+                try:
+                    results = fn(**params)
+                    result_matrix.append(results)
+                except Exception as e:
+                    logging.error(f"Error encountered for {key} ({params}): {e}")
+                    if skip_if_error:
+                        # Skip to the next iteration if an error occurs
+                        logging.info("Skipping this feature because skip_if_error=True")
+                        continue
+                    else:
+                        raise
+                else:
+                    n_features += 1
 
         # Get all instances that fulfills all (or some) values
-        n_features = len(features)
         n_active_to_pass = math.floor(n_features * threshold)
         logging.info(
             f"Getting instances. Needs {n_active_to_pass}/{n_features} to swap to human preferences."
