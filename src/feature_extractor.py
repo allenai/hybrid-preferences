@@ -255,3 +255,5 @@ class FeatureExtractor:
 
         logging.info(f"Filtering instances where score > {threshold}")
         return [1 if score >= threshold else 0 for score in scores]
+
+    def _extract_cosine_sim()
