@@ -1,11 +1,12 @@
-import json
 import argparse
-import random
-from pathlib import Path
-import sys
+import json
 import logging
+import random
+import sys
+from pathlib import Path
 
 import pandas as pd
+
 from src.feature_extractor import FeatureExtractor
 
 logging.basicConfig(
