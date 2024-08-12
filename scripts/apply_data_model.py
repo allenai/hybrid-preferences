@@ -67,6 +67,7 @@ def main():
     logging.info("Swapping preferences")
     extractor = FeatureExtractor(
         df,
+        id_col="prompt_hash",
         prompt_col="text",
         completion_a_col="response_a",
         completion_b_col="response_b",

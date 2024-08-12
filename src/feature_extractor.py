@@ -1,9 +1,13 @@
+import re
 import math
 import logging
 from pathlib import Path
 from typing import Any, Optional
 
+import spacy
 import pandas as pd
+from tqdm import tqdm
+from nltk.stem import WordNetLemmatizer
 
 
 class FeatureExtractor:
@@ -17,15 +21,17 @@ class FeatureExtractor:
         self,
         df: "pd.DataFrame",
         *,
+        id_col: str = "id",
         prompt_col: str = "text",
         completion_a_col: str = "completion_a",
         completion_b_col: str = "completion_b",
         keep_features: Optional[Path] = None,
     ):
         self.columns = list(df.columns)
+        self.id = list[str] = df[id_col].to_list()
         self.prompts: list[str] = df[prompt_col].to_list()
-        self.completion_a: list[str] = df[completion_a_col].to_list()
-        self.completion_b: list[str] = df[completion_b_col].to_list()
+        self.completions_a: list[str] = df[completion_a_col].to_list()
+        self.completions_b: list[str] = df[completion_b_col].to_list()
         logging.info(f"Found {len(self.prompts)} prompts with cols: {self.columns}")
 
         self.keep_features: Optional[Path] = keep_features
@@ -36,6 +42,7 @@ class FeatureExtractor:
         # Register all extractors here with a shorthand name
         self.REGISTERED_EXTRACTORS = {
             "identity": self._extract_identity,
+            "entity_sim": self._extract_entity_sim,
         }
 
     def __call__(
@@ -89,5 +96,61 @@ class FeatureExtractor:
             key, params = s, {}
         return key, params
 
-    def _extract_identity(self, **kwargs) -> list[int]:
+    def _extract_identity(self, **kwargs) -> list[bool]:
         return [1 for _ in range(len(self.prompts))]
+
+    def _extract_entity_sim(
+        self,
+        threshold: float = 0.8,
+        model_name: str = "en_core_web_lg",
+        n_process: int = 4,
+        **kwargs,
+    ) -> list[bool]:
+        FEATURE_NAME = "entity_sim"
+
+        model = spacy.load(model_name)
+        lemmatizer = WordNetLemmatizer()
+
+        docs_a = model.pipe(self.completions_a, n_process=n_process)
+        docs_b = model.pipe(self.completions_b, n_process=n_process)
+        scores = []
+
+        for doc_a, doc_b in tqdm(zip(docs_a, docs_b)):
+            gen_a_ents = set()
+            gen_b_ents = set()
+
+            for ent in doc_a.ents:
+                ent_text = re.sub("[^0-9 a-zA-Z]+", "", ent.text)
+                ent_text = lemmatizer.lemmatize(ent_text.replace("the", "").strip())
+                ent_text = ent_text.lower()
+
+                gen_a_ents.add(ent_text)
+
+            for ent in doc_b.ents:
+                ent_text = re.sub("[^0-9 a-zA-Z]+", "", ent.text)
+                ent_text = lemmatizer.lemmatize(ent_text.replace("the", "").strip())
+                ent_text = ent_text.lower()
+
+                gen_b_ents.add(ent_text)
+
+            intersection = len(gen_a_ents.intersection(gen_b_ents))
+            union = (len(gen_b_ents) + len(gen_b_ents)) - intersection
+
+            # If there are no entities in either of the generations, return 1
+            score = 1 if union == 0 else intersection / union
+            scores.append(score)
+
+        if self.keep_features:
+            df = pd.DataFrame(
+                {
+                    "id": self.id,
+                    "prompt": self.prompts,
+                    "completion_a": self.completions_a,
+                    "completion_b": self.completions_b,
+                    FEATURE_NAME: scores,
+                }
+            )
+            df.to_json(self.keep_features, lines=True, orient="records")
+
+        logging.info(f"Filtering egs where entity_sim is greater than {threshold}")
+        return [1 if score >= threshold else 0 for score in scores]
