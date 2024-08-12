@@ -41,6 +41,11 @@ def main():
     if args.show_all_features:
         logging.info("Features you can use")
 
+    df = pd.read_json(args.input_path, lines=True)
+    if not {"pref_human", "pref_gpt4"}.issubset(set(list(df.columns))):
+        logging.error("Columns 'pref_human' and 'pref_gpt4' should be present!")
+        sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
