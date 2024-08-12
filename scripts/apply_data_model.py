@@ -1,8 +1,9 @@
 import argparse
 from pathlib import Path
-
 import sys
 import logging
+
+import pandas as pd
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -17,18 +18,18 @@ def get_args():
     description = """Apply data model to get swapped preferences.
 
 This CLI expects a JSONL file with fields `pref_human` and `pref_gpt4`.
-Then, it will output a JSONL file containing the following fields:
+Then, it will output a JSONL file in the provided directory containing the following fields:
 - `pref`: the final preference used for reward model training
 - `is_swapped`: whether that instance fulfilled the features passed.
 - `features_used`: a comma-separated string of features used for this instance.
 
 You can select a number of features by passing arguments to the `--features` option.
-By default all features will be computed.
+All features will be computed by default.
 """
 
     parser = argparse.ArgumentParser(description=description, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("--input_path", type=Path, required=True, help="Path to the JSONL file containing preferences.")
-    parser.add_argument("--output_path", type=Path, required=True, help="Path to save the output JSONL file.")
+    parser.add_argument("--output_dir", type=Path, required=True, help="Directory to save the output JSONL file.")
     parser.add_argument("--features", nargs="*", default=None, help="Features to include. To show all available features, pass --show_all_features.")
     parser.add_argument("--show_all_features", action="store_true", default=False, help="If set, will just show all available features and exit the CLI.")
     # fmt: on
@@ -38,7 +39,7 @@ By default all features will be computed.
 def main():
     args = get_args()
     if args.show_all_features:
-        logging.info("Hi")
+        logging.info("Features you can use")
 
 
 if __name__ == "__main__":
