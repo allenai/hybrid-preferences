@@ -43,6 +43,7 @@ For example:
     parser.add_argument("--num_instances", type=int, default=7000, help="Number of instances to save in the output file.")
     parser.add_argument("--features", nargs="*", default=None, help="Features to include. To show all available features, pass --show_all_features.")
     parser.add_argument("--threshold", type=float, default=1.0, help="Percentage of total features to be active in order to swap w/ human preferences.")
+    parser.add_argument("--keep_features_dir", type=Path, default=None, help="If set, will store all collected features in this directory.")
     parser.add_argument("--show_all_features", action="store_true", default=False, help="If set, will just show all available features and exit the CLI.")
     parser.add_argument("--random_seed", type=int, default=42, help="Set the random seed.")
     # fmt: on
@@ -69,6 +70,7 @@ def main():
         prompt_col="text",
         completion_a_col="response_a",
         completion_b_col="response_b",
+        keep_features=args.keep_features_dir,
     )
     # TODO
     features = args.features

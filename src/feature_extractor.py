@@ -1,5 +1,6 @@
 import math
 import logging
+from pathlib import Path
 from typing import Any, Optional
 
 import pandas as pd
@@ -19,12 +20,18 @@ class FeatureExtractor:
         prompt_col: str = "text",
         completion_a_col: str = "completion_a",
         completion_b_col: str = "completion_b",
+        keep_features: Optional[Path] = None,
     ):
         self.columns = list(df.columns)
         self.prompts: list[str] = df[prompt_col].to_list()
         self.completion_a: list[str] = df[completion_a_col].to_list()
         self.completion_b: list[str] = df[completion_b_col].to_list()
         logging.info(f"Found {len(self.prompts)} prompts with cols: {self.columns}")
+
+        self.keep_features: Optional[Path] = keep_features
+        if self.keep_features:
+            self.keep_features.mkdir(parents=True, exist_ok=True)
+            logging.info(f"Will save all collected features to {self.keep_features}")
 
         # Register all extractors here with a shorthand name
         self.REGISTERED_EXTRACTORS = {
