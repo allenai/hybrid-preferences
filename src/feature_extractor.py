@@ -9,6 +9,7 @@ import evaluate
 from nltk import word_tokenize
 from rouge_score import rouge_scorer
 import pandas as pd
+import numpy as np
 from tqdm import tqdm
 from nltk.stem import WordNetLemmatizer
 
@@ -176,6 +177,44 @@ class FeatureExtractor:
             verbose=True,
         )["f1"]
 
+        if self.keep_features:
+            df = pd.DataFrame(
+                {
+                    "id": self.id,
+                    "prompt": self.prompts,
+                    "completion_a": self.completions_a,
+                    "completion_b": self.completions_b,
+                    FEATURE_NAME: scores,
+                }
+            )
+            df.to_json(self.keep_features, lines=True, orient="records")
+
+        logging.info(f"Filtering instances where score > {threshold}")
+        return [1 if score >= threshold else 0 for score in scores]
+
+    def _extract_bertscore_length(self, threshold: float = 0.9, **kwargs) -> list[bool]:
+        FEATURE_NAME = "bertscore_length"
+
+        length_penalties = []
+        bertscore = evaluate.load("bertscore")
+        bert_scores = bertscore.compute(
+            predictions=self.completions_a,
+            references=self.completions_b,
+            lang="en",
+            verbose=True,
+        )["f1"]
+
+        for a, b in zip(self.completions_a, self.completions_b):
+            ref, cand = (a, b) if len(a) > len(b) else (b, a)
+            try:
+                length_penalty = np.exp(
+                    1 - len(word_tokenize(ref)) / len(word_tokenize(cand))
+                )
+            except ZeroDivisionError:
+                length_penalty = 0
+            length_penalties.append(length_penalty)
+
+        scores = [i * j for i, j in zip(bert_scores, length_penalties)]
         if self.keep_features:
             df = pd.DataFrame(
                 {
