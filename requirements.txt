@@ -1,0 +1,9 @@
+transformers
+pandas
+spacy
+numpy
+evaluate
+rouge-score
+sentence-transformers
+bert_score
+nltk
