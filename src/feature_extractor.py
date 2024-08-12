@@ -15,6 +15,7 @@ class FeatureExtractor:
     def __init__(
         self,
         df: "pd.DataFrame",
+        *,
         prompt_col: str = "text",
         completion_a_col: str = "completion_a",
         completion_b_col: str = "completion_b",
@@ -47,8 +48,9 @@ class FeatureExtractor:
         logging.info(
             f"Getting instances. Needs {n_active_to_pass}/{n_features} to swap."
         )
+        breakpoint()
 
-        # TODO: swap features
+        # TODO: swap features (take note of the features too)
 
     def parse_feature(self, s: str) -> tuple[str, dict[str, Any]]:
         key, params_str = s.split("::")

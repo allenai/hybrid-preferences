@@ -6,6 +6,7 @@ import sys
 import logging
 
 import pandas as pd
+from src.feature_extractor import FeatureExtractor
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -41,6 +42,7 @@ For example:
     parser.add_argument("--output_dir", type=Path, required=True, help="Directory to save the output JSONL file.")
     parser.add_argument("--num_instances", type=int, default=7000, help="Number of instances to save in the output file.")
     parser.add_argument("--features", nargs="*", default=None, help="Features to include. To show all available features, pass --show_all_features.")
+    parser.add_argument("--threshold", type=float, default=1.0, help="Percentage of total features to be active in order to swap w/ human preferences.")
     parser.add_argument("--show_all_features", action="store_true", default=False, help="If set, will just show all available features and exit the CLI.")
     parser.add_argument("--random_seed", type=int, default=42, help="Set the random seed.")
     # fmt: on
@@ -62,6 +64,13 @@ def main():
 
     # Swap preferences
     logging.info("Swapping preferences")
+    extractor = FeatureExtractor(
+        df,
+        prompt_col="text",
+        completion_a_col="response_a",
+        completion_b_col="response_b",
+    )
+    extractor(features=args.features, threshold=args.threshold)
 
     # Convert to DPO training format
     logging.info("Converting annotations into DPO training format")
