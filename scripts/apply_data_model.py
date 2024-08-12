@@ -4,7 +4,6 @@ import random
 from pathlib import Path
 import sys
 import logging
-from typing import Any
 
 import pandas as pd
 
