@@ -37,7 +37,7 @@ class FeatureExtractor:
         for feature in features:
             key, params = self.parse_feature(feature)
             if key in self.REGISTERED_EXTRACTORS:
-                logging.info(f"Extracting {key} with params: {params}")
+                logging.info(f"Extracting '{key}' with params: {params}")
                 fn = self.REGISTERED_EXTRACTORS[key]
                 results = fn(**params)
                 result_matrix.append(results)
@@ -46,17 +46,20 @@ class FeatureExtractor:
         n_features = len(features)
         n_active_to_pass = math.floor(n_features * threshold)
         logging.info(
-            f"Getting instances. Needs {n_active_to_pass}/{n_features} to swap."
+            f"Getting instances. Needs {n_active_to_pass}/{n_features} to swap to human preferences."
         )
         breakpoint()
 
         # TODO: swap features (take note of the features too)
 
     def parse_feature(self, s: str) -> tuple[str, dict[str, Any]]:
-        key, params_str = s.split("::")
-        params = dict(item.split("=") for item in params_str.split(","))
-        params = {k: int(v) if v.isdigit() else v for k, v in params.items()}
+        if "::" in s:
+            key, params_str = s.split("::")
+            params = dict(item.split("=") for item in params_str.split(","))
+            params = {k: int(v) if v.isdigit() else v for k, v in params.items()}
+        else:
+            key, params = s, {}
         return key, params
 
     def _extract_identity(self, **kwargs) -> list[int]:
-        return [1 for _ in len(self.prompts)]
+        return [1 for _ in range(len(self.prompts))]

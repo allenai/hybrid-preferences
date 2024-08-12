@@ -70,7 +70,14 @@ def main():
         completion_a_col="response_a",
         completion_b_col="response_b",
     )
-    extractor(features=args.features, threshold=args.threshold)
+    # TODO
+    features = args.features
+    if not features:
+        logging.info(
+            "Will extract all available features using their default parameters"
+        )
+        features = list(extractor.REGISTERED_EXTRACTORS.keys())
+    extractor(features=features, threshold=args.threshold)
 
     # Convert to DPO training format
     logging.info("Converting annotations into DPO training format")
