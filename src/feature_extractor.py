@@ -5,6 +5,9 @@ from pathlib import Path
 from typing import Any, Optional
 
 import spacy
+import evaluate
+from nltk import word_tokenize
+from rouge_score import rouge_scorer
 import pandas as pd
 from tqdm import tqdm
 from nltk.stem import WordNetLemmatizer
@@ -88,10 +91,18 @@ class FeatureExtractor:
         # TODO: swap features (take note of the features too)
 
     def parse_feature(self, s: str) -> tuple[str, dict[str, Any]]:
+        def _convert(v):
+            if v.isdigit():
+                return int(v)
+            try:
+                return float(v)
+            except ValueError:
+                return v
+
         if "::" in s:
             key, params_str = s.split("::")
             params = dict(item.split("=") for item in params_str.split(","))
-            params = {k: int(v) if v.isdigit() else v for k, v in params.items()}
+            params = {k: _convert(v) for k, v in params.items()}
         else:
             key, params = s, {}
         return key, params
@@ -152,5 +163,30 @@ class FeatureExtractor:
             )
             df.to_json(self.keep_features, lines=True, orient="records")
 
-        logging.info(f"Filtering egs where entity_sim is greater than {threshold}")
+        logging.info(f"Filtering instances where score > {threshold}")
+        return [1 if score >= threshold else 0 for score in scores]
+
+    def _extract_bertscore(self, threshold: float = 0.8, **kwargs) -> list[bool]:
+        FEATURE_NAME = "bertscore"
+        bertscore = evaluate.load("bertscore")
+        scores = bertscore.compute(
+            predictions=self.completions_a,
+            references=self.completions_b,
+            lang="en",
+            verbose=True,
+        )["f1"]
+
+        if self.keep_features:
+            df = pd.DataFrame(
+                {
+                    "id": self.id,
+                    "prompt": self.prompts,
+                    "completion_a": self.completions_a,
+                    "completion_b": self.completions_b,
+                    FEATURE_NAME: scores,
+                }
+            )
+            df.to_json(self.keep_features, lines=True, orient="records")
+
+        logging.info(f"Filtering instances where score > {threshold}")
         return [1 if score >= threshold else 0 for score in scores]
