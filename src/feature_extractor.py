@@ -191,7 +191,7 @@ class FeatureExtractor:
 
         if self.keep_features:
             self.save_features(
-                output_path=self.keep_features,
+                output_path=self.keep_features / f"{FEATURE_NAME}.json",
                 extra_columns={FEATURE_NAME: scores},
             )
 
@@ -210,7 +210,7 @@ class FeatureExtractor:
 
         if self.keep_features:
             self.save_features(
-                output_path=self.keep_features,
+                output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
                 extra_columns={FEATURE_NAME: scores},
             )
 
@@ -242,7 +242,7 @@ class FeatureExtractor:
         scores = [i * j for i, j in zip(bert_scores, length_penalties)]
         if self.keep_features:
             self.save_features(
-                output_path=self.keep_features,
+                output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
                 extra_columns={FEATURE_NAME: scores},
             )
 
@@ -260,7 +260,7 @@ class FeatureExtractor:
 
         if self.keep_features:
             self.save_features(
-                output_path=self.keep_features,
+                output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
                 extra_columns={FEATURE_NAME: scores},
             )
 
@@ -296,7 +296,7 @@ class FeatureExtractor:
 
         if self.keep_features:
             self.save_features(
-                output_path=self.keep_features,
+                output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
                 extra_columns={FEATURE_NAME: scores},
             )
 

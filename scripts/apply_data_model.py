@@ -102,20 +102,23 @@ def main():
 
     output_dir: Path = args.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
-    with output_dir.open("w") as f:
+    tag = "___".join(features).replace("::", "__").replace("=", "-")
+    output_path = output_dir / f"human_datamodel_{args.num_instances}_FEATS_{tag}.jsonl"
+    with output_path.open("w") as f:
         for annotation in converted_annotations:
             f.write(json.dumps(annotation) + "\n")
+    logging.info(f"Saved to {output_path}")
 
 
 def convert_to_dpo_format(
     instance: dict[str, str], preference_label: str
 ) -> dict[str, str]:
     conversation_a = [
-        {"content": instance["text"], "role": "user"},
+        {"content": instance["prompt"], "role": "user"},
         {"content": instance["completion_a"], "role": "assistant"},
     ]
     conversation_b = [
-        {"content": instance["text"], "role": "user"},
+        {"content": instance["prompt"], "role": "user"},
         {"content": instance["completion_b"], "role": "assistant"},
     ]
     if preference_label.lower() in [
@@ -143,7 +146,7 @@ def convert_to_dpo_format(
     return {
         "source": instance["source"],
         "highest_level_degree": instance["highest_level_degree"],
-        "prompt": instance["text"],
+        "prompt": instance["prompt"],
         "chosen": chosen,
         "chosen_model": chosen_model,
         "rejected": rejected,
