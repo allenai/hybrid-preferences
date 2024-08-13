@@ -37,6 +37,9 @@ class FeatureExtractor:
         self.prompts: list[str] = df[prompt_col].to_list()
         self.completions_a: list[str] = df[completion_a_col].to_list()
         self.completions_b: list[str] = df[completion_b_col].to_list()
+        # Preferences
+        self.pref_humans = df["pref_human"].to_list()
+        self.pref_gpt4 = df["pref_gpt4"].to_list()
         logging.info(f"Found {len(self.prompts)} prompts with cols: {self.columns}")
 
         self.keep_features: Optional[Path] = keep_features
@@ -90,11 +93,29 @@ class FeatureExtractor:
         # Get all instances that fulfills all (or some) values
         n_active_to_pass = math.floor(n_features * threshold)
         logging.info(
-            f"Getting instances. Needs {n_active_to_pass}/{n_features} to swap to human preferences."
+            f"Getting instances. Needs at least {n_active_to_pass}/{n_features} to swap to human preferences."
         )
-        breakpoint()
+        result_matrix = np.array(result_matrix)
+        n_active_features = np.sum(result_matrix, axis=0)
+        to_swap = n_active_features >= n_active_to_pass
+        logging.info(f"Swapping {sum(to_swap)} samples with human preferences.")
 
-        # TODO: swap features (take note of the features too)
+        prefs = [
+            human if swap else gpt4
+            for human, gpt4, swap in zip(self.pref_humans, self.pref_gpt4, to_swap)
+        ]
+        df = pd.DataFrame(
+            {
+                "id": self.id,
+                "prompt": self.prompts,
+                "completion_a": self.completions_a,
+                "completion_b": self.completions_b,
+                "is_swapped": list(to_swap),
+                "features_used": ",".join(features),
+                "pref": prefs,
+            }
+        )
+        return df
 
     def save_features(self, output_path: Path, extra_columns: dict[str, Any]):
         dataset = {
