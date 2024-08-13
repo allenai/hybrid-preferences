@@ -1,8 +1,8 @@
-import sys
 import argparse
-from pathlib import Path
 import logging
 import subprocess
+import sys
+from pathlib import Path
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
