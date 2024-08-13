@@ -33,6 +33,7 @@ class FeatureExtractor:
         completion_b_col: str = "completion_b",
         keep_features: Optional[Path] = None,
     ):
+        self._df = df
         self.columns = list(df.columns)
         self.id: list[str] = df[id_col].to_list()
         self.prompts: list[str] = df[prompt_col].to_list()
@@ -56,6 +57,7 @@ class FeatureExtractor:
             "bertscore_length": self._extract_bertscore_length,
             "cosine_sim": self._extract_cosine_sim,
             "rouge": self._extract_rouge,
+            "domain": self._extract_domain,
         }
 
     def __call__(
@@ -74,7 +76,10 @@ class FeatureExtractor:
         for feature in features:
             key, params = self.parse_feature(feature)
             if key in self.REGISTERED_EXTRACTORS:
-                logging.info(f"Extracting '{key}' with params: {params}")
+                if params:
+                    logging.info(f"Extracting '{key}' with params: {params}")
+                else:
+                    logging.info(f"Extracting '{key}' with default params")
                 fn = self.REGISTERED_EXTRACTORS[key]
 
                 try:
@@ -303,3 +308,30 @@ class FeatureExtractor:
 
         logging.info(f"Filtering instances where score > {threshold}")
         return [1 if score >= threshold else 0 for score in scores]
+
+    def _extract_domain(
+        self,
+        include_domains: str = "Information Technology,Mathematics",
+        domain_col: str = "domain",
+        **kwargs,
+    ) -> list[bool]:
+        FEATURE_NAME = "domain"
+        if domain_col not in self.columns:
+            raise ValueError(
+                f"No `{domain_col}` field found in the dataset! Skipping this feature"
+            )
+
+        include_list = [domain.strip() for domain in include_domains.split(",")]
+        instance_domains = self._df[domain_col].to_list()
+        scores = [1 if domain in include_list else 0 for domain in instance_domains]
+
+        if self.keep_features:
+            self.save_features(
+                output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
+                extra_columns={
+                    FEATURE_NAME: scores,
+                    f"{FEATURE_NAME}_include_list": include_domains,
+                },
+            )
+
+        return scores

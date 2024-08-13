@@ -42,9 +42,10 @@ For example:
     parser.add_argument("--input_path", type=Path, required=True, help="Path to the JSONL file containing preferences.")
     parser.add_argument("--output_dir", type=Path, required=True, help="Directory to save the output JSONL file.")
     parser.add_argument("--num_instances", type=int, default=7000, help="Number of instances to save in the output file.")
-    parser.add_argument("--features", nargs="*", default=None, help="Features to include. To show all available features, pass --show_all_features.")
+    parser.add_argument("--features", nargs="*", default=None, help="Features to include. To show all available features.")
     parser.add_argument("--threshold", type=float, default=1.0, help="Percentage of total features to be active in order to swap w/ human preferences.")
     parser.add_argument("--keep_features_dir", type=Path, default=None, help="If set, will store all collected features in this directory.")
+    parser.add_argument("--append_to_experiments_file", type=Path, default=None, help="If set, will append to an experiments TXT file to be used for submitting TPU training jobs.")
     parser.add_argument("--random_seed", type=int, default=42, help="Set the random seed.")
     # fmt: on
     return parser.parse_args()
@@ -108,6 +109,22 @@ def main():
         for annotation in converted_annotations:
             f.write(json.dumps(annotation) + "\n")
     logging.info(f"Saved to {output_path}")
+
+    experiments_file: Path = args.append_to_experiments_file
+    if experiments_file:
+        experiment_name = output_path.stem
+        if experiments_file.exists():
+            logging.info(
+                f"Appending experiment {experiment_name} to {experiments_file}"
+            )
+            with experiments_file.open("a") as f:
+                f.write("\n" + experiment_name)
+        else:
+            logging.info(
+                f"{experiments_file} not found. Generating new and appending experiment {experiment_name}"
+            )
+            with experiments_file.open("w") as f:
+                f.write(experiment_name)
 
 
 def convert_to_dpo_format(
