@@ -1,5 +1,6 @@
 import logging
 import math
+import random
 import re
 from pathlib import Path
 from typing import Any, Optional
@@ -49,7 +50,7 @@ class FeatureExtractor:
 
         # Register all extractors here with a shorthand name
         self.REGISTERED_EXTRACTORS = {
-            "identity": self._extract_identity,
+            "random": self._extract_random,
             "entity_sim": self._extract_entity_sim,
             "bertscore": self._extract_bertscore,
             "bertscore_length": self._extract_bertscore_length,
@@ -145,8 +146,8 @@ class FeatureExtractor:
             key, params = s, {}
         return key, params
 
-    def _extract_identity(self, **kwargs) -> list[bool]:
-        return [1 for _ in range(len(self.prompts))]
+    def _extract_random(self, threshold: float = 0.5, **kwargs) -> list[bool]:
+        return [1 if random.random() >= 0.5 else 0 for _ in range(len(self.prompts))]
 
     def _extract_entity_sim(
         self,
