@@ -1,6 +1,14 @@
+import sys
 import argparse
 from pathlib import Path
 import logging
+
+logging.basicConfig(
+    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[logging.StreamHandler(sys.stdout)],
+    level=logging.INFO,
+)
 
 DPO_JOB_TEMPLATE = """"""
 
@@ -81,6 +89,10 @@ def main():
             cmd += " && sleep 900 && "
 
         commands_for_experiments.append(cmd)
+
+    command_str = "".join(commands_for_experiments)
+    logging.info(f"Running {len(commands_for_experiments)} commands on TPU:")
+    logging.debug(command_str)
 
 
 if __name__ == "__main__":
