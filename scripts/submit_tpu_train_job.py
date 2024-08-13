@@ -102,7 +102,7 @@ def main():
 
     commands_for_experiments = []
     for idx, experiment_name in enumerate(experiment_names):
-        if args.is_dpo:
+        if args.train_dpo:
             cmd = DPO_JOB_TEMPLATE.format(
                 experiment_name=experiment_name,
                 input_gcs_path=args.input_gcs_path,
@@ -129,23 +129,42 @@ def main():
         f"Running {len(commands_for_experiments)} commands on TPU '{args.tpu_name}':"
     )
     logging.debug(command_str)
-    breakpoint()
 
     # Run the command using subprocess
-    tpu_command = (
-        f"gcloud alpha compute tpus tpu-vm ssh {args.tpu_name} "
-        "--zone=us-east1-d --project=ai2-tpu --worker=all "
-        "--command='cd easylm; git pull; "
-        'export LIBTPU_INIT_ARGS="--xla_jf_spmd_threshold_for_windowed_einsum_mib=0 '
-        "--xla_tpu_spmd_threshold_for_allgather_cse=10000 "
-        "--xla_tpu_spmd_rewrite_einsum_with_reshape=true "
-        '--xla_tpu_enable_latency_hiding_scheduler=true TPU_MEGACORE=MEGACORE_DENSE"; '
-        f'echo "{command_str}" > run_experiments.sh; '
-        "chmod +x run_experiments.sh; "
-        "./run_experiments.sh &> experiments.log &"
-    )
+    # tpu_command = (
+    #     f"gcloud alpha compute tpus tpu-vm ssh {args.tpu_name} "
+    #     "--zone=us-east1-d --project=ai2-tpu --worker=all "
+    #     "--command='cd easylm; git pull; export LIBTPU_INIT_ARGS='--xla_jf_spmd_threshold_for_windowed_einsum_mib=0 --xla_tpu_spmd_threshold_for_allgather_cse=10000 --xla_tpu_spmd_rewrite_einsum_with_reshape=true --xla_tpu_enable_latency_hiding_scheduler=true TPU_MEGACORE=MEGACORE_DENSE';"
+    #     f'echo "{command_str}" > run_experiments.sh; '
+    #     "chmod +x run_experiments.sh; "
+    #     "./run_experiments.sh &> experiments.log &'"
+    # )
 
-    subprocess.run(tpu_command, shell=True, check=True)
+    tpu_command = [
+        "gcloud",
+        "alpha",
+        "compute",
+        "tpus",
+        "tpu-vm",
+        "ssh",
+        args.tpu_name,
+        "--zone=us-east1-d",
+        "--project=ai2-tpu",
+        "--worker=all",
+        "--command="
+        + (
+            "cd easylm; git pull; "
+            "export LIBTPU_INIT_ARGS='--xla_jf_spmd_threshold_for_windowed_einsum_mib=0 "
+            "--xla_tpu_spmd_threshold_for_allgather_cse=10000 "
+            "--xla_tpu_spmd_rewrite_einsum_with_reshape=true "
+            "--xla_tpu_enable_latency_hiding_scheduler=true TPU_MEGACORE=MEGACORE_DENSE'; "
+            'echo "' + command_str + '" > run_experiments.sh; '
+            "chmod +x run_experiments.sh; "
+            "./run_experiments.sh &> experiments.log &"
+        ),
+    ]
+
+    subprocess.run(tpu_command, check=True)
     logging.info(
         "TPU command sent. You can track the logs by using the following command: "
         f'gcloud alpha compute tpus tpu-vm ssh {args.tpu_name} --worker=all --zone=us-east1-d --project=ai2-tpu --command="tail -f easylm/experiments.log"'
