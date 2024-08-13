@@ -118,7 +118,7 @@ def main():
                 f"Appending experiment {experiment_name} to {experiments_file}"
             )
             with experiments_file.open("a") as f:
-                f.write(experiment_name)
+                f.write("\n" + experiment_name)
         else:
             logging.info(
                 f"{experiments_file} not found. Generating new and appending experiment {experiment_name}"

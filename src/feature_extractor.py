@@ -75,7 +75,10 @@ class FeatureExtractor:
         for feature in features:
             key, params = self.parse_feature(feature)
             if key in self.REGISTERED_EXTRACTORS:
-                logging.info(f"Extracting '{key}' with params: {params}")
+                if params:
+                    logging.info(f"Extracting '{key}' with params: {params}")
+                else:
+                    logging.info(f"Extracting '{key}' with default params")
                 fn = self.REGISTERED_EXTRACTORS[key]
 
                 try:
