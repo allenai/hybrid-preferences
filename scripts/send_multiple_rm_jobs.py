@@ -2,6 +2,7 @@ import sys
 import argparse
 from pathlib import Path
 import logging
+import subprocess
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -91,8 +92,30 @@ def main():
         commands_for_experiments.append(cmd)
 
     command_str = "".join(commands_for_experiments)
-    logging.info(f"Running {len(commands_for_experiments)} commands on TPU:")
+    logging.info(
+        f"Running {len(commands_for_experiments)} commands on TPU '{args.tpu_name}':"
+    )
     logging.debug(command_str)
+
+    # Run the command using subprocess
+    tpu_command = (
+        f"gcloud alpha compute tpus tpu-vm ssh {args.tpu_name} "
+        "--zone=us-east1-d --project=ai2-tpu --worker=all "
+        "--command='cd easylm; git pull; "
+        'export LIBTPU_INIT_ARGS="--xla_jf_spmd_threshold_for_windowed_einsum_mib=0 '
+        "--xla_tpu_spmd_threshold_for_allgather_cse=10000 "
+        "--xla_tpu_spmd_rewrite_einsum_with_reshape=true "
+        '--xla_tpu_enable_latency_hiding_scheduler=true TPU_MEGACORE=MEGACORE_DENSE"; '
+        f'echo "{command_str}" > run_experiments.sh; '
+        "chmod +x run_experiments.sh; "
+        "./run_experiments.sh &> experiments.log &"
+    )
+
+    subprocess.run(tpu_command, shell=True, check=True)
+    logging.info(
+        "TPU command sent. You can track the logs by using the following command: "
+        f'gcloud alpha compute tpus tpu-vm ssh {args.tpu_name} --worker=all --zone=us-east1-d --project=ai2-tpu --command="tail -f easylm/experiments.log"'
+    )
 
 
 if __name__ == "__main__":
