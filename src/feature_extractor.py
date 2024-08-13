@@ -11,6 +11,7 @@ import spacy
 from nltk import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from rouge_score import rouge_scorer
+from sentence_transformers import SentenceTransformer, util
 from tqdm import tqdm
 
 
@@ -32,10 +33,13 @@ class FeatureExtractor:
         keep_features: Optional[Path] = None,
     ):
         self.columns = list(df.columns)
-        self.id = list[str] = df[id_col].to_list()
+        self.id: list[str] = df[id_col].to_list()
         self.prompts: list[str] = df[prompt_col].to_list()
         self.completions_a: list[str] = df[completion_a_col].to_list()
         self.completions_b: list[str] = df[completion_b_col].to_list()
+        # Preferences
+        self.pref_humans = df["pref_human"].to_list()
+        self.pref_gpt4 = df["pref_gpt4"].to_list()
         logging.info(f"Found {len(self.prompts)} prompts with cols: {self.columns}")
 
         self.keep_features: Optional[Path] = keep_features
@@ -47,6 +51,10 @@ class FeatureExtractor:
         self.REGISTERED_EXTRACTORS = {
             "identity": self._extract_identity,
             "entity_sim": self._extract_entity_sim,
+            "bertscore": self._extract_bertscore,
+            "bertscore_length": self._extract_bertscore_length,
+            "cosine_sim": self._extract_cosine_sim,
+            "rouge": self._extract_rouge,
         }
 
     def __call__(
@@ -85,11 +93,40 @@ class FeatureExtractor:
         # Get all instances that fulfills all (or some) values
         n_active_to_pass = math.floor(n_features * threshold)
         logging.info(
-            f"Getting instances. Needs {n_active_to_pass}/{n_features} to swap to human preferences."
+            f"Getting instances. Needs at least {n_active_to_pass}/{n_features} to swap to human preferences."
         )
-        breakpoint()
+        result_matrix = np.array(result_matrix)
+        n_active_features = np.sum(result_matrix, axis=0)
+        to_swap = n_active_features >= n_active_to_pass
+        logging.info(f"Swapping {sum(to_swap)} samples with human preferences.")
 
-        # TODO: swap features (take note of the features too)
+        prefs = [
+            human if swap else gpt4
+            for human, gpt4, swap in zip(self.pref_humans, self.pref_gpt4, to_swap)
+        ]
+        df = pd.DataFrame(
+            {
+                "id": self.id,
+                "prompt": self.prompts,
+                "completion_a": self.completions_a,
+                "completion_b": self.completions_b,
+                "is_swapped": list(to_swap),
+                "features_used": ",".join(features),
+                "pref": prefs,
+            }
+        )
+        return df
+
+    def save_features(self, output_path: Path, extra_columns: dict[str, Any]):
+        dataset = {
+            "id": self.id,
+            "prompt": self.prompts,
+            "completion_a": self.completions_a,
+            "completion_b": self.completions_b,
+        }
+        dataset.update(extra_columns)
+        output_df = pd.DataFrame(dataset)
+        output_df.to_json(output_path, lines=True, orient="records")
 
     def parse_feature(self, s: str) -> tuple[str, dict[str, Any]]:
         def _convert(v):
@@ -153,16 +190,10 @@ class FeatureExtractor:
             scores.append(score)
 
         if self.keep_features:
-            df = pd.DataFrame(
-                {
-                    "id": self.id,
-                    "prompt": self.prompts,
-                    "completion_a": self.completions_a,
-                    "completion_b": self.completions_b,
-                    FEATURE_NAME: scores,
-                }
+            self.save_features(
+                output_path=self.keep_features / f"{FEATURE_NAME}.json",
+                extra_columns={FEATURE_NAME: scores},
             )
-            df.to_json(self.keep_features, lines=True, orient="records")
 
         logging.info(f"Filtering instances where score > {threshold}")
         return [1 if score >= threshold else 0 for score in scores]
@@ -178,16 +209,10 @@ class FeatureExtractor:
         )["f1"]
 
         if self.keep_features:
-            df = pd.DataFrame(
-                {
-                    "id": self.id,
-                    "prompt": self.prompts,
-                    "completion_a": self.completions_a,
-                    "completion_b": self.completions_b,
-                    FEATURE_NAME: scores,
-                }
+            self.save_features(
+                output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
+                extra_columns={FEATURE_NAME: scores},
             )
-            df.to_json(self.keep_features, lines=True, orient="records")
 
         logging.info(f"Filtering instances where score > {threshold}")
         return [1 if score >= threshold else 0 for score in scores]
@@ -216,16 +241,64 @@ class FeatureExtractor:
 
         scores = [i * j for i, j in zip(bert_scores, length_penalties)]
         if self.keep_features:
-            df = pd.DataFrame(
-                {
-                    "id": self.id,
-                    "prompt": self.prompts,
-                    "completion_a": self.completions_a,
-                    "completion_b": self.completions_b,
-                    FEATURE_NAME: scores,
-                }
+            self.save_features(
+                output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
+                extra_columns={FEATURE_NAME: scores},
             )
-            df.to_json(self.keep_features, lines=True, orient="records")
+
+        logging.info(f"Filtering instances where score > {threshold}")
+        return [1 if score >= threshold else 0 for score in scores]
+
+    def _extract_rouge(self, threshold: float = 0.8, **kwargs) -> list[bool]:
+        FEATURE_NAME = "rouge"
+
+        rouge = rouge_scorer.RougeScorer(["rouge1"], use_stemmer=True)
+        scores = []
+        for a, b in tqdm(zip(self.completions_a, self.completions_b)):
+            score = rouge.score(prediction=a, target=b)["rouge1"].fmeasure
+            scores.append(score)
+
+        if self.keep_features:
+            self.save_features(
+                output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
+                extra_columns={FEATURE_NAME: scores},
+            )
+
+        logging.info(f"Filtering instances where score > {threshold}")
+        return [1 if score >= threshold else 0 for score in scores]
+
+    def _extract_cosine_sim(
+        self,
+        threshold: float = 0.8,
+        model_name: str = "all-distilroberta-v1",
+        device: str = "cuda",
+        **kwargs,
+    ) -> list[bool]:
+        FEATURE_NAME = "cosine_sim"
+
+        model = SentenceTransformer(model_name, device=device)
+        model.max_seq_length = 200
+
+        embeddings_a = model.encode(
+            self.completions_a,
+            convert_to_tensor=True,
+            show_progress_bar=True,
+            device=device,
+        )
+        embeddings_b = model.encode(
+            self.completions_b,
+            convert_to_tensor=True,
+            show_progress_bar=True,
+            device=device,
+        )
+        cosine_scores = util.cos_sim(embeddings_a, embeddings_b)
+        scores = cosine_scores.diag().cpu().numpy().tolist()
+
+        if self.keep_features:
+            self.save_features(
+                output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
+                extra_columns={FEATURE_NAME: scores},
+            )
 
         logging.info(f"Filtering instances where score > {threshold}")
         return [1 if score >= threshold else 0 for score in scores]
