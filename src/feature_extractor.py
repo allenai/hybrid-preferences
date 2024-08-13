@@ -57,6 +57,7 @@ class FeatureExtractor:
             "bertscore_length": self._extract_bertscore_length,
             "cosine_sim": self._extract_cosine_sim,
             "rouge": self._extract_rouge,
+            "domain": self._extract_domain,
         }
 
     def __call__(
