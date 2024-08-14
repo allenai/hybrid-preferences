@@ -8,6 +8,7 @@ from pathlib import Path
 import pandas as pd
 
 from src.feature_extractor import FeatureExtractor
+from src.feature_extractor import get_all_feature_combinations
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -21,8 +22,10 @@ def get_args():
     # fmt: off
     description = """Apply data model to get swapped preferences.
 
-This CLI expects a JSONL file with fields `pref_human` and `pref_gpt4`.
-Then, it will output a JSONL file in the provided directory containing the following fields:
+This CLI expects a JSONL file with fields `pref_human` and `pref_gpt4`.  Then,
+it will output a JSONL file in the provided directory containing the following
+fields:
+
 - `pref`: the final preference used for reward model training
 - `is_swapped`: whether that instance fulfilled the features passed.
 - `features_used`: a comma-separated string of features used for this instance.
@@ -30,29 +33,41 @@ Then, it will output a JSONL file in the provided directory containing the follo
 You can select a number of features by passing arguments to the `--features`
 option.  All features will be computed by default.  Some features can be
 parametrized. You can do so by first appending a double colon (::), and then
-passing the parameters as a name=value dictionary. Remember that booleans should be 0 or 1.
+passing the parameters as a name=value dictionary. Remember that booleans should
+be 0 or 1.
 
 For example:
 
     [feature_name]::[param1]=[value1],[param2]=[value2]
     entity_sim::threshold=0.95,model_name=en_core_web_lg,n_process=4
+
+You can use the `--show_all_features` flag to get a list of all available
+features.  If you don't pass anything in the `--features` option, this CLI will
+extract all features.
+
 """
 
     parser = argparse.ArgumentParser(description=description, formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument("--input_path", type=Path, required=True, help="Path to the JSONL file containing preferences.")
-    parser.add_argument("--output_dir", type=Path, required=True, help="Directory to save the output JSONL file.")
+    parser.add_argument("--input_path", type=Path, required=False, help="Path to the JSONL file containing preferences.")
+    parser.add_argument("--output_dir", type=Path, required=False, help="Directory to save the output JSONL file.")
     parser.add_argument("--num_instances", type=int, default=7000, help="Number of instances to save in the output file.")
-    parser.add_argument("--features", nargs="*", default=None, help="Features to include. To show all available features.")
+    parser.add_argument("--features", nargs="*", default=None, help="Features to include. To show all available features. If not set, will try all feature combinations. Pass --show_all_combinations to show all features.")
     parser.add_argument("--threshold", type=float, default=1.0, help="Percentage of total features to be active in order to swap w/ human preferences.")
     parser.add_argument("--keep_features_dir", type=Path, default=None, help="If set, will store all collected features in this directory.")
     parser.add_argument("--append_to_experiments_file", type=Path, default=None, help="If set, will append to an experiments TXT file to be used for submitting TPU training jobs.")
     parser.add_argument("--random_seed", type=int, default=42, help="Set the random seed.")
+    parser.add_argument("--show_all_features", action="store_true", help="Show all available features and exit.")
     # fmt: on
     return parser.parse_args()
 
 
 def main():
     args = get_args()
+
+    all_features, _ = get_all_feature_combinations()
+    if args.show_all_features:
+        logging.info(f"Available features: {', '.join(all_features)}")
+        sys.exit(0)
 
     random.seed(args.random_seed)
     df = pd.read_json(args.input_path, lines=True)

@@ -1,3 +1,5 @@
+import inspect
+import itertools
 import logging
 import math
 import random
@@ -6,7 +8,6 @@ from pathlib import Path
 from typing import Any, Optional
 
 import evaluate
-import inspect
 import numpy as np
 import pandas as pd
 import spacy
@@ -17,13 +18,21 @@ from sentence_transformers import SentenceTransformer, util
 from tqdm import tqdm
 
 
-def get_all_feature_combinations() -> list[str]:
+def get_all_feature_combinations() -> tuple[list[str], list[list[str]]]:
+    """Get all available feature combinations"""
     features = [
         mem.removeprefix("_extract_")
         for mem, _ in inspect.getmembers(FeatureExtractor)
         if mem.startswith("_extract")
     ]
-    return features
+
+    feature_combinations = [
+        list(comb)
+        for r in range(1, len(features) + 1)
+        for comb in itertools.combinations(features, r)
+    ]
+
+    return features, feature_combinations
 
 
 class FeatureExtractor:
