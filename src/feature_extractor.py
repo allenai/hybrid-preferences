@@ -200,6 +200,7 @@ class FeatureExtractor:
             zip(docs_a, docs_b),
             file=tqdm_file,
             bar_format=tqdm_bar_format,
+            total=len(self.completions_a),
         ):
             gen_a_ents = set()
             gen_b_ents = set()
