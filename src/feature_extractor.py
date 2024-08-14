@@ -352,6 +352,7 @@ class FeatureExtractor:
                 zip(self.completions_a, self.completions_b),
                 file=tqdm_file,
                 bar_format=tqdm_bar_format,
+                total=len(self.completions_a),
             ):
                 score = rouge.score(prediction=a, target=b)["rouge1"].fmeasure
                 scores.append(score)
