@@ -228,7 +228,7 @@ class FeatureExtractor:
 
         if self.keep_features:
             self.save_features(
-                output_path=self.keep_features / f"{FEATURE_NAME}.json",
+                output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
                 extra_columns={FEATURE_NAME: scores},
             )
 
