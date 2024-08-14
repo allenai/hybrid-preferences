@@ -56,7 +56,6 @@ extract all features.
     shared_args.add_argument("--input_path", type=Path, required=False, help="Path to the JSONL file containing preferences.")
     shared_args.add_argument("--output_dir", type=Path, required=False, help="Directory to save the output JSONL file.")
     shared_args.add_argument("--num_instances", type=int, default=7000, help="Number of instances to save in the output file.")
-    shared_args.add_argument("--features", nargs="*", default=None, help="Features to include. To show all available features. If not set, will try all feature combinations. Pass --show_all_combinations to show all features.")
     shared_args.add_argument("--threshold", type=float, default=1.0, help="Percentage of total features to be active in order to swap w/ human preferences.")
     shared_args.add_argument("--keep_features_dir", type=Path, default=None, help="If set, will store all collected features in this directory.")
     shared_args.add_argument("--append_to_experiments_file", type=Path, default=None, help="If set, will append to an experiments TXT file to be used for submitting TPU training jobs.")
@@ -64,6 +63,7 @@ extract all features.
 
     # Arguments for 'single' command
     parser_single = subparsers.add_parser("single", help="Run single data model run", parents=[shared_args])
+    parser_single.add_argument("--features", nargs="*", default=None, help="Features to include. To show all available features. If not set, will try all feature combinations. Pass --show_all_combinations to show all features.")
     parser_single.add_argument("--show_all_features", action="store_true", help="Show all available features and exit.")
 
     # Arguments for 'multi' command
