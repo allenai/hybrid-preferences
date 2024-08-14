@@ -83,6 +83,9 @@ class FeatureExtractor:
             "domain": self._extract_domain,
         }
 
+        # Some cache for easier processing
+        self.bert_scores = None
+
     def __call__(
         self, features: list[str], threshold: float = 1.0, skip_if_error: bool = True
     ) -> "pd.DataFrame":
@@ -231,15 +234,27 @@ class FeatureExtractor:
         logging.info(f"Filtering instances where score > {threshold}")
         return [1 if score >= threshold else 0 for score in scores]
 
-    def _extract_bertscore(self, threshold: float = 0.8, **kwargs) -> list[bool]:
+    def _extract_bertscore(
+        self,
+        model_type: str = "distilbert-base-uncased",
+        threshold: float = 0.8,
+        **kwargs,
+    ) -> list[bool]:
         FEATURE_NAME = "bertscore"
         bertscore = evaluate.load("bertscore")
         scores = bertscore.compute(
             predictions=self.completions_a,
             references=self.completions_b,
-            lang="en",
             verbose=True,
+            use_fast_tokenizer=True,
+            nthreads=8,
+            device="cuda",
+            model_type=model_type,
         )["f1"]
+
+        # Cache this so it's easier to run bertscore
+        logging.info("Caching bert scores")
+        self.bert_scores = scores
 
         if self.keep_features:
             self.save_features(
@@ -250,17 +265,33 @@ class FeatureExtractor:
         logging.info(f"Filtering instances where score > {threshold}")
         return [1 if score >= threshold else 0 for score in scores]
 
-    def _extract_bertscore_length(self, threshold: float = 0.9, **kwargs) -> list[bool]:
+    def _extract_bertscore_length(
+        self,
+        threshold: float = 0.9,
+        model_type: str = "distilbert-base-uncased",
+        **kwargs,
+    ) -> list[bool]:
         FEATURE_NAME = "bertscore_length"
 
         length_penalties = []
-        bertscore = evaluate.load("bertscore")
-        bert_scores = bertscore.compute(
-            predictions=self.completions_a,
-            references=self.completions_b,
-            lang="en",
-            verbose=True,
-        )["f1"]
+        if not self.bert_scores:
+            bertscore = evaluate.load("bertscore")
+            bert_scores = bertscore.compute(
+                predictions=self.completions_a,
+                references=self.completions_b,
+                lang="en",
+                verbose=True,
+                use_fast_tokenizer=True,
+                nthreads=8,
+                device="cuda",
+                model_type=model_type,
+            )["f1"]
+
+            # Cache this so it's easier to run bertscore
+            logging.info("Caching bert scores")
+            self.bert_scores = bert_scores
+        else:
+            bert_scores = self.bert_scores
 
         for a, b in zip(self.completions_a, self.completions_b):
             ref, cand = (a, b) if len(a) > len(b) else (b, a)
