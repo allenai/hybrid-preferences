@@ -315,6 +315,7 @@ class FeatureExtractor:
                 if self.use_cache:
                     self._cache_result(key="bertscore", scores=bert_scores)
 
+            logging.info("Computing length penalties")
             for a, b in zip(self.completions_a, self.completions_b):
                 ref, cand = (a, b) if len(a) > len(b) else (b, a)
                 try:
