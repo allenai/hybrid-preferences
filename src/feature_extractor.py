@@ -1,3 +1,4 @@
+import sys
 import inspect
 import itertools
 import logging
@@ -16,6 +17,9 @@ from nltk.stem import WordNetLemmatizer
 from rouge_score import rouge_scorer
 from sentence_transformers import SentenceTransformer, util
 from tqdm import tqdm
+
+tqdm_file = sys.stdout
+tqdm_bar_format = "{l_bar}{bar}{r_bar}\n"
 
 
 def get_all_feature_combinations() -> tuple[list[str], list[list[str]]]:
@@ -189,7 +193,11 @@ class FeatureExtractor:
         docs_b = model.pipe(self.completions_b, n_process=n_process)
         scores = []
 
-        for doc_a, doc_b in tqdm(zip(docs_a, docs_b)):
+        for doc_a, doc_b in tqdm(
+            zip(docs_a, docs_b),
+            file=tqdm_file,
+            bar_format=tqdm_bar_format,
+        ):
             gen_a_ents = set()
             gen_b_ents = set()
 
@@ -279,7 +287,11 @@ class FeatureExtractor:
 
         rouge = rouge_scorer.RougeScorer(["rouge1"], use_stemmer=True)
         scores = []
-        for a, b in tqdm(zip(self.completions_a, self.completions_b)):
+        for a, b in tqdm(
+            zip(self.completions_a, self.completions_b),
+            file=tqdm_file,
+            bar_format=tqdm_bar_format,
+        ):
             score = rouge.score(prediction=a, target=b)["rouge1"].fmeasure
             scores.append(score)
 
