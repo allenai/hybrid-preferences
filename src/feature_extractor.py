@@ -130,7 +130,7 @@ class FeatureExtractor:
             f"Getting instances. Needs at least {n_active_to_pass}/{n_features} to swap to human preferences."
         )
         result_matrix = np.array(result_matrix)
-        if not result_matrix:
+        if len(result_matrix) == 0:
             # Handle error
             logging.info(
                 "Didn't find any features for this combination. Will return GPT-4 preferences"
