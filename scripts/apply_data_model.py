@@ -79,15 +79,28 @@ def main():
     args = get_args()
     all_features, all_combinations = get_all_feature_combinations()
 
+    df = pd.read_json(args.input_path, lines=True)
+    if not {"pref_human", "pref_gpt4"}.issubset(set(list(df.columns))):
+        logging.error("Columns 'pref_human' and 'pref_gpt4' should be present!")
+        sys.exit(1)
+
+    feature_extractor = FeatureExtractor(
+        df,
+        id_col="prompt_hash",
+        prompt_col="text",
+        completion_a_col="response_a",
+        completion_b_col="response_b",
+        keep_features=args.keep_features_dir,
+    )
+
     if args.command == "single":
         if args.show_all_features:
             logging.info(f"Available features: {', '.join(all_features)}")
             sys.exit(0)
 
         apply_data_model(
-            input_path=args.input_path,
+            feature_extractor,
             output_dir=args.output_dir,
-            keep_features_dir=args.keep_features_dir,
             features=args.features,
             threshold=args.threshold,
             random_seed=args.random_seed,
@@ -126,9 +139,8 @@ def main():
             )
 
             apply_data_model(
-                input_path=args.input_path,
+                feature_extractor,
                 output_dir=args.output_dir,
-                keep_features_dir=args.keep_features_dir,
                 features=feature_combination,
                 threshold=args.threshold,
                 random_seed=args.random_seed,
@@ -138,9 +150,9 @@ def main():
 
 
 def apply_data_model(
-    input_path: Path,
+    extractor: "FeatureExtractor",
+    *,
     output_dir: Path,
-    keep_features_dir: Optional[Path] = None,
     features: Optional[list[str]] = None,
     threshold: float = 1.0,
     random_seed: int = 42,
@@ -148,20 +160,6 @@ def apply_data_model(
     append_to_experiments_file: Optional[Path] = None,
 ):
     random.seed(random_seed)
-    df = pd.read_json(input_path, lines=True)
-    if not {"pref_human", "pref_gpt4"}.issubset(set(list(df.columns))):
-        logging.error("Columns 'pref_human' and 'pref_gpt4' should be present!")
-        sys.exit(1)
-
-    # Swap preferences
-    extractor = FeatureExtractor(
-        df,
-        id_col="prompt_hash",
-        prompt_col="text",
-        completion_a_col="response_a",
-        completion_b_col="response_b",
-        keep_features=keep_features_dir,
-    )
     if not features:
         logging.info(
             "Will extract all available features using their default parameters"
