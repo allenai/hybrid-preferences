@@ -110,7 +110,9 @@ def main():
     elif args.command == "multi":
 
         feats_to_run = (
-            random.sample(all_combinations, args.n_sample_combinations)
+            random.sample(
+                all_combinations, min(args.n_sample_combinations, len(all_combinations))
+            )
             if args.n_sample_combinations
             else all_combinations
         )

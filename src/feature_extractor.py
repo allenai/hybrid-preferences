@@ -130,9 +130,16 @@ class FeatureExtractor:
             f"Getting instances. Needs at least {n_active_to_pass}/{n_features} to swap to human preferences."
         )
         result_matrix = np.array(result_matrix)
-        n_active_features = np.sum(result_matrix, axis=0)
-        to_swap = n_active_features >= n_active_to_pass
-        logging.info(f"Swapping {sum(to_swap)} samples with human preferences.")
+        if not result_matrix:
+            # Handle error
+            logging.info(
+                "Didn't find any features for this combination. Will return GPT-4 preferences"
+            )
+            to_swap = [False for _ in range(len(self.pref_gpt4))]
+        else:
+            n_active_features = np.sum(result_matrix, axis=0)
+            to_swap = n_active_features >= n_active_to_pass
+            logging.info(f"Swapping {sum(to_swap)} samples with human preferences.")
 
         prefs = [
             human if swap else gpt4
