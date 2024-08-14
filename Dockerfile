@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends git
 COPY requirements.txt /stage
 RUN pip install -r requirements.txt
 RUN python -m spacy download en_core_web_lg
-RUN python -m nltk.downloader 'punkt'
+RUN python -m nltk.downloader 'punkt_tab'
 RUN python -m nltk.downloader 'wordnet'
 
 # Copy all files
