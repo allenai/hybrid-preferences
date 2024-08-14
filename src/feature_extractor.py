@@ -268,7 +268,7 @@ class FeatureExtractor:
 
     def _extract_bertscore_length(
         self,
-        threshold: float = 0.9,
+        threshold: float = 0.40,
         model_type: str = "distilbert-base-uncased",
         **kwargs,
     ) -> list[bool]:
@@ -314,7 +314,7 @@ class FeatureExtractor:
         logging.info(f"Filtering instances where score > {threshold}")
         return [1 if score >= threshold else 0 for score in scores]
 
-    def _extract_rouge(self, threshold: float = 0.8, **kwargs) -> list[bool]:
+    def _extract_rouge(self, threshold: float = 0.4, **kwargs) -> list[bool]:
         FEATURE_NAME = "rouge"
 
         rouge = rouge_scorer.RougeScorer(["rouge1"], use_stemmer=True)
