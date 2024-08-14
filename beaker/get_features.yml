@@ -23,6 +23,8 @@ tasks:
       - 42
       - --n_sample_combinations
       - 50
+      - --ignore_list
+      - random
     datasets:
       - mountPath: /source/
         source:
