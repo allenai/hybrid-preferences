@@ -35,9 +35,12 @@ tasks:
       gpuCount: 2
     context:
       priority: normal
+      preemptible: true
     constraints:
       cluster:
         - ai2/allennlp-cirrascale
+        - ai2/general-cirrascale-a100-80g-ib
+        - ai2/jupiter-cirrascale-2
     envVars:
       - name: OPENAI_API_KEY
         secret: OPENAI_API_KEY

@@ -55,6 +55,7 @@ class FeatureExtractor:
         completion_a_col: str = "completion_a",
         completion_b_col: str = "completion_b",
         keep_features: Optional[Path] = None,
+        use_cache: bool = True,
     ):
         self._df = df
         self.columns = list(df.columns)
@@ -83,8 +84,9 @@ class FeatureExtractor:
             "domain": self._extract_domain,
         }
 
-        # Some cache for easier processing
-        self.bert_scores = None
+        # Cache data structure
+        self.use_cache = use_cache
+        self.cache: dict[str, Any] = {}
 
     def __call__(
         self, features: list[str], threshold: float = 1.0, skip_if_error: bool = True
@@ -128,9 +130,16 @@ class FeatureExtractor:
             f"Getting instances. Needs at least {n_active_to_pass}/{n_features} to swap to human preferences."
         )
         result_matrix = np.array(result_matrix)
-        n_active_features = np.sum(result_matrix, axis=0)
-        to_swap = n_active_features >= n_active_to_pass
-        logging.info(f"Swapping {sum(to_swap)} samples with human preferences.")
+        if not result_matrix:
+            # Handle error
+            logging.info(
+                "Didn't find any features for this combination. Will return GPT-4 preferences"
+            )
+            to_swap = [False for _ in range(len(self.pref_gpt4))]
+        else:
+            n_active_features = np.sum(result_matrix, axis=0)
+            to_swap = n_active_features >= n_active_to_pass
+            logging.info(f"Swapping {sum(to_swap)} samples with human preferences.")
 
         prefs = [
             human if swap else gpt4
@@ -149,7 +158,7 @@ class FeatureExtractor:
         )
         return df
 
-    def save_features(self, output_path: Path, extra_columns: dict[str, Any]):
+    def _save_features(self, output_path: Path, extra_columns: dict[str, Any]):
         dataset = {
             "id": self.id,
             "prompt": self.prompts,
@@ -159,6 +168,9 @@ class FeatureExtractor:
         dataset.update(extra_columns)
         output_df = pd.DataFrame(dataset)
         output_df.to_json(output_path, lines=True, orient="records")
+
+    def _cache_result(self, key: str, scores: list[Any]):
+        self.cache[key] = scores
 
     def parse_feature(self, s: str) -> tuple[str, dict[str, Any]]:
         def _convert(v):
@@ -189,48 +201,55 @@ class FeatureExtractor:
     ) -> list[bool]:
         FEATURE_NAME = "entity_sim"
 
-        model = spacy.load(model_name)
-        lemmatizer = WordNetLemmatizer()
+        if FEATURE_NAME in self.cache and self.use_cache:
+            logging.info(f"Using cached results for {FEATURE_NAME}")
+            scores = self.cache[FEATURE_NAME]
+        else:
+            model = spacy.load(model_name)
+            lemmatizer = WordNetLemmatizer()
 
-        docs_a = model.pipe(self.completions_a, n_process=n_process)
-        docs_b = model.pipe(self.completions_b, n_process=n_process)
-        scores = []
+            docs_a = model.pipe(self.completions_a, n_process=n_process)
+            docs_b = model.pipe(self.completions_b, n_process=n_process)
+            scores = []
 
-        for doc_a, doc_b in tqdm(
-            zip(docs_a, docs_b),
-            file=tqdm_file,
-            bar_format=tqdm_bar_format,
-            total=len(self.completions_a),
-        ):
-            gen_a_ents = set()
-            gen_b_ents = set()
+            for doc_a, doc_b in tqdm(
+                zip(docs_a, docs_b),
+                file=tqdm_file,
+                bar_format=tqdm_bar_format,
+                total=len(self.completions_a),
+            ):
+                gen_a_ents = set()
+                gen_b_ents = set()
 
-            for ent in doc_a.ents:
-                ent_text = re.sub("[^0-9 a-zA-Z]+", "", ent.text)
-                ent_text = lemmatizer.lemmatize(ent_text.replace("the", "").strip())
-                ent_text = ent_text.lower()
+                for ent in doc_a.ents:
+                    ent_text = re.sub("[^0-9 a-zA-Z]+", "", ent.text)
+                    ent_text = lemmatizer.lemmatize(ent_text.replace("the", "").strip())
+                    ent_text = ent_text.lower()
 
-                gen_a_ents.add(ent_text)
+                    gen_a_ents.add(ent_text)
 
-            for ent in doc_b.ents:
-                ent_text = re.sub("[^0-9 a-zA-Z]+", "", ent.text)
-                ent_text = lemmatizer.lemmatize(ent_text.replace("the", "").strip())
-                ent_text = ent_text.lower()
+                for ent in doc_b.ents:
+                    ent_text = re.sub("[^0-9 a-zA-Z]+", "", ent.text)
+                    ent_text = lemmatizer.lemmatize(ent_text.replace("the", "").strip())
+                    ent_text = ent_text.lower()
 
-                gen_b_ents.add(ent_text)
+                    gen_b_ents.add(ent_text)
 
-            intersection = len(gen_a_ents.intersection(gen_b_ents))
-            union = (len(gen_b_ents) + len(gen_b_ents)) - intersection
+                intersection = len(gen_a_ents.intersection(gen_b_ents))
+                union = (len(gen_b_ents) + len(gen_b_ents)) - intersection
 
-            # If there are no entities in either of the generations, return 1
-            score = 1 if union == 0 else intersection / union
-            scores.append(score)
+                # If there are no entities in either of the generations, return 1
+                score = 1 if union == 0 else intersection / union
+                scores.append(score)
 
         if self.keep_features:
-            self.save_features(
+            self._save_features(
                 output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
                 extra_columns={FEATURE_NAME: scores},
             )
+
+        if self.use_cache:
+            self._cache_result(key=FEATURE_NAME, scores=scores)
 
         logging.info(f"Filtering instances where score > {threshold}")
         return [1 if score >= threshold else 0 for score in scores]
@@ -242,26 +261,30 @@ class FeatureExtractor:
         **kwargs,
     ) -> list[bool]:
         FEATURE_NAME = "bertscore"
-        bertscore = evaluate.load("bertscore")
-        scores = bertscore.compute(
-            predictions=self.completions_a,
-            references=self.completions_b,
-            verbose=True,
-            use_fast_tokenizer=True,
-            nthreads=8,
-            device="cuda",
-            model_type=model_type,
-        )["f1"]
 
-        # Cache this so it's easier to run bertscore
-        logging.info("Caching bert scores")
-        self.bert_scores = scores
+        if FEATURE_NAME in self.cache and self.use_cache:
+            logging.info(f"Using cached results for {FEATURE_NAME}")
+            scores = self.cache[FEATURE_NAME]
+        else:
+            bertscore = evaluate.load("bertscore")
+            scores = bertscore.compute(
+                predictions=self.completions_a,
+                references=self.completions_b,
+                verbose=True,
+                use_fast_tokenizer=True,
+                nthreads=8,
+                device="cuda",
+                model_type=model_type,
+            )["f1"]
 
         if self.keep_features:
-            self.save_features(
+            self._save_features(
                 output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
                 extra_columns={FEATURE_NAME: scores},
             )
+
+        if self.use_cache:
+            self._cache_result(key=FEATURE_NAME, scores=scores)
 
         logging.info(f"Filtering instances where score > {threshold}")
         return [1 if score >= threshold else 0 for score in scores]
@@ -274,42 +297,52 @@ class FeatureExtractor:
     ) -> list[bool]:
         FEATURE_NAME = "bertscore_length"
 
-        length_penalties = []
-        if not self.bert_scores:
-            bertscore = evaluate.load("bertscore")
-            bert_scores = bertscore.compute(
-                predictions=self.completions_a,
-                references=self.completions_b,
-                lang="en",
-                verbose=True,
-                use_fast_tokenizer=True,
-                nthreads=8,
-                device="cuda",
-                model_type=model_type,
-            )["f1"]
-
-            # Cache this so it's easier to run bertscore
-            logging.info("Caching bert scores")
-            self.bert_scores = bert_scores
+        if FEATURE_NAME in self.cache and self.use_cache:
+            logging.info(f"Using cached results for {FEATURE_NAME}")
+            scores = self.cache[FEATURE_NAME]
         else:
-            bert_scores = self.bert_scores
+            length_penalties = []
+            if "bertscore" in self.cache:
+                logging.info("Using cached bertscore results")
+                bert_scores = self.cache["bertscore"]
+            else:
+                # Compute the result
+                bertscore = evaluate.load("bertscore")
+                bert_scores = bertscore.compute(
+                    predictions=self.completions_a,
+                    references=self.completions_b,
+                    lang="en",
+                    verbose=True,
+                    use_fast_tokenizer=True,
+                    nthreads=8,
+                    device="cuda",
+                    model_type=model_type,
+                )["f1"]
 
-        for a, b in zip(self.completions_a, self.completions_b):
-            ref, cand = (a, b) if len(a) > len(b) else (b, a)
-            try:
-                length_penalty = np.exp(
-                    1 - len(word_tokenize(ref)) / len(word_tokenize(cand))
-                )
-            except ZeroDivisionError:
-                length_penalty = 0
-            length_penalties.append(length_penalty)
+                if self.use_cache:
+                    self._cache_result(key="bertscore", scores=bert_scores)
 
-        scores = [i * j for i, j in zip(bert_scores, length_penalties)]
+            logging.info("Computing length penalties")
+            for a, b in zip(self.completions_a, self.completions_b):
+                ref, cand = (a, b) if len(a) > len(b) else (b, a)
+                try:
+                    length_penalty = np.exp(
+                        1 - len(word_tokenize(ref)) / len(word_tokenize(cand))
+                    )
+                except ZeroDivisionError:
+                    length_penalty = 0
+                length_penalties.append(length_penalty)
+
+            scores = [i * j for i, j in zip(bert_scores, length_penalties)]
+
         if self.keep_features:
-            self.save_features(
+            self._save_features(
                 output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
                 extra_columns={FEATURE_NAME: scores},
             )
+
+        if self.use_cache:
+            self._cache_result(key=FEATURE_NAME, scores=scores)
 
         logging.info(f"Filtering instances where score > {threshold}")
         return [1 if score >= threshold else 0 for score in scores]
@@ -317,21 +350,29 @@ class FeatureExtractor:
     def _extract_rouge(self, threshold: float = 0.4, **kwargs) -> list[bool]:
         FEATURE_NAME = "rouge"
 
-        rouge = rouge_scorer.RougeScorer(["rouge1"], use_stemmer=True)
-        scores = []
-        for a, b in tqdm(
-            zip(self.completions_a, self.completions_b),
-            file=tqdm_file,
-            bar_format=tqdm_bar_format,
-        ):
-            score = rouge.score(prediction=a, target=b)["rouge1"].fmeasure
-            scores.append(score)
+        if FEATURE_NAME in self.cache and self.use_cache:
+            logging.info(f"Using cached results for {FEATURE_NAME}")
+            scores = self.cache[FEATURE_NAME]
+        else:
+            rouge = rouge_scorer.RougeScorer(["rouge1"], use_stemmer=True)
+            scores = []
+            for a, b in tqdm(
+                zip(self.completions_a, self.completions_b),
+                file=tqdm_file,
+                bar_format=tqdm_bar_format,
+                total=len(self.completions_a),
+            ):
+                score = rouge.score(prediction=a, target=b)["rouge1"].fmeasure
+                scores.append(score)
 
         if self.keep_features:
-            self.save_features(
+            self._save_features(
                 output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
                 extra_columns={FEATURE_NAME: scores},
             )
+
+        if self.use_cache:
+            self._cache_result(key=FEATURE_NAME, scores=scores)
 
         logging.info(f"Filtering instances where score > {threshold}")
         return [1 if score >= threshold else 0 for score in scores]
@@ -345,29 +386,36 @@ class FeatureExtractor:
     ) -> list[bool]:
         FEATURE_NAME = "cosine_sim"
 
-        model = SentenceTransformer(model_name, device=device)
-        model.max_seq_length = 200
+        if FEATURE_NAME in self.cache and self.use_cache:
+            logging.info(f"Using cached results for {FEATURE_NAME}")
+            scores = self.cache[FEATURE_NAME]
+        else:
+            model = SentenceTransformer(model_name, device=device)
+            model.max_seq_length = 200
 
-        embeddings_a = model.encode(
-            self.completions_a,
-            convert_to_tensor=True,
-            show_progress_bar=True,
-            device=device,
-        )
-        embeddings_b = model.encode(
-            self.completions_b,
-            convert_to_tensor=True,
-            show_progress_bar=True,
-            device=device,
-        )
-        cosine_scores = util.cos_sim(embeddings_a, embeddings_b)
-        scores = cosine_scores.diag().cpu().numpy().tolist()
+            embeddings_a = model.encode(
+                self.completions_a,
+                convert_to_tensor=True,
+                show_progress_bar=True,
+                device=device,
+            )
+            embeddings_b = model.encode(
+                self.completions_b,
+                convert_to_tensor=True,
+                show_progress_bar=True,
+                device=device,
+            )
+            cosine_scores = util.cos_sim(embeddings_a, embeddings_b)
+            scores = cosine_scores.diag().cpu().numpy().tolist()
 
         if self.keep_features:
-            self.save_features(
+            self._save_features(
                 output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
                 extra_columns={FEATURE_NAME: scores},
             )
+
+        if self.use_cache:
+            self._cache_result(key=FEATURE_NAME, scores=scores)
 
         logging.info(f"Filtering instances where score > {threshold}")
         return [1 if score >= threshold else 0 for score in scores]
@@ -384,17 +432,24 @@ class FeatureExtractor:
                 f"No `{domain_col}` field found in the dataset! Skipping this feature"
             )
 
-        include_list = [domain.strip() for domain in include_domains.split(",")]
-        instance_domains = self._df[domain_col].to_list()
-        scores = [1 if domain in include_list else 0 for domain in instance_domains]
+        if FEATURE_NAME in self.cache and self.use_cache:
+            logging.info(f"Using cached results for {FEATURE_NAME}")
+            scores = self.cache[FEATURE_NAME]
+        else:
+            include_list = [domain.strip() for domain in include_domains.split(",")]
+            instance_domains = self._df[domain_col].to_list()
+            scores = [1 if domain in include_list else 0 for domain in instance_domains]
 
         if self.keep_features:
-            self.save_features(
+            self._save_features(
                 output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
                 extra_columns={
                     FEATURE_NAME: scores,
                     f"{FEATURE_NAME}_include_list": include_domains,
                 },
             )
+
+        if self.use_cache:
+            self._cache_result(key=FEATURE_NAME, scores=scores)
 
         return scores
