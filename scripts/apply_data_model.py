@@ -69,6 +69,7 @@ extract all features.
     # Arguments for 'multi' command
     parser_multi = subparsers.add_parser("multi", help="Run multiple combinations", parents=[shared_args])
     parser_multi.add_argument("--n_sample_combinations", type=int, default=None, help="Sample the combinations to run.")
+    parser_multi.add_argument("--ignore_list", nargs="*", default=None, help="Ignore combinations that include these features.")
 
     # fmt: on
     return parser.parse_args()
@@ -100,6 +101,20 @@ def main():
             if args.n_sample_combinations
             else all_combinations
         )
+
+        if args.ignore_list:
+            logging.info(
+                f"Ignoring feature combinations that include these features: {', '.join(args.ignore_list)}"
+            )
+            feats_to_run = [
+                feature_combination
+                for feature_combination in feats_to_run
+                if not any(
+                    feature in args.ignore_list for feature in feature_combination
+                )
+            ]
+            logging.info(f"Updated number of feature combinations: {len(feats_to_run)}")
+
         logging.info(
             f"There are {len(all_combinations)} total feature combinations."
             f" Running {len(feats_to_run)}."
