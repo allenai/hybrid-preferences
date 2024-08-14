@@ -296,6 +296,7 @@ class FeatureExtractor:
         else:
             length_penalties = []
             if "bertscore" in self.cache:
+                logging.info("Using cached bertscore results")
                 bert_scores = self.cache["bertscore"]
             else:
                 # Compute the result
