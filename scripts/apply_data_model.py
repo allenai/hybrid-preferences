@@ -139,7 +139,6 @@ def apply_data_model(
         sys.exit(1)
 
     # Swap preferences
-    logging.info("Swapping preferences")
     extractor = FeatureExtractor(
         df,
         id_col="prompt_hash",
@@ -153,6 +152,8 @@ def apply_data_model(
             "Will extract all available features using their default parameters"
         )
         features = list(extractor.REGISTERED_EXTRACTORS.keys())
+
+    logging.info("Extracting features")
     extracted_df = extractor(features=features, threshold=threshold)
 
     # Convert to DPO training format
