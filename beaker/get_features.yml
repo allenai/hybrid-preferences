@@ -39,3 +39,5 @@ tasks:
     envVars:
       - name: OPENAI_API_KEY
         secret: OPENAI_API_KEY
+      - name: TOKENIZERS_PARALLELISM
+        value: false
