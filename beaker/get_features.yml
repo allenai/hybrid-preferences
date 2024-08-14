@@ -1,0 +1,41 @@
+version: v2
+budget: ai2/oe-adapt
+description: "Get features using datamodel approach"
+tasks:
+  - name: get-features-datamodel
+    image:
+      beaker: ljm/human-datamodel
+    command: ["python", "-m", "scripts.apply_data_model", "multi"]
+    arguments:
+      - --input_path
+      - /source/helpsteer2_human_vs_gpt4_weighted_for_llama.jsonl
+      - --output_dir
+      - /output/data/
+      - --num_instances
+      - 7000
+      - --threshold
+      - 1
+      - --keep_features_dir
+      - /output/features/
+      - --append_to_experiments_file
+      - /output/experiments.txt
+      - --random_seed
+      - 42
+      - --n_sample_combinations
+      - 50
+    datasets:
+      - mountPath: /source/
+        source:
+          beaker: 01J3G7J400XHDEEAR8TRN2YWF3
+    result:
+      path: /output
+    resources:
+      gpuCount: 2
+    context:
+      priority: normal
+    constraints:
+      cluster:
+        - ai2/allennlp-cirrascale
+    envVars:
+      - name: OPENAI_API_KEY
+        secret: OPENAI_API_KEY
