@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 import evaluate
+import inspect
 import numpy as np
 import pandas as pd
 import spacy
@@ -14,6 +15,15 @@ from nltk.stem import WordNetLemmatizer
 from rouge_score import rouge_scorer
 from sentence_transformers import SentenceTransformer, util
 from tqdm import tqdm
+
+
+def get_all_feature_combinations() -> list[str]:
+    features = [
+        mem.removeprefix("_extract_")
+        for mem, _ in inspect.getmembers(FeatureExtractor)
+        if mem.startswith("_extract")
+    ]
+    return features
 
 
 class FeatureExtractor:
