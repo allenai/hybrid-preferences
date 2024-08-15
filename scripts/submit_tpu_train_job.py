@@ -94,6 +94,7 @@ It is recommended that the name of the dataset is the name of your experiment, s
     parser.add_argument("--ckpt_gcs_path", type=str, default="gs://hamishi-east1/easylm/llama2/tulu2_13b_fixed/tulu2_13b_fixed/455af914503740be9664497dae996762/streaming_params", help="GCS filepath containing the parameter checkpoint for training.")
     parser.add_argument("--vocab_gcs_path", type=str, default="gs://hamishi-east1/easylm/llama/tokenizer.model", help="GCS filepath containing the tokenizer.")
     parser.add_argument("--train_dpo", action="store_true", default=False, help="If set, will train a DPO model instead of a Sequence Regression RM.")
+    parser.add_argument("--timeout", type=int, default=900, help="Set timeout (in seconds) in between training runs.")
     # fmt: on
     return parser.parse_args()
 
@@ -125,7 +126,7 @@ def main():
             )
 
         if idx < len(experiment_names) - 1:
-            cmd += " && sleep 900 && "
+            cmd += f" && sleep {args.timeout} && "
 
         commands_for_experiments.append(cmd)
 
