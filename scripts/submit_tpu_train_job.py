@@ -84,6 +84,7 @@ It is recommended that the name of the dataset is the name of your experiment, s
     parser = argparse.ArgumentParser(description=description, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("--experiment_path", type=Path, required=True, help="Path to a TXT file containing the experiments (or datasets) in a GCS bucket.")
     parser.add_argument("--tpu_name", type=str, required=True, help="Name of the TPU to run these experiments on.")
+    parser.add_argument("--zone", type=str, required=True, help="Zone of the TPU.")
     parser.add_argument("--input_gcs_path", type=str, default="gs://ljm-dev/human-preferences/train_data", help="Path to the GCS bucket containing the datasets.")
     parser.add_argument("--output_gcs_path", type=str, default="gs://ljm-dev/human-preferences", help="Path to the GCS bucket to save the models. Will create subdirectories for DPO or RM runs.")
     parser.add_argument("--ckpt_gcs_path", type=str, default="gs://hamishi-east1/easylm/llama2/tulu2_13b_fixed/tulu2_13b_fixed/455af914503740be9664497dae996762/streaming_params", help="GCS filepath containing the parameter checkpoint for training.")
@@ -148,7 +149,7 @@ def main():
         "tpu-vm",
         "ssh",
         args.tpu_name,
-        "--zone=us-east1-d",
+        f"--zone={args.zone}",
         "--project=ai2-tpu",
         "--worker=all",
         "--command="
@@ -167,7 +168,7 @@ def main():
     subprocess.run(tpu_command, check=True)
     logging.info(
         "TPU command sent. You can track the logs by using the following command: "
-        f'gcloud alpha compute tpus tpu-vm ssh {args.tpu_name} --worker=all --zone=us-east1-d --project=ai2-tpu --command="tail -f easylm/experiments.log"'
+        f'gcloud alpha compute tpus tpu-vm ssh {args.tpu_name} --worker=all --zone={args.zone} --project=ai2-tpu --command="tail -f easylm/experiments.log"'
     )
 
 
