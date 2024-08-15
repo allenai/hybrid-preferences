@@ -35,7 +35,7 @@ DPO_JOB_TEMPLATE = (
     "--train_dataset.json_torch_dataset.seq_length=4096 "
     "--train_dataset.json_torch_dataset.batch_size=8 "
     "--checkpointer.save_optimizer_state=False "
-    "--logger.online=True "
+    "--logger.online={log_to_wandb} "
     "--logger.project='ljm-dev' "
     "--logger.entity='rlhf-llm-dev' "
     "--logger.prefix_to_id=True "
@@ -69,7 +69,7 @@ RM_JOB_TEMPLATE = (
     "--train_dataset.json_torch_dataset.batch_size=16 "
     "--checkpointer.save_optimizer_state=False "
     "--train_dataset.json_torch_dataset.remove_truncated_samples=True "
-    "--logger.online=True "
+    "--logger.online={log_to_wandb} "
     "--logger.project=ljm-dev "
     "--logger.entity=rlhf-llm-dev "
     "--logger.prefix_to_id=True "
@@ -95,6 +95,7 @@ It is recommended that the name of the dataset is the name of your experiment, s
     parser.add_argument("--vocab_gcs_path", type=str, default="gs://hamishi-east1/easylm/llama/tokenizer.model", help="GCS filepath containing the tokenizer.")
     parser.add_argument("--train_dpo", action="store_true", default=False, help="If set, will train a DPO model instead of a Sequence Regression RM.")
     parser.add_argument("--timeout", type=int, default=900, help="Set timeout (in seconds) in between training runs.")
+    parser.add_argument("--log_to_wandb", action="store_true", default=False, help="If set, will log to WandB.")
     # fmt: on
     return parser.parse_args()
 
@@ -115,6 +116,7 @@ def main():
                 output_gcs_path=args.output_gcs_path,
                 ckpt_gcs_path=args.ckpt_gcs_path,
                 vocab_gcs_path=args.vocab_gcs_path,
+                log_to_wandb="True" if args.log_to_wandb else "False",
             )
         else:
             cmd = RM_JOB_TEMPLATE.format(
@@ -123,6 +125,7 @@ def main():
                 output_gcs_path=args.output_gcs_path,
                 ckpt_gcs_path=args.ckpt_gcs_path,
                 vocab_gcs_path=args.vocab_gcs_path,
+                log_to_wandb="True" if args.log_to_wandb else "False",
             )
 
         if idx < len(experiment_names) - 1:
