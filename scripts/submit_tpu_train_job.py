@@ -95,7 +95,7 @@ It is recommended that the name of the dataset is the name of your experiment, s
     parser.add_argument("--vocab_gcs_path", type=str, default="gs://hamishi-east1/easylm/llama/tokenizer.model", help="GCS filepath containing the tokenizer.")
     parser.add_argument("--train_dpo", action="store_true", default=False, help="If set, will train a DPO model instead of a Sequence Regression RM.")
     parser.add_argument("--timeout", type=int, default=900, help="Set timeout (in seconds) in between training runs.")
-    parser.add_argument("--log_to_wandb", action="store_true", default=False, help="If set, will log to WandB.")
+    parser.add_argument("--log_to_wandb", action="store_true", default=False, help="If set, will log online to WandB.")
     # fmt: on
     return parser.parse_args()
 
