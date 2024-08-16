@@ -5,8 +5,10 @@ Usage:
 ```
 pip install google-cloud-storage beaker-py
 gcloud auth application-default login
+gcloud auth application login
 git clone https://github.com/hamishivi/EasyLM.git
 cd EasyLM
+gsutil cp gs://hamishi-east1/easylm/llama/tokenizer.model .
 conda env create -f scripts/gpu_environment.yml
 # Copy this script into the machine you're working on
 python convert_to_hf.py --gcs_bucket <BUCKET_NAME> --gcs_dir_path <PREFIX> --parent_dir <OUTPUT>
@@ -16,6 +18,7 @@ python convert_to_hf.py --gcs_bucket <BUCKET_NAME> --gcs_dir_path <PREFIX> --par
 
 import sys
 import argparse
+import subprocess
 import logging
 from pathlib import Path
 
@@ -40,6 +43,7 @@ def get_args():
     parser.add_argument("--gcs_bucket", type=str, help="GCS bucket where the models are stored (NO need for gs:// prefix).")
     parser.add_argument("--gcs_dir_path", type=str, help="The directory path (or prefix) of models (e.g., human-preferences/rm_checkpoints/tulu2_13b_rm_human_datamodel_).")
     parser.add_argument("--parent_dir", type=Path, help="Directory where all downloads and outputs will be stored.")
+    parser.add_argument("--tokenizer_path", type=str, default="tokenizer.model", help="Path where you downloaded the tokenizer model.")
     # fmt: on
     return parser.parse_args()
 
@@ -72,10 +76,20 @@ def main():
         download_path = param_dir / param_file
         gcs_path.chunk_size = 4 * 1024 * 1024
         gcs_path.download_to_filename(str(download_path))
-        params_dict[download_path] = out_dir
+        params_dict[str(download_path)] = out_dir
 
     for idx, (input_params, output_dir) in enumerate(params_dict.items()):
-        pass
+        logging.info(f"Converting {download_path} to HF format")
+        convert_command = [
+            "python",
+            "-m",
+            "EasyLM.models.llama.convert_easylm_to_hf",
+            f"--load_checkpoint=params::{input_params}",
+            f"--tokenizer_path={args.tokenizer_path}",
+            f"--model_size={args.model_size}",
+            f"--output_dir={output_dir}",
+        ]
+        subprocess.run(convert_command, check=True)
 
 
 def list_directories_with_prefix(
