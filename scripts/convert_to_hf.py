@@ -72,25 +72,32 @@ def main():
         out_dir = parent_dir / f"{experiment_name}_OUT"
         param_dir.mkdir(parents=True, exist_ok=True)
         out_dir.mkdir(parents=True, exist_ok=True)
-        # Create output file and save outputs there
-        param_file = "streaming_params"
-        download_path = param_dir / param_file
-        gcs_path.chunk_size = 4 * 1024 * 1024
-        gcs_path.download_to_filename(str(download_path))
-        params_dict[str(download_path)] = out_dir
-
-    for idx, (input_params, output_dir) in enumerate(params_dict.items()):
-        logging.info(f"Converting {download_path} to HF format")
-        convert_command = [
-            "python",
+        subprocess.call(
+            "gsutil",
             "-m",
-            "EasyLM.models.llama.convert_easylm_to_hf",
-            f"--load_checkpoint=params::{input_params}",
-            f"--tokenizer_path={args.tokenizer_path}",
-            f"--model_size={args.model_size}",
-            f"--output_dir={output_dir}",
-        ]
-        subprocess.run(convert_command, check=True)
+            "cp",
+            f"gs://{args.gcs_bucket}/{gcs_path.name}/",
+            str(param_dir),
+        )
+        # Create output file and save outputs there
+        # param_file = "streaming_params"
+        # download_path = param_dir / param_file
+        # gcs_path.chunk_size = 4 * 1024 * 1024
+        # gcs_path.download_to_filename(str(download_path))
+        # params_dict[str(download_path)] = out_dir
+
+    # for idx, (input_params, output_dir) in enumerate(params_dict.items()):
+    #     logging.info(f"Converting {download_path} to HF format")
+    #     convert_command = [
+    #         "python",
+    #         "-m",
+    #         "EasyLM.models.llama.convert_easylm_to_hf",
+    #         f"--load_checkpoint=params::{input_params}",
+    #         f"--tokenizer_path={args.tokenizer_path}",
+    #         f"--model_size={args.model_size}",
+    #         f"--output_dir={output_dir}",
+    #     ]
+    #     subprocess.run(convert_command, check=True)
 
 
 def list_directories_with_prefix(
