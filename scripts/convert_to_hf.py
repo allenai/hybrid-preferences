@@ -6,7 +6,7 @@ Usage:
 # Setup EasyLM
 git clone https://github.com/hamishivi/EasyLM.git
 cd EasyLM
-gcloud auth application login
+gcloud auth login
 gsutil cp gs://hamishi-east1/easylm/llama/tokenizer.model .
 conda env create -f scripts/gpu_environment.yml
 conda activate EasyLM
