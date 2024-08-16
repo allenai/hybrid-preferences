@@ -1,4 +1,4 @@
-"""A semi-portable script for converting files from EasyLM to HF format
+"""A semi-portable script for converting many files from EasyLM to HF format
 
 Usage:
 
@@ -10,6 +10,7 @@ git clone https://github.com/hamishivi/EasyLM.git
 cd EasyLM
 gsutil cp gs://hamishi-east1/easylm/llama/tokenizer.model .
 conda env create -f scripts/gpu_environment.yml
+conda activate EasyLM
 # Copy this script into the machine you're working on
 python convert_to_hf.py --gcs_bucket <BUCKET_NAME> --gcs_dir_path <PREFIX> --parent_dir <OUTPUT>
 ```
