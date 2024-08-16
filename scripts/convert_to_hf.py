@@ -6,12 +6,12 @@ Usage:
 # Setup EasyLM
 git clone https://github.com/hamishivi/EasyLM.git
 cd EasyLM
+gcloud auth application login
 gsutil cp gs://hamishi-east1/easylm/llama/tokenizer.model .
 conda env create -f scripts/gpu_environment.yml
 conda activate EasyLM
 pip install google-cloud-storage beaker-py
 gcloud auth application-default login
-gcloud auth application login
 # Copy this script into the machine you're working on
 python convert_to_hf.py --gcs_bucket <BUCKET_NAME> --gcs_dir_path <PREFIX> --parent_dir <OUTPUT>
 ```
