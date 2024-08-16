@@ -45,9 +45,11 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--gcs_bucket", type=str, help="GCS bucket where the models are stored (NO need for gs:// prefix).")
     parser.add_argument("--gcs_dir_path", type=str, help="The directory path (or prefix) of models (e.g., human-preferences/rm_checkpoints/tulu2_13b_rm_human_datamodel_).")
-    parser.add_argument("--download_dir", type=Path, help="Directory where all parameter downloads from GCS will be stored. Will be emptied for every batch.")
+    parser.add_argument("--download_dir", type=Path, default="download_dir", help="Parent directory where all parameter downloads from GCS will be stored. Ephemerable: will be emptied for every batch.")
+    parser.add_argument("--pytorch_dir", type=Path, default="pytorch_dir", help="Parent directory to store all converted pytorch files. Ephemerable: will be emptied for every batch.")
     parser.add_argument("--tokenizer_path", type=str, default="tokenizer.model", help="Path where you downloaded the tokenizer model.")
-    parser.add_argument("--batch_size", type=int, default=5, help="Number of models to download before deleting.")
+    parser.add_argument("--model_size", type=str, default="13b", help="Model size to pass to EasyLM.")
+    parser.add_argument("--batch_size", type=int, default=3, help="Number of models to download before deleting.")
     # fmt: on
     return parser.parse_args()
 
@@ -74,27 +76,30 @@ def main():
                 f.write(f"gs://{args.gcs_bucket}/{filedir}\n")
 
         download_command = f"cat src_files.txt | gsutil -m cp -I -r {download_dir}"
+        logging.info("Downloading files")
         subprocess.run(download_command, text=True, shell=True, capture_output=False)
 
-    # Create output file and save outputs there
-    # param_file = "streaming_params"
-    # download_path = param_dir / param_file
-    # gcs_path.chunk_size = 4 * 1024 * 1024
-    # gcs_path.download_to_filename(str(download_path))
-    # params_dict[str(download_path)] = out_dir
+        logging.info("Converting to HF format")
+        params_paths: list[Path] = find_dirs_with_files(
+            download_dir, "*streaming_params*"
+        )
+        pytorch_dir = Path(args.pytorch_dir)
+        for params_path in params_paths:
+            output_dir = pytorch_dir / params_path.parent.stem.split("--")[0]
+            output_dir.mkdir(parents=True, exist_ok=True)
+            logging.info(f"Saving to {output_dir}")
+            convert_command = [
+                "python",
+                "-m",
+                "EasyLM.models.llama.convert_easylm_to_hf",
+                f"--load_checkpoint=params::{params_path}",
+                f"--tokenizer_path={args.tokenizer_path}",
+                f"--model_size={args.model_size}",
+                f"--output_dir={output_dir}",
+                "--is_reward_model",
+            ]
 
-    # for idx, (input_params, output_dir) in enumerate(params_dict.items()):
-    #     logging.info(f"Converting {download_path} to HF format")
-    #     convert_command = [
-    #         "python",
-    #         "-m",
-    #         "EasyLM.models.llama.convert_easylm_to_hf",
-    #         f"--load_checkpoint=params::{input_params}",
-    #         f"--tokenizer_path={args.tokenizer_path}",
-    #         f"--model_size={args.model_size}",
-    #         f"--output_dir={output_dir}",
-    #     ]
-    #     subprocess.run(convert_command, check=True)
+            subprocess.run(convert_command, check=True)
 
 
 def make_batch(l: list[Any], batch_size: int) -> list[list[Any]]:
@@ -114,6 +119,16 @@ def list_directories_with_prefix(
     directories = list()
     directories = [blob for blob in blobs if "streaming_params" in blob.name]
     return directories
+
+
+def find_dirs_with_files(base_dir: Path, pattern: str):
+    matching_dirs = set()
+
+    # Iterate over all files matching the pattern
+    for file in base_dir.rglob(pattern):
+        matching_dirs.add(file)
+
+    return list(matching_dirs)
 
 
 if __name__ == "__main__":
