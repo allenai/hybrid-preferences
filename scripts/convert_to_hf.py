@@ -51,7 +51,9 @@ def main():
         gcs_path.download_to_filename(str(download_path))
 
 
-def list_directories_with_prefix(bucket_name: list[str], prefix: list[str]) -> list:
+def list_directories_with_prefix(
+    bucket_name: list[str], prefix: list[str]
+) -> list["storage.Blob"]:
     client = storage.Client()
     bucket = client.get_bucket(bucket_name)
 
