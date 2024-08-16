@@ -50,6 +50,7 @@ def get_args():
     parser.add_argument("--tokenizer_path", type=str, default="tokenizer.model", help="Path where you downloaded the tokenizer model.")
     parser.add_argument("--model_size", type=str, default="13b", help="Model size to pass to EasyLM.")
     parser.add_argument("--batch_size", type=int, default=3, help="Number of models to download before deleting.")
+    parser.add_argument("--is_reward_model", default=False, action="store_true", help="Set if converting a reward model.")
     # fmt: on
     return parser.parse_args()
 
@@ -77,6 +78,7 @@ def main():
 
         download_command = f"cat src_files.txt | gsutil -m cp -I -r {download_dir}"
         logging.info("Downloading files")
+        logging.info(f"Running command: {download_command}")
         subprocess.run(download_command, text=True, shell=True, capture_output=False)
 
         logging.info("Converting to HF format")
@@ -96,9 +98,13 @@ def main():
                 f"--tokenizer_path={args.tokenizer_path}",
                 f"--model_size={args.model_size}",
                 f"--output_dir={output_dir}",
-                "--is_reward_model",
             ]
 
+            if args.is_reward_model:
+                logging.info("Passing --is_reward_model flag")
+                convert_command += "--is_reward_model"
+
+            logging.info(f"Running command: {convert_command}")
             subprocess.run(convert_command, check=True)
 
 
