@@ -7,6 +7,7 @@ pip install google-cloud-storage beaker-py
 gcloud auth application-default login
 git clone https://github.com/hamishivi/EasyLM.git
 cd EasyLM
+conda env create -f scripts/gpu_environment.yml
 # Copy this script into the machine you're working on
 python convert_to_hf.py --gcs_bucket <BUCKET_NAME> --gcs_dir_path <PREFIX> --parent_dir <OUTPUT>
 ```
