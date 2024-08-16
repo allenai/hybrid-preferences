@@ -34,21 +34,27 @@ def main():
     parent_dir = Path(args.parent_dir)
     parent_dir.mkdir(parents=True, exist_ok=True)
 
-    params_gcs_paths = list_directories_with_prefix(
+    params_gcs_paths: list["storage.Blob"] = list_directories_with_prefix(
         bucket_name=args.gcs_bucket, prefix=args.gcs_dir_path
     )
     logging.info(f"Found {len(params_gcs_paths)} parameter files.")
 
     params_dict = {}
     for gcs_path in params_gcs_paths:
+        # Create experiment name as an ID
         experiment_name = Path(gcs_path.name).parent.stem.split("--")[0]
+        logging.info(f"Downloading {experiment_name}")
+        # Input and output directories
         param_dir = parent_dir / experiment_name
         out_dir = parent_dir / f"{experiment_name}_OUT"
         param_dir.mkdir(parents=True, exist_ok=True)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        # Create output file and save outputs there
         param_file = "streaming_params"
         download_path = param_dir / param_file
         gcs_path.chunk_size = 4 * 1024 * 1024
         gcs_path.download_to_filename(str(download_path))
+        params_dict[download_path] = out_dir
 
 
 def list_directories_with_prefix(
