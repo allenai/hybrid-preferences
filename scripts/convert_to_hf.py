@@ -55,9 +55,6 @@ def get_args():
 def main():
     args = get_args()
 
-    parent_dir = Path(args.parent_dir)
-    parent_dir.mkdir(parents=True, exist_ok=True)
-
     params_gcs_paths: list["storage.Blob"] = list_directories_with_prefix(
         bucket_name=args.gcs_bucket, prefix=args.gcs_dir_path
     )
@@ -67,13 +64,16 @@ def main():
     batches = make_batch(src_files, batch_size=args.batch_size)
     logging.info(f"Converting into batches of {args.batch_size} to save space")
     for idx, batch in enumerate(batches):
+        download_dir = Path(args.download_dir)
+        download_dir.mkdir(parents=True, exist_ok=True)
+
         logging.info(f"*** Processing batch: {idx+1} ***")
         with open("src_files.txt", "w") as f:
             for line in batch:
                 filedir = Path(line).parent
                 f.write(f"gs://{args.gcs_bucket}/{filedir}\n")
 
-        download_command = f"cat src_files.txt | gsutil -m cp -I -r {parent_dir}"
+        download_command = f"cat src_files.txt | gsutil -m cp -I -r {download_dir}"
         subprocess.run(download_command, text=True, shell=True, capture_output=False)
 
     # Create output file and save outputs there
