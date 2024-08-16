@@ -1,3 +1,18 @@
+"""A semi-portable script for converting files from EasyLM to HF format
+
+Usage:
+
+```
+pip install google-cloud-storage beaker-py
+gcloud auth application-default login
+git clone https://github.com/hamishivi/EasyLM.git
+cd EasyLM
+# Copy this script into the machine you're working on
+python convert_to_hf.py --gcs_bucket <BUCKET_NAME> --gcs_dir_path <PREFIX> --parent_dir <OUTPUT>
+```
+
+"""
+
 import sys
 import argparse
 import logging
@@ -40,10 +55,12 @@ def main():
     logging.info(f"Found {len(params_gcs_paths)} parameter files.")
 
     params_dict = {}
-    for gcs_path in params_gcs_paths:
+    for idx, gcs_path in enumerate(params_gcs_paths):
         # Create experiment name as an ID
         experiment_name = Path(gcs_path.name).parent.stem.split("--")[0]
-        logging.info(f"Downloading {experiment_name}")
+        logging.info(
+            f"*** Downloading {experiment_name} ({idx+1} / {len(params_gcs_paths)}) ***"
+        )
         # Input and output directories
         param_dir = parent_dir / experiment_name
         out_dir = parent_dir / f"{experiment_name}_OUT"
@@ -55,6 +72,9 @@ def main():
         gcs_path.chunk_size = 4 * 1024 * 1024
         gcs_path.download_to_filename(str(download_path))
         params_dict[download_path] = out_dir
+
+    for idx, (input_params, output_dir) in enumerate(params_dict.items()):
+        pass
 
 
 def list_directories_with_prefix(
