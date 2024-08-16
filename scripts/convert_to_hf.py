@@ -72,12 +72,15 @@ def main():
         out_dir = parent_dir / f"{experiment_name}_OUT"
         param_dir.mkdir(parents=True, exist_ok=True)
         out_dir.mkdir(parents=True, exist_ok=True)
-        subprocess.call(
-            "gsutil",
-            "-m",
-            "cp",
-            f"gs://{args.gcs_bucket}/{gcs_path.name}/",
-            str(param_dir),
+        subprocess.run(
+            [
+                "gsutil",
+                "-m",
+                "cp",
+                f"gs://{args.gcs_bucket}/{gcs_path.name}/",
+                str(param_dir),
+            ],
+            check=True,
         )
         # Create output file and save outputs there
         # param_file = "streaming_params"
