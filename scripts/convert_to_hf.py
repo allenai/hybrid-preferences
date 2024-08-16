@@ -107,6 +107,12 @@ def main():
             logging.info(f"Running command: {convert_command}")
             subprocess.run(convert_command, check=True)
 
+            logging.info("Uploading to beaker")
+            # TODO:
+
+            logging.info("Sending eval script to beaker")
+            # TODO:
+
 
 def make_batch(l: list[Any], batch_size: int) -> list[list[Any]]:
     return [l[i : i + batch_size] for i in range(0, len(l), batch_size)]
