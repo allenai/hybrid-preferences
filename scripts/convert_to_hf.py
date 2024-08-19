@@ -19,10 +19,10 @@ conda run -n EasyLM python convert_to_hf.py --gcs_bucket <BUCKET_NAME> --gcs_dir
 
 """
 
-import sys
 import argparse
-import subprocess
 import logging
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
