@@ -12,6 +12,7 @@ conda activate EasyLM
 gcloud auth login
 gsutil cp gs://hamishi-east1/easylm/llama/tokenizer.model .
 pip install google-cloud-storage beaker-py
+pip install huggingface-hub --upgrade
 gcloud auth application-default login
 # Copy this script into the machine you're working on
 python convert_to_hf.py --gcs_bucket <BUCKET_NAME> --gcs_dir_path <PREFIX> --parent_dir <OUTPUT>
