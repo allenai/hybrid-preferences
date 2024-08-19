@@ -118,7 +118,6 @@ def main():
 
             logging.info(f"Running command: {convert_command}")
             subprocess.run(convert_command, check=True)
-            breakpoint()
 
             # Upload each converted model to beaker so we can run evaluations there
             logging.info("Pushing to beaker...")
