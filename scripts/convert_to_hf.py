@@ -249,9 +249,9 @@ def create_beaker_experiment_spec(
                 resources=TaskResources(gpu_count=1),
                 env_vars=[
                     EnvVar(name="CUDA_DEVICE_ORDER", value="PCI_BUS_ID"),
-                    EnvVar(name="TRANSFORMERS_CACHE", vaule="./cache/"),
+                    EnvVar(name="TRANSFORMERS_CACHE", value="./cache/"),
                     EnvVar(name="WANDB_WATCH", value="false"),
-                    EnvVar(name="WANDB_LOG_MODEL", vaule="false"),
+                    EnvVar(name="WANDB_LOG_MODEL", value="false"),
                     EnvVar(name="WANDB_DISABLED", value="true"),
                     EnvVar(name="HF_TOKEN", secret="HF_TOKEN"),
                 ],
