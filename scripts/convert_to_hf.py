@@ -57,6 +57,7 @@ def get_args():
     parser.add_argument("--batch_size", type=int, default=3, help="Number of models to download before deleting.")
     parser.add_argument("--is_reward_model", default=False, action="store_true", help="Set if converting a reward model.")
     parser.add_argument("--beaker_workspace", default="ai2/ljm-oe-adapt", help="Beaker workspace to upload datasets.")
+    parser.add_argument("--max_workers", default=1, type=int, help="Number of workers to spawn when uploading to Beaker datasets.")
     # fmt: on
     return parser.parse_args()
 
@@ -137,7 +138,7 @@ def main():
                 description=description,
                 force=True,
                 strip_paths=True,
-                max_workers=1,
+                max_workers=args.max_workers,
             )
             logging.info(f"Uploaded dataset to {dataset.id}")
 
