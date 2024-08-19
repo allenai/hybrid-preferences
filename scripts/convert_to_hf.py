@@ -143,7 +143,10 @@ def main():
                 description,
                 "--name",
                 experiment_name,
+                "--workspace",
+                args.beaker_workspace,
             ]
+            logging.info(f"Running command: {upload_command}")
             subprocess.run(upload_command, check=True)
 
             # dataset = beaker.dataset.create(
