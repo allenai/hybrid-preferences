@@ -228,7 +228,10 @@ def create_beaker_experiment_spec(
                 name=f"evaluate-{experiment_name}",
                 image=ImageSource(beaker="nathanl/rb_v16"),
                 constraints=Constraints(
-                    cluster=["ai2/allennlp-cirrascale", "ai2/jupiter-cirrascale-2"]
+                    cluster=[
+                        "ai2/allennlp-cirrascale",
+                        # "ai2/jupiter-cirrascale-2",
+                    ]
                 ),
                 context=TaskContext(priority="normal", preemptible=True),
                 result=ResultSpec(path="/output"),
