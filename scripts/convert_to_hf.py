@@ -253,6 +253,7 @@ def create_beaker_experiment_spec(
                     EnvVar(name="WANDB_WATCH", value="false"),
                     EnvVar(name="WANDB_LOG_MODEL", value="false"),
                     EnvVar(name="WANDB_DISABLED", value="true"),
+                    EnvVar(name="WANDB_PROJECT", value="rewardbench"),
                     EnvVar(name="HF_TOKEN", secret="HF_TOKEN"),
                 ],
             )
