@@ -8,14 +8,13 @@ git clone https://github.com/hamishivi/EasyLM.git
 cd EasyLM
 git checkout bc241782b67bbe926e148ec9d2046d76b7ba58c8 .
 conda env create -f scripts/gpu_environment.yml
-conda activate EasyLM
 gcloud auth login
 gsutil cp gs://hamishi-east1/easylm/llama/tokenizer.model .
-pip install google-cloud-storage beaker-py
-pip install huggingface-hub --upgrade
+conda run -n EasyLM pip install google-cloud-storage beaker-py
+conda run -n EasyLM pip install huggingface-hub --upgrade
 gcloud auth application-default login
 # Copy this script into the machine you're working on
-python convert_to_hf.py --gcs_bucket <BUCKET_NAME> --gcs_dir_path <PREFIX> --parent_dir <OUTPUT>
+conda run -n EasyLM python convert_to_hf.py --gcs_bucket <BUCKET_NAME> --gcs_dir_path <PREFIX> --parent_dir <OUTPUT>
 ```
 
 """
@@ -153,6 +152,12 @@ def main():
             )
             logging.info(f"Running experiment {experiment.id}")
 
+        # Delete contents where we downloaded the model and where converted them
+        # in order to save space. Then we go ahead with the next batch
+        logging.info("Emptying directories as preparation for next batch...")
+        rmtree(download_dir)
+        rmtree(pytorch_dir)
+
 
 def make_batch(l: list[Any], batch_size: int) -> list[list[Any]]:
     return [l[i : i + batch_size] for i in range(0, len(l), batch_size)]
@@ -226,6 +231,15 @@ def create_beaker_experiment_spec(
         ],
     )
     return spec
+
+
+def rmtree(f: Path):
+    if f.is_file():
+        f.unlink()
+    else:
+        for child in f.iterdir():
+            rmtree(child)
+        f.rmdir()
 
 
 if __name__ == "__main__":
