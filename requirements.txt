@@ -7,3 +7,5 @@ rouge-score
 sentence-transformers
 bert_score
 nltk==3.8.2
+beaker-py
+google-cloud-storage

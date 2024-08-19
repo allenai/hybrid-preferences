@@ -54,7 +54,7 @@ def get_args():
     parser.add_argument("--model_size", type=str, default="13b", help="Model size to pass to EasyLM.")
     parser.add_argument("--batch_size", type=int, default=3, help="Number of models to download before deleting.")
     parser.add_argument("--is_reward_model", default=False, action="store_true", help="Set if converting a reward model.")
-    parser.add_argument("--beaker_workspace", default="ai2/ljm-oe-adapt", help="Beaker workspace to upload datasets.")
+    parser.add_argument("--beaker_workspace", default=None, help="Beaker workspace to upload datasets.")
     # fmt: on
     return parser.parse_args()
 
@@ -118,16 +118,15 @@ def main():
             breakpoint()
 
             # Upload each converted model to beaker so we can run evaluations there
-            logging.info("Uploading to beaker")
-            logging.info("Pushing to beaker")
-            beaker = Beaker.from_env(default_workspace=args.beaker_workspace)
-            dataset = beaker.dataset.create(
-                experiment_name,
-                output_dir,
-                description=f"Human datamodel for experiment: {experiment_name}",
-                force=True,
-            )
-            # TODO:
+            if args.beaker_workspace:
+                logging.info("Pushing to beaker")
+                beaker = Beaker.from_env(default_workspace=args.beaker_workspace)
+                dataset = beaker.dataset.create(
+                    experiment_name,
+                    output_dir,
+                    description=f"Human datamodel for experiment: {experiment_name}",
+                    force=True,
+                )
 
             logging.info("Sending eval script to beaker")
             # TODO:
