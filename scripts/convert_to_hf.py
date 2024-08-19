@@ -230,7 +230,7 @@ def create_beaker_experiment_spec(
                 constraints=Constraints(
                     cluster=["ai2/allennlp-cirrascale", "ai2/jupiter-cirrascale-2"]
                 ),
-                context=TaskContext(priority="normal"),
+                context=TaskContext(priority="normal", preemptible=True),
                 result=ResultSpec(path="/output"),
                 command=["/bin/sh", "-c"],
                 arguments=[
