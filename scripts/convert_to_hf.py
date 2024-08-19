@@ -57,7 +57,7 @@ def get_args():
     parser.add_argument("--model_size", type=str, default="13b", help="Model size to pass to EasyLM.")
     parser.add_argument("--batch_size", type=int, default=3, help="Number of models to download before deleting.")
     parser.add_argument("--is_reward_model", default=False, action="store_true", help="Set if converting a reward model.")
-    parser.add_argument("--beaker_workspace", default=None, help="Beaker workspace to upload datasets.")
+    parser.add_argument("--beaker_workspace", default="ai2/ljm-oe-adapt", help="Beaker workspace to upload datasets.")
     # fmt: on
     return parser.parse_args()
 
@@ -121,20 +121,30 @@ def main():
             breakpoint()
 
             # Upload each converted model to beaker so we can run evaluations there
-            if args.beaker_workspace:
-                logging.info("Pushing to beaker")
-                beaker = Beaker.from_env(default_workspace=args.beaker_workspace)
-                description = f"Human data model for experiment: {experiment_name}"
-                description += " (RM)" if args.is_reward_model else " (DPO)"
-                dataset = beaker.dataset.create(
-                    experiment_name,
-                    output_dir,
-                    description=description,
-                    force=True,
-                )
+            logging.info("Pushing to beaker...")
+            beaker = Beaker.from_env(default_workspace=args.beaker_workspace)
+            description = f"Human data model for experiment: {experiment_name}"
+            description += " (RM)" if args.is_reward_model else " (DPO)"
+            dataset = beaker.dataset.create(
+                experiment_name,
+                output_dir,
+                description=description,
+                force=True,
+            )
+            logging.info(f"Uploaded dataset to {dataset.id}")
 
-            logging.info("Sending eval script to beaker")
-            # TODO:
+            # Create experiment and auto-queue
+            logging.info("Sending eval script to beaker...")
+            spec = create_beaker_experiment_spec(
+                experiment_name=experiment_name,
+                reward_model_beaker_id=dataset.id,
+            )
+            experiment = beaker.experiment.create(
+                spec=spec,
+                name=f"rm-eval-{experiment_name}",
+                workspace=args.beaker_workspace,
+            )
+            logging.info(f"Running experiment {experiment.id}")
 
 
 def make_batch(l: list[Any], batch_size: int) -> list[list[Any]]:
@@ -164,6 +174,51 @@ def find_dirs_with_files(base_dir: Path, pattern: str):
         matching_dirs.add(file)
 
     return list(matching_dirs)
+
+
+def create_beaker_experiment_spec(
+    experiment_name: str, reward_model_beaker_id: str
+) -> ExperimentSpec:
+    spec = ExperimentSpec(
+        budget="ai2/oe-adapt",
+        version="v2",
+        description="Perform rewardbench evaluation",
+        tasks=[
+            TaskSpec(
+                name=f"evaluate-{experiment_name}",
+                image=ImageSource(docker="nathanl/rb_v16"),
+                constraints=Constraints(
+                    cluster=["ai2/allennlp-cirrascale", "ai2/jupiter-cirrascale-2"]
+                ),
+                context=TaskContext(priority="normal"),
+                result=ResultSpec(path="/output"),
+                command=["/bin/sh", "-c"],
+                arguments=[
+                    "python scripts/run_rm.py --model /reward_model --tokenizer /reward_model --batch_size 8 --chat_template tulu --trust_remote_code --do_not_save"
+                ],
+                datasets=[
+                    DataMount(
+                        source=DataSource(beaker=reward_model_beaker_id),
+                        mount_path="/reward_model",
+                    ),
+                    DataMount(
+                        source=DataSource(host_path="/net/nfs.cirrascale"),
+                        mount_path="/net/nfs.cirrascale",
+                    ),
+                ],
+                resources=TaskResources(gpu_count=1),
+                env_vars=[
+                    EnvVar(name="CUDA_DEVICE_ORDER", value="PCI_BUS_ID"),
+                    EnvVar(name="TRANSFORMERS_CACHE", vaule="./cache/"),
+                    EnvVar(name="WANDB_WATCH", value="false"),
+                    EnvVar(name="WANDB_LOG_MODEL", vaule="false"),
+                    EnvVar(name="WANDB_DISABLED", value="true"),
+                    EnvVar(name="HF_TOKEN", secret="HF_TOKEN"),
+                ],
+            )
+        ],
+    )
+    return spec
 
 
 if __name__ == "__main__":
