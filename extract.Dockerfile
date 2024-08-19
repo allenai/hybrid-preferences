@@ -31,7 +31,6 @@ RUN cd EasyLM \
     && git checkout bc241782b67bbe926e148ec9d2046d76b7ba58c8 . 
 RUN conda env create -f scripts/gpu_environment.yml
 ENV PATH=$CONDA_DIR/bin:$PATH
-SHELL ["conda", "run", "-n", "EasyLM", "/bin/bash", "-c"]
+SHELL ["conda", "run", "--no-capture-output", "-n", "EasyLM", "/bin/bash", "-c"]
 RUN pip install google-cloud-storage beaker-py
 RUN pip install --upgrade huggingface-hub
-
