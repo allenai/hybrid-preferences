@@ -27,7 +27,9 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from beaker.client import Beaker
+from beaker.client import Beaker, Constraints, DataMount, DataSource, EnvVar
+from beaker.client import ExperimentSpec, ImageSource, ResultSpec, TaskContext
+from beaker.client import TaskResources, TaskSpec
 
 try:
     from google.cloud import storage
@@ -122,10 +124,12 @@ def main():
             if args.beaker_workspace:
                 logging.info("Pushing to beaker")
                 beaker = Beaker.from_env(default_workspace=args.beaker_workspace)
+                description = f"Human data model for experiment: {experiment_name}"
+                description += " (RM)" if args.is_reward_model else " (DPO)"
                 dataset = beaker.dataset.create(
                     experiment_name,
                     output_dir,
-                    description=f"Human datamodel for experiment: {experiment_name}",
+                    description=description,
                     force=True,
                 )
 
