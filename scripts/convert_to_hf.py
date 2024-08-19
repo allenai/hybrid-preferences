@@ -112,7 +112,7 @@ def main():
 
             if args.is_reward_model:
                 logging.info("Passing --is_reward_model flag")
-                convert_command += [" --is_reward_model"]
+                convert_command += ["--is_reward_model"]
 
             logging.info(f"Running command: {convert_command}")
             subprocess.run(convert_command, check=True)
