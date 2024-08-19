@@ -137,7 +137,7 @@ def main():
                 description=description,
                 force=True,
                 strip_paths=True,
-                max_workers=4,
+                max_workers=1,
             )
             logging.info(f"Uploaded dataset to {dataset.id}")
 
