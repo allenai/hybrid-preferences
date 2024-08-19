@@ -26,6 +26,8 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from beaker.client import Beaker
+
 try:
     from google.cloud import storage
 except ModuleNotFoundError:
@@ -52,6 +54,7 @@ def get_args():
     parser.add_argument("--model_size", type=str, default="13b", help="Model size to pass to EasyLM.")
     parser.add_argument("--batch_size", type=int, default=3, help="Number of models to download before deleting.")
     parser.add_argument("--is_reward_model", default=False, action="store_true", help="Set if converting a reward model.")
+    parser.add_argument("--beaker_workspace", default="ai2/ljm-oe-adapt", help="Beaker workspace to upload datasets.")
     # fmt: on
     return parser.parse_args()
 
@@ -67,7 +70,10 @@ def main():
     src_files = [gcs_path.name for gcs_path in params_gcs_paths]
     batches = make_batch(src_files, batch_size=args.batch_size)
     logging.info(f"Converting into batches of {args.batch_size} to save space")
+
     for idx, batch in enumerate(batches):
+
+        # Perform download in batches to save disk space
         download_dir = Path(args.download_dir)
         download_dir.mkdir(parents=True, exist_ok=True)
 
@@ -82,13 +88,15 @@ def main():
         logging.info(f"Running command: {download_command}")
         subprocess.run(download_command, text=True, shell=True, capture_output=False)
 
+        # Convert output from GCS to HuggingFace format
         logging.info("Converting to HF format")
         params_paths: list[Path] = find_dirs_with_files(
             download_dir, "*streaming_params*"
         )
         pytorch_dir = Path(args.pytorch_dir)
         for params_path in params_paths:
-            output_dir = pytorch_dir / params_path.parent.stem.split("--")[0]
+            experiment_name = params_path.parent.stem.split("--")[0]
+            output_dir = pytorch_dir / experiment_name
             output_dir.mkdir(parents=True, exist_ok=True)
             logging.info(f"Saving to {output_dir}")
             convert_command = [
@@ -107,8 +115,18 @@ def main():
 
             logging.info(f"Running command: {convert_command}")
             subprocess.run(convert_command, check=True)
+            breakpoint()
 
+            # Upload each converted model to beaker so we can run evaluations there
             logging.info("Uploading to beaker")
+            logging.info("Pushing to beaker")
+            beaker = Beaker.from_env(default_workspace=args.beaker_workspace)
+            dataset = beaker.dataset.create(
+                experiment_name,
+                output_dir,
+                description=f"Human datamodel for experiment: {experiment_name}",
+                force=True,
+            )
             # TODO:
 
             logging.info("Sending eval script to beaker")
