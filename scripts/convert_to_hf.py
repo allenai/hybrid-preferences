@@ -24,7 +24,7 @@ import logging
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from beaker.client import Beaker, Constraints, DataMount, DataSource, EnvVar
 from beaker.client import ExperimentSpec, ImageSource, ResultSpec, TaskContext
@@ -164,6 +164,7 @@ def main():
             spec = create_beaker_experiment_spec(
                 experiment_name=experiment_name,
                 reward_model_beaker_id=experiment_name,
+                account_name=account.name,
             )
             experiment = beaker.experiment.create(
                 spec=spec,
@@ -209,8 +210,15 @@ def find_dirs_with_files(base_dir: Path, pattern: str):
 
 
 def create_beaker_experiment_spec(
-    experiment_name: str, reward_model_beaker_id: str
+    experiment_name: str,
+    reward_model_beaker_id: str,
+    account_name: Optional[str] = None,
 ) -> ExperimentSpec:
+    dataset_name = (
+        f"{account_name}/{reward_model_beaker_id}"
+        if account_name
+        else reward_model_beaker_id
+    )
     spec = ExperimentSpec(
         budget="ai2/oe-adapt",
         version="v2",
@@ -230,7 +238,7 @@ def create_beaker_experiment_spec(
                 ],
                 datasets=[
                     DataMount(
-                        source=DataSource(beaker=reward_model_beaker_id),
+                        source=DataSource(beaker=dataset_name),
                         mount_path="/reward_model",
                     ),
                     DataMount(
