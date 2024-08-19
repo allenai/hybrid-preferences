@@ -132,21 +132,35 @@ def main():
             logging.info("Pushing to beaker...")
             description = f"Human data model for experiment: {experiment_name}"
             description += " (RM)" if args.is_reward_model else " (DPO)"
-            dataset = beaker.dataset.create(
-                experiment_name,
+
+            # Try using `beaker dataset create` because the python API doesn't work
+            upload_command = [
+                "beaker",
+                "dataset",
+                "create",
                 output_dir,
-                description=description,
-                force=True,
-                strip_paths=True,
-                max_workers=args.max_workers,
-            )
-            logging.info(f"Uploaded dataset to {dataset.id}")
+                "--desc",
+                description,
+                "--name",
+                experiment_name,
+            ]
+            subprocess.run(upload_command, check=True)
+
+            # dataset = beaker.dataset.create(
+            #     experiment_name,
+            #     output_dir,
+            #     description=description,
+            #     force=True,
+            #     strip_paths=True,
+            #     max_workers=args.max_workers,
+            # )
+            # logging.info(f"Uploaded dataset to {dataset.id}")
 
             # Create experiment and auto-queue
             logging.info("Sending eval script to beaker...")
             spec = create_beaker_experiment_spec(
                 experiment_name=experiment_name,
-                reward_model_beaker_id=dataset.id,
+                reward_model_beaker_id=experiment_name,
             )
             experiment = beaker.experiment.create(
                 spec=spec,
