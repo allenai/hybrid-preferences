@@ -65,6 +65,15 @@ def get_args():
 def main():
     args = get_args()
 
+    beaker = Beaker.from_env(default_workspace=args.beaker_workspace)
+    try:
+        account = beaker.account.whoami()
+    except Exception as e:
+        logging.info("Please authenticate using `beaker account login`")
+        raise
+    else:
+        logging.info(f"Logged-in as {account.name} ({account.email})")
+
     params_gcs_paths: list["storage.Blob"] = list_directories_with_prefix(
         bucket_name=args.gcs_bucket, prefix=args.gcs_dir_path
     )
@@ -121,7 +130,6 @@ def main():
 
             # Upload each converted model to beaker so we can run evaluations there
             logging.info("Pushing to beaker...")
-            beaker = Beaker.from_env(default_workspace=args.beaker_workspace)
             description = f"Human data model for experiment: {experiment_name}"
             description += " (RM)" if args.is_reward_model else " (DPO)"
             dataset = beaker.dataset.create(
