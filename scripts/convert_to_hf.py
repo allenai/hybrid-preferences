@@ -226,7 +226,7 @@ def create_beaker_experiment_spec(
         tasks=[
             TaskSpec(
                 name=f"evaluate-{experiment_name}",
-                image=ImageSource(docker="nathanl/rb_v16"),
+                image=ImageSource(beaker="nathanl/rb_v16"),
                 constraints=Constraints(
                     cluster=["ai2/allennlp-cirrascale", "ai2/jupiter-cirrascale-2"]
                 ),
