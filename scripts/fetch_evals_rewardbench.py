@@ -142,7 +142,6 @@ def main():
     thresh = args.gpt4_threshold_score
     logging.info(f"Creating labels in column 'label' with GPT-4 threshold '{thresh}'")
     overall_df["label"] = (overall_df["Overall"] > thresh).astype(int)
-    breakpoint()
 
     overall_df.to_csv(args.output_file)
     logging.info(f"Saved on {args.output_file}")
