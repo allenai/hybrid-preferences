@@ -69,7 +69,7 @@ def main():
     try:
         account = beaker.account.whoami()
     except Exception as e:
-        logging.info("Please authenticate using `beaker account login`")
+        logging.error(f"Please authenticate using `beaker account login`: {e}")
         raise
     else:
         logging.info(f"Logged-in as {account.name} ({account.email})")
