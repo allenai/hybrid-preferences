@@ -3,6 +3,7 @@ import argparse
 from beaker import Beaker, Experiment
 import logging
 import pandas as pd
+from pathlib import Path
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -76,8 +77,10 @@ def get_args():
     # fmt: off
     description = "Get results from Beaker that evaluates on RewardBench"
     parser = argparse.ArgumentParser()
-    parser.add_argument("--beaker_workspace", default="ai2/ljm-oe-adapt", help="Beaker workspace to fetch experiments")
-    parser.add_argument("--experiment_prefix", default="rm-eval-", help="Prefix for experiments to fetch")
+    parser.add_argument("--output_file", type=Path, help="CSV Filepath to save output features and category scores.")
+    parser.add_argument("--beaker_workspace", default="ai2/ljm-oe-adapt", help="Beaker workspace to fetch experiments.")
+    parser.add_argument("--experiment_prefix", default="rm-eval-", help="Prefix for experiments to fetch.")
+    parser.add_argument("--gpt4_threshold_score", type=float, default=0.5, help="GPT-4 threshold score to create binary labels")
     # fmt:on
     return parser.parse_args()
 
@@ -119,9 +122,28 @@ def main():
     df_subset_scores = df_subset_scores[cols]
     logging.info("Computing category scores...")
     df_category_scores = get_category_scores(df_subset_scores).sort_values(
-        by="Overall", ascending=False
+        by="Overall",
+        ascending=False,
     )
-    breakpoint()
+
+    # Turn features into a binary matrix
+    df_feats = get_features(
+        df_category_scores.reset_index().rename(columns={"index": "experiment"}),
+        col_name="experiment",
+    )
+
+    overall_df = pd.merge(
+        df_feats,
+        df_category_scores,
+        left_index=True,
+        right_index=True,
+    )
+
+    thresh = args.gpt4_threshold_score
+    logging.info(f"Creating labels in column 'label' with GPT-4 threshold '{thresh}'")
+    overall_df["label"] = (overall_df["Overall"] > thresh).astype(int)
+    overall_df.to_csv(args.output_file)
+    logging.info(f"Saved on {args.output_file}")
 
 
 def is_done(experiment: "Experiment") -> bool:
@@ -138,6 +160,24 @@ def get_category_scores(df_subset: "pd.DataFrame") -> "pd.DataFrame":
     df_category = pd.DataFrame(category_scores)
     df_category["Overall"] = df_category.mean(axis=1)
     return df_category
+
+
+def get_features(df: "pd.DataFrame", col_name: str) -> "pd.DataFrame":
+    experiment_to_feats: dict[str, list[str]] = {}
+    experiments = df[col_name].to_list()
+    for experiment in experiments:
+        features = experiment.split("FEATS_")[-1].split("___")
+        experiment_to_feats[experiment] = features
+
+    unique_features = set(f for feats in experiment_to_feats.values() for f in feats)
+    df_feats = pd.DataFrame(
+        [
+            {feat: int(feat in feats) for feat in unique_features}
+            for feats in experiment_to_feats.values()
+        ],
+        index=experiment_to_feats.keys(),
+    )
+    return df_feats
 
 
 if __name__ == "__main__":
