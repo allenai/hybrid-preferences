@@ -80,7 +80,7 @@ def get_args():
     parser.add_argument("--output_file", type=Path, help="CSV Filepath to save output features and category scores.")
     parser.add_argument("--beaker_workspace", default="ai2/ljm-oe-adapt", help="Beaker workspace to fetch experiments.")
     parser.add_argument("--experiment_prefix", default="rm-eval-", help="Prefix for experiments to fetch.")
-    parser.add_argument("--gpt4_threshold_score", type=float, default=0.5, help="GPT-4 threshold score to create binary labels")
+    parser.add_argument("--gpt4_threshold_score", type=float, default=0.658, help="GPT-4 threshold score to create binary labels")
     # fmt:on
     return parser.parse_args()
 
@@ -142,6 +142,8 @@ def main():
     thresh = args.gpt4_threshold_score
     logging.info(f"Creating labels in column 'label' with GPT-4 threshold '{thresh}'")
     overall_df["label"] = (overall_df["Overall"] > thresh).astype(int)
+    breakpoint()
+
     overall_df.to_csv(args.output_file)
     logging.info(f"Saved on {args.output_file}")
 
