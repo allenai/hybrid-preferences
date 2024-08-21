@@ -22,19 +22,34 @@ tqdm_file = sys.stdout
 tqdm_bar_format = "{l_bar}{bar}{r_bar}\n"
 
 
-def get_all_feature_combinations() -> tuple[list[str], list[list[str]]]:
-    """Get all available feature combinations"""
+def get_all_feature_combinations(
+    max_number: Optional[int] = None,
+    strict: bool = False,
+) -> tuple[list[str], list[list[str]]]:
+    """Get all available feature combinations
+
+    max_number (Optional[int]): max number of feature combinations
+    strict (bool): if set, will only return feature combinations exactly matching max_number
+    """
     features = [
         mem.removeprefix("_extract_")
         for mem, _ in inspect.getmembers(FeatureExtractor)
         if mem.startswith("_extract")
     ]
 
+    if max_number is None:
+        max_number = len(features) + 1
+
     feature_combinations = [
         list(comb)
-        for r in range(1, len(features) + 1)
+        for r in range(1, min(max_number + 1, len(features) + 1))
         for comb in itertools.combinations(features, r)
     ]
+
+    if strict:
+        feature_combinations = [
+            feats for feats in feature_combinations if len(feats) == max_number
+        ]
 
     return features, feature_combinations
 
