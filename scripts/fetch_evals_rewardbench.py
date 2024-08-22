@@ -115,11 +115,6 @@ def main():
         for experiment in experiments
     }
     df_subset_scores = pd.DataFrame(subset_scores).transpose().drop(columns=["model"])
-    metadata_cols = ["model_type", "chat_template"]
-    cols = metadata_cols + [
-        col for col in df_subset_scores.columns if col not in metadata_cols
-    ]  # Cleanup dataframe for easier viewing
-    df_subset_scores = df_subset_scores[cols]
     logging.info("Computing category scores...")
     df_category_scores = get_category_scores(df_subset_scores).sort_values(
         by="Overall",
@@ -138,6 +133,12 @@ def main():
         left_index=True,
         right_index=True,
     )
+    overall_df = overall_df.merge(df_subset_scores, left_index=True, right_index=True)
+    metadata_cols = ["model_type", "chat_template"]
+    cols = metadata_cols + [
+        col for col in overall_df.columns if col not in metadata_cols
+    ]  # Cleanup dataframe for easier viewing
+    overall_df = overall_df[cols]
 
     thresh = args.gpt4_threshold_score
     logging.info(f"Creating labels in column 'label' with GPT-4 threshold '{thresh}'")
