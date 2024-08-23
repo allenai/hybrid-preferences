@@ -31,7 +31,7 @@ DPO_JOB_TEMPLATE = (
     "--optimizer.adamw_optimizer.warmup_ratio=0.1 "
     "--optimizer.accumulate_gradient_steps=4 "
     "--train_dataset.type='preference_json_torch' "
-    "--train_dataset.json_torch_dataset.path='{input_gcs_path}/{experiment_name}.jsonl' "
+    "--train_dataset.json_torch_dataset.path='{input_gcs_path}/{dataset_name}/{experiment_name}.jsonl' "
     "--train_dataset.json_torch_dataset.seq_length=4096 "
     "--train_dataset.json_torch_dataset.batch_size=8 "
     "--checkpointer.save_optimizer_state=False "
@@ -40,7 +40,7 @@ DPO_JOB_TEMPLATE = (
     "--logger.entity='rlhf-llm-dev' "
     "--logger.prefix_to_id=True "
     "--logger.prefix='tulu2_13b_dpo_{experiment_name}' "
-    "--logger.output_dir='{output_gcs_path}/checkpoints/'"
+    "--logger.output_dir='{output_gcs_path}/checkpoints/{dataset_name}'"
 )
 
 
@@ -64,7 +64,7 @@ RM_JOB_TEMPLATE = (
     "--optimizer.adamw_optimizer.warmup_ratio=0.03 "
     "--optimizer.accumulate_gradient_steps=4 "
     "--train_dataset.type=preference_json_torch "
-    "--train_dataset.json_torch_dataset.path='{input_gcs_path}/{experiment_name}.jsonl' "
+    "--train_dataset.json_torch_dataset.path='{input_gcs_path}/{dataset_name}/{experiment_name}.jsonl' "
     "--train_dataset.json_torch_dataset.seq_length=4096 "
     "--train_dataset.json_torch_dataset.batch_size=16 "
     "--checkpointer.save_optimizer_state=False "
@@ -74,7 +74,7 @@ RM_JOB_TEMPLATE = (
     "--logger.entity=rlhf-llm-dev "
     "--logger.prefix_to_id=True "
     "--logger.prefix=tulu2_13b_rm_{experiment_name} "
-    "--logger.output_dir='{output_gcs_path}/rm_checkpoints/'"
+    "--logger.output_dir='{output_gcs_path}/rm_checkpoints/{dataset_name}'"
 )
 
 
@@ -89,6 +89,7 @@ It is recommended that the name of the dataset is the name of your experiment, s
     parser.add_argument("--experiment_path", type=Path, required=True, help="Path to a TXT file containing the experiments (or datasets) in a GCS bucket.")
     parser.add_argument("--tpu_name", type=str, required=True, help="Name of the TPU to run these experiments on.")
     parser.add_argument("--zone", type=str, required=True, help="Zone of the TPU.")
+    parser.add_argument("--dataset_name", type=str, required=True, help="Dataset name for managing IO paths.")
     parser.add_argument("--input_gcs_path", type=str, default="gs://ljm-dev/human-preferences/train_data", help="Path to the GCS bucket containing the datasets.")
     parser.add_argument("--output_gcs_path", type=str, default="gs://ljm-dev/human-preferences", help="Path to the GCS bucket to save the models. Will create subdirectories for DPO or RM runs.")
     parser.add_argument("--ckpt_gcs_path", type=str, default="gs://hamishi-east1/easylm/llama2/tulu2_13b_fixed/tulu2_13b_fixed/455af914503740be9664497dae996762/streaming_params", help="GCS filepath containing the parameter checkpoint for training.")
@@ -112,6 +113,7 @@ def main():
         if args.train_dpo:
             cmd = DPO_JOB_TEMPLATE.format(
                 experiment_name=experiment_name,
+                dataset_name=args.dataset_name,
                 input_gcs_path=args.input_gcs_path,
                 output_gcs_path=args.output_gcs_path,
                 ckpt_gcs_path=args.ckpt_gcs_path,
@@ -121,6 +123,7 @@ def main():
         else:
             cmd = RM_JOB_TEMPLATE.format(
                 experiment_name=experiment_name,
+                dataset_name=args.dataset_name,
                 input_gcs_path=args.input_gcs_path,
                 output_gcs_path=args.output_gcs_path,
                 ckpt_gcs_path=args.ckpt_gcs_path,
