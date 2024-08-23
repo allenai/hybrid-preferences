@@ -2,7 +2,7 @@ version: v2
 budget: ai2/oe-adapt
 description: "Get features using datamodel approach"
 tasks:
-  - name: get-features-datamodel
+  - name: get-features-datamodel-helpsteer2-llama
     image:
       beaker: ljm/human-datamodel
     command: ["python", "-m", "scripts.apply_data_model", "multi"]
@@ -25,6 +25,7 @@ tasks:
       - 120
       - --ignore_list
       - random
+      - domain
     datasets:
       - mountPath: /source/
         source:
@@ -39,7 +40,50 @@ tasks:
     constraints:
       cluster:
         - ai2/allennlp-cirrascale
-        - ai2/general-cirrascale-a100-80g-ib
+        - ai2/jupiter-cirrascale-2
+    envVars:
+      - name: OPENAI_API_KEY
+        secret: OPENAI_API_KEY
+      - name: TOKENIZERS_PARALLELISM
+        value: false
+  - name: get-features-datamodel-multipref-overall
+    image:
+      beaker: ljm/human-datamodel
+    command: ["python", "-m", "scripts.apply_data_model", "multi"]
+    arguments:
+      - --input_path
+      - /source/multipref_human_vs_gpt4_overall.jsonl
+      - --output_dir
+      - /output/data/
+      - --num_instances
+      - 7000
+      - --threshold
+      - 1
+      - --keep_features_dir
+      - /output/features/
+      - --append_to_experiments_file
+      - /output/experiments.txt
+      - --random_seed
+      - 42
+      - --n_sample_combinations
+      - 120
+      - --ignore_list
+      - random
+      - domain
+    datasets:
+      - mountPath: /source/
+        source:
+          beaker: 01J60EX37YBNQM9T6GJX5Q8X0C
+    result:
+      path: /output
+    resources:
+      gpuCount: 2
+    context:
+      priority: normal
+      preemptible: true
+    constraints:
+      cluster:
+        - ai2/allennlp-cirrascale
         - ai2/jupiter-cirrascale-2
     envVars:
       - name: OPENAI_API_KEY
