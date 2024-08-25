@@ -77,7 +77,9 @@ extract all features.
 
 def main():
     args = get_args()
-    all_features, all_combinations = get_all_feature_combinations()
+    all_features, all_combinations = get_all_feature_combinations(
+        meta_analyzer_n_samples=250
+    )
 
     df = pd.read_json(args.input_path, lines=True)
     if not {"pref_human", "pref_gpt4"}.issubset(set(list(df.columns))):

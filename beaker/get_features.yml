@@ -25,7 +25,6 @@ tasks:
       - 120
       - --ignore_list
       - random
-      - domain
     datasets:
       - mountPath: /source/
         source:
@@ -69,7 +68,6 @@ tasks:
       - 120
       - --ignore_list
       - random
-      - domain
     datasets:
       - mountPath: /source/
         source:
