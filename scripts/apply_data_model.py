@@ -39,7 +39,7 @@ be 0 or 1.
 For example:
 
     [feature_name]::[param1]=[value1],[param2]=[value2]
-    entity_sim::threshold=0.95,model_name=en_core_web_lg,n_process=4
+    entity_sim::threshold=0.95|model_name=en_core_web_lg|n_process=4
 
 You can use the `--show_all_features` flag to get a list of all available
 features.  If you don't pass anything in the `--features` option, this CLI will

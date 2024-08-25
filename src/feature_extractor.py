@@ -54,6 +54,19 @@ def get_all_feature_combinations(
     return features, feature_combinations
 
 
+def check_lists(query: list[Any], constraint: list[Any], strict: bool = False) -> int:
+    """Check if at least one value in query is in constraint.
+    If strict=True, then ensures all values of query are in constraint.
+    """
+    # Normalize strings
+    query = [q.lower() for q in query]
+    constraint = [c.lower() for c in constraint]
+
+    if strict:
+        return int(all(elem in constraint for elem in query))
+    return int(any(elem in constraint for elem in query))
+
+
 class FeatureExtractor:
     """Feature extractor class that takes in a dataframe of prompts, completions, and other metadata
 
@@ -96,7 +109,7 @@ class FeatureExtractor:
             "bertscore_length": self._extract_bertscore_length,
             "cosine_sim": self._extract_cosine_sim,
             "rouge": self._extract_rouge,
-            "domain": self._extract_domain,
+            "subject_of_expertise": self._extract_subject_of_expertise,
         }
 
         # Cache data structure
@@ -198,7 +211,7 @@ class FeatureExtractor:
 
         if "::" in s:
             key, params_str = s.split("::")
-            params = dict(item.split("=") for item in params_str.split(","))
+            params = dict(item.split("=") for item in params_str.split("|"))
             params = {k: _convert(v) for k, v in params.items()}
         else:
             key, params = s, {}
@@ -435,32 +448,69 @@ class FeatureExtractor:
         logging.info(f"Filtering instances where score > {threshold}")
         return [1 if score >= threshold else 0 for score in scores]
 
-    def _extract_domain(
+    def _extract_subject_of_expertise(
         self,
-        include_domains: str = "Information Technology,Mathematics",
-        domain_col: str = "domain",
+        constraints: str = "Computer sciences,Mathematics",
+        col: str = "subject_of_expertise",
+        strict: bool = False,
         **kwargs,
     ) -> list[bool]:
-        FEATURE_NAME = "domain"
-        if domain_col not in self.columns:
+        FEATURE_NAME = "subject_of_expertise"
+        if col not in self.columns:
             raise ValueError(
-                f"No `{domain_col}` field found in the dataset! Skipping this feature"
+                f"No `{col}` field found in the dataset! Skipping this feature"
             )
 
         if FEATURE_NAME in self.cache and self.use_cache:
             logging.info(f"Using cached results for {FEATURE_NAME}")
             scores = self.cache[FEATURE_NAME]
         else:
-            include_list = [domain.strip() for domain in include_domains.split(",")]
-            instance_domains = self._df[domain_col].to_list()
-            scores = [1 if domain in include_list else 0 for domain in instance_domains]
+            include_list = [domain.strip() for domain in constraints.split(",")]
+            instance_features = self._df[col].to_list()
+            scores = [
+                check_lists(feat, include_list, strict=strict)
+                for feat in instance_features
+            ]
 
         if self.keep_features:
             self._save_features(
                 output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
                 extra_columns={
                     FEATURE_NAME: scores,
-                    f"{FEATURE_NAME}_include_list": include_domains,
+                    f"{FEATURE_NAME}_include_list": constraints,
+                },
+            )
+
+        if self.use_cache:
+            self._cache_result(key=FEATURE_NAME, scores=scores)
+
+        return scores
+
+    def _extract_expertise_level(
+        self,
+        value: str = "general public",
+        col: str = "expertise_level",
+        **kwargs,
+    ) -> list[bool]:
+        FEATURE_NAME = "expertise_level"
+        if col not in self.columns:
+            raise ValueError(
+                f"No `{col}` field found in the dataset! Skipping this feature"
+            )
+
+        if FEATURE_NAME in self.cache and self.use_cache:
+            logging.info(f"Using cached results for {FEATURE_NAME}")
+            scores = self.cache[FEATURE_NAME]
+        else:
+            instance_features = self._df[col].to_list()
+            scores = [feat.lower() == value.lower() for feat in instance_features]
+
+        if self.keep_features:
+            self._save_features(
+                output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
+                extra_columns={
+                    FEATURE_NAME: scores,
+                    f"{FEATURE_NAME}_value": value,
                 },
             )
 
