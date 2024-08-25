@@ -110,6 +110,7 @@ class FeatureExtractor:
             "cosine_sim": self._extract_cosine_sim,
             "rouge": self._extract_rouge,
             "subject_of_expertise": self._extract_subject_of_expertise,
+            "expertise_level": self._extract_expertise_level,
         }
 
         # Cache data structure
@@ -448,17 +449,17 @@ class FeatureExtractor:
         logging.info(f"Filtering instances where score > {threshold}")
         return [1 if score >= threshold else 0 for score in scores]
 
-    def _extract_subject_of_expertise(
+    def _extract_analyzer_closed_set(
         self,
+        feature_name: str = "subject_of_expertise",
         constraints: str = "Computer sciences,Mathematics",
-        col: str = "subject_of_expertise",
         strict: bool = False,
         **kwargs,
     ) -> list[bool]:
-        FEATURE_NAME = "subject_of_expertise"
-        if col not in self.columns:
+        FEATURE_NAME = feature_name
+        if feature_name not in self.columns:
             raise ValueError(
-                f"No `{col}` field found in the dataset! Skipping this feature"
+                f"No `{feature_name}` field found in the dataset! Skipping this feature"
             )
 
         if FEATURE_NAME in self.cache and self.use_cache:
@@ -466,7 +467,7 @@ class FeatureExtractor:
             scores = self.cache[FEATURE_NAME]
         else:
             include_list = [domain.strip() for domain in constraints.split(",")]
-            instance_features = self._df[col].to_list()
+            instance_features = self._df[feature_name].to_list()
             scores = [
                 check_lists(feat, include_list, strict=strict)
                 for feat in instance_features
@@ -477,7 +478,7 @@ class FeatureExtractor:
                 output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
                 extra_columns={
                     FEATURE_NAME: scores,
-                    f"{FEATURE_NAME}_include_list": constraints,
+                    f"{FEATURE_NAME}_closed_set": constraints,
                 },
             )
 
@@ -486,23 +487,23 @@ class FeatureExtractor:
 
         return scores
 
-    def _extract_expertise_level(
+    def _extract_analyzer_scalar(
         self,
+        feature_name: str = "expertise_level",
         value: str = "general public",
-        col: str = "expertise_level",
         **kwargs,
     ) -> list[bool]:
         FEATURE_NAME = "expertise_level"
-        if col not in self.columns:
+        if feature_name not in self.columns:
             raise ValueError(
-                f"No `{col}` field found in the dataset! Skipping this feature"
+                f"No `{feature_name}` field found in the dataset! Skipping this feature"
             )
 
         if FEATURE_NAME in self.cache and self.use_cache:
             logging.info(f"Using cached results for {FEATURE_NAME}")
             scores = self.cache[FEATURE_NAME]
         else:
-            instance_features = self._df[col].to_list()
+            instance_features = self._df[feature_name].to_list()
             scores = [feat.lower() == value.lower() for feat in instance_features]
 
         if self.keep_features:
@@ -510,7 +511,7 @@ class FeatureExtractor:
                 output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
                 extra_columns={
                     FEATURE_NAME: scores,
-                    f"{FEATURE_NAME}_value": value,
+                    f"{FEATURE_NAME}_scalar": value,
                 },
             )
 
