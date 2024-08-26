@@ -1,4 +1,5 @@
 import argparse
+import hashlib
 import json
 import logging
 import random
@@ -202,6 +203,7 @@ def apply_data_model(
     feature_tags = []
     for feature in features:
         if "analyzer" in feature:
+            # Cleanup the names
             _, feature_params = feature.split("::")
             feature_name, feature_value = feature_params.split("|")
             _, name = feature_name.split("=")
@@ -211,33 +213,37 @@ def apply_data_model(
         else:
             feature_tags.append(feature)
     tag = "___".join(feature_tags).replace("::", "__").replace("=", "-")
+    feats_id = hashlib.md5(tag.encode("utf-8")).hexdigest()
     swap_stats = extracted_df["is_swapped"].value_counts().to_dict()
     num_swaps = swap_stats[True] if True in swap_stats else 0
-    output_path = (
-        output_dir
-        / f"human_datamodel_{num_instances}_FEATS_{tag}_SWAPS_{num_swaps}.jsonl"
-    )
-    with output_path.open("w") as f:
-        for annotation in converted_annotations:
-            f.write(json.dumps(annotation) + "\n")
-    logging.info(f"Saved to {output_path}")
+    if num_swaps != 0:
+        output_path = (
+            output_dir
+            / f"human_datamodel_{num_instances}_FEATS_{feats_id}_SWAPS_{num_swaps}.jsonl"
+        )
+        with output_path.open("w") as f:
+            for annotation in converted_annotations:
+                f.write(json.dumps(annotation) + "\n")
+        logging.info(f"Saved to {output_path}")
 
-    # Create a TXT file so that it's easier to submit tpu jobs
-    experiments_file: Path = append_to_experiments_file
-    if experiments_file:
-        experiment_name = output_path.stem
-        if experiments_file.exists():
-            logging.info(
-                f"Appending experiment {experiment_name} to {experiments_file}"
-            )
-            with experiments_file.open("a") as f:
-                f.write("\n" + experiment_name)
-        else:
-            logging.info(
-                f"{experiments_file} not found. Generating new and appending experiment {experiment_name}"
-            )
-            with experiments_file.open("w") as f:
-                f.write(experiment_name)
+        # Create a TXT file so that it's easier to submit tpu jobs
+        experiments_file: Path = append_to_experiments_file
+        if experiments_file:
+            experiment_name = output_path.stem
+            if experiments_file.exists():
+                logging.info(
+                    f"Appending experiment {experiment_name} to {experiments_file}"
+                )
+                with experiments_file.open("a") as f:
+                    f.write("\n" + f"{experiment_name}::{tag}")
+            else:
+                logging.info(
+                    f"{experiments_file} not found. Generating new and appending experiment {experiment_name}"
+                )
+                with experiments_file.open("w") as f:
+                    f.write(f"{experiment_name}::{tag}")
+    else:
+        logging.info(f"Tag set '{tag}' resulted into 0 swaps! Skipping")
 
 
 def convert_to_dpo_format(

@@ -109,7 +109,8 @@ def main():
         experiment_names = f.read().splitlines()
 
     commands_for_experiments = []
-    for idx, experiment_name in enumerate(experiment_names):
+    for idx, experiment_str in enumerate(experiment_names):
+        experiment_name, _ = experiment_str.split("::")
         if args.train_dpo:
             cmd = DPO_JOB_TEMPLATE.format(
                 experiment_name=experiment_name,
