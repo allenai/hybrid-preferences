@@ -79,7 +79,7 @@ extract all features.
 def main():
     args = get_args()
     all_features, all_combinations = get_all_feature_combinations(
-        meta_analyzer_n_samples=250
+        meta_analyzer_n_samples=500
     )
 
     df = pd.read_json(args.input_path, lines=True)

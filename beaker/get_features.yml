@@ -22,7 +22,7 @@ tasks:
       - --random_seed
       - 42
       - --n_sample_combinations
-      - 200
+      - 500
       - --ignore_list
       - random
     datasets:
