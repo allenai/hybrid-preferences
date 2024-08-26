@@ -199,7 +199,11 @@ def apply_data_model(
 
     output_dir.mkdir(parents=True, exist_ok=True)
     tag = "___".join(features).replace("::", "__").replace("=", "-")
-    output_path = output_dir / f"human_datamodel_{num_instances}_FEATS_{tag}.jsonl"
+    num_swaps = extracted_df["is_swapped"].value_counts().to_dict()[True]
+    output_path = (
+        output_dir
+        / f"human_datamodel_{num_instances}_FEATS_{tag}_SWAPS_{num_swaps}.jsonl"
+    )
     with output_path.open("w") as f:
         for annotation in converted_annotations:
             f.write(json.dumps(annotation) + "\n")
