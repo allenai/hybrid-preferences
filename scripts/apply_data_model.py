@@ -198,7 +198,19 @@ def apply_data_model(
         logging.info(f"Sampled {num_instances} instances from the total.")
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    tag = "___".join(features).replace("::", "__").replace("=", "-")
+
+    feature_tags = []
+    for feature in features:
+        if "analyzer" in feature:
+            _, feature_params = feature.split("::")
+            feature_name, feature_value = feature_params.split("|")
+            _, name = feature_name.split("=")
+            _, value = feature_value.split("=")
+            value = value.replace(" ", "_")
+            feature_tags.append(f"{name}={value}")
+        else:
+            feature_tags.append(feature)
+    tag = "___".join(feature_tags).replace("::", "__").replace("=", "-")
     swap_stats = extracted_df["is_swapped"].value_counts().to_dict()
     num_swaps = swap_stats[True] if True in swap_stats else 0
     output_path = (
