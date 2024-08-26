@@ -51,6 +51,7 @@ def get_args():
     parser.add_argument("--gcs_bucket", type=str, help="GCS bucket where the models are stored (NO need for gs:// prefix).")
     parser.add_argument("--gcs_dir_path", type=str, help="The directory path (or prefix) of models (e.g., human-preferences/rm_checkpoints/tulu2_13b_rm_human_datamodel_).")
     parser.add_argument("--download_dir", type=Path, default="download_dir", help="Parent directory where all parameter downloads from GCS will be stored. Ephemerable: will be emptied for every batch.")
+    parser.add_argument("--prefix", type=str, default=None, help="Custom prefix to further differentiate experiments.")
     parser.add_argument("--pytorch_dir", type=Path, default="pytorch_dir", help="Parent directory to store all converted pytorch files. Ephemerable: will be emptied for every batch.")
     parser.add_argument("--tokenizer_path", type=str, default="tokenizer.model", help="Path where you downloaded the tokenizer model.")
     parser.add_argument("--model_size", type=str, default="13b", help="Model size to pass to EasyLM.")
@@ -108,6 +109,8 @@ def main():
         pytorch_dir = Path(args.pytorch_dir)
         for params_path in params_paths:
             experiment_name = params_path.parent.stem.split("--")[0]
+            if args.prefix:
+                experiment_name = f"{args.prefix}-{experiment_name}"
             output_dir = pytorch_dir / experiment_name
             output_dir.mkdir(parents=True, exist_ok=True)
             logging.info(f"Saving to {output_dir}")
