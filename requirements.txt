@@ -6,6 +6,6 @@ evaluate
 rouge-score
 sentence-transformers
 bert_score
-nltk==3.8.2
+nltk==3.9
 beaker-py
 google-cloud-storage
