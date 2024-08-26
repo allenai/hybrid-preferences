@@ -1,9 +1,11 @@
-import sys
 import argparse
-from beaker import Beaker, Experiment
 import logging
-import pandas as pd
+import sys
 from pathlib import Path
+
+import pandas as pd
+
+from beaker import Beaker, Experiment
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
