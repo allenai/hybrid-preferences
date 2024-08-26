@@ -22,7 +22,7 @@ tasks:
       - --random_seed
       - 42
       - --n_sample_combinations
-      - 120
+      - 200
       - --ignore_list
       - random
     datasets:
@@ -65,7 +65,7 @@ tasks:
       - --random_seed
       - 42
       - --n_sample_combinations
-      - 120
+      - 200
       - --ignore_list
       - random
     datasets:
