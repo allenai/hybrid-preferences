@@ -537,7 +537,7 @@ class FeatureExtractor:
 
         # No caching here
         instance_features = self._df[feature_name].to_list()
-        scores = [feat.lower() == value.lower() for feat in instance_features]
+        scores = [(feat or "").lower() == value.lower() for feat in instance_features]
 
         if self.keep_features:
             self._save_features(

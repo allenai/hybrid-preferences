@@ -18,7 +18,7 @@ def get_meta_analyzer_features(**kwargs) -> dict[str, list[str]]:
             # fall under on of the values we set.
             for feature, values in features.items():
                 for value in values:
-                    func_name = f"analyzer_{extractor_name}|feature_name={feature}|constraints={value}"
+                    func_name = f"analyzer_{extractor_name}::feature_name={feature}|constraints={value}"
                     if feature not in feature_params:
                         feature_params[feature] = [func_name]
                     else:
@@ -36,7 +36,7 @@ def get_meta_analyzer_features(**kwargs) -> dict[str, list[str]]:
             # For scalar features, we check each value
             for feature, values in features.items():
                 for value in values:
-                    func_name = f"analyzer_{extractor_name}|feature_name={feature}|value={value}"
+                    func_name = f"analyzer_{extractor_name}::feature_name={feature}|value={value}"
                     if feature not in feature_params:
                         feature_params[feature] = [func_name]
                     else:
@@ -44,7 +44,7 @@ def get_meta_analyzer_features(**kwargs) -> dict[str, list[str]]:
         elif extractor_name == "open_set":
             # For open_set values, we just check for existence
             for feature, values in features.items():
-                func_name = f"analyzer_{extractor_name}|feature_name={feature}|check_for_existence=1"
+                func_name = f"analyzer_{extractor_name}::feature_name={feature}|check_for_existence=1"
                 if feature not in feature_params:
                     feature_params[feature] = [func_name]
                 else:
