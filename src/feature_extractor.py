@@ -18,40 +18,94 @@ from rouge_score import rouge_scorer
 from sentence_transformers import SentenceTransformer, util
 from tqdm import tqdm
 
+from src.utils import get_meta_analyzer_features
+
 tqdm_file = sys.stdout
 tqdm_bar_format = "{l_bar}{bar}{r_bar}\n"
 
 
 def get_all_feature_combinations(
     max_number: Optional[int] = None,
-    strict: bool = False,
+    meta_analyzer_n_samples: Optional[int] = None,
 ) -> tuple[list[str], list[list[str]]]:
     """Get all available feature combinations
 
+    If you include meta_analyzer_n_samples, it will randomly sample different
+    combinations of meta-analyzer tags and attach them randomly to some of the
+    initial lexical features.
+
     max_number (Optional[int]): max number of feature combinations
-    strict (bool): if set, will only return feature combinations exactly matching max_number
+    meta_analyzer_n_samples (Optional[int]): number of meta analyzer features to include for each feature combination
     """
-    features = [
+    all_features = [
         mem.removeprefix("_extract_")
         for mem, _ in inspect.getmembers(FeatureExtractor)
         if mem.startswith("_extract")
     ]
 
+    features = [feature for feature in all_features if "analyzer" not in feature]
     if max_number is None:
         max_number = len(features) + 1
 
     feature_combinations = [
         list(comb)
         for r in range(1, min(max_number + 1, len(features) + 1))
-        for comb in itertools.combinations(features, r)
+        for comb in tqdm(itertools.combinations(features, r))
     ]
 
-    if strict:
-        feature_combinations = [
-            feats for feats in feature_combinations if len(feats) == max_number
+    if meta_analyzer_n_samples:
+        logging.info("Adding meta analyzer features")
+        # Add meta analyzer features
+        meta_analyzer_features = []
+        for _ in range(meta_analyzer_n_samples):
+            meta_analyzer_features.append(
+                list(random.choice(v) for v in get_meta_analyzer_features().values())
+            )
+
+        # Sample a few more, sometimes, we don't need the complete feature set
+        meta_analyzer_features = [
+            random.sample(inner, random.randint(1, len(inner)))
+            for inner in meta_analyzer_features
         ]
 
-    return features, feature_combinations
+        # Let's split the meta_analyzer_features. The first half we can append to the lexical
+        # features, and the last half we can append as-is.
+        split_index = int(0.5 * len(meta_analyzer_features))
+        meta_analyzer_features_init_50 = meta_analyzer_features[:split_index]
+        meta_analyzer_features_last_50 = meta_analyzer_features[split_index:]
+
+        # For each list in feature_combinations, append a random number of elements
+        # (between 1 and the length of the corresponding list) from meta_analyzer_features
+        for i in range(
+            min(len(feature_combinations), len(meta_analyzer_features_init_50))
+        ):
+            feature_combinations[i].extend(
+                random.sample(
+                    meta_analyzer_features_init_50[i],
+                    random.randint(1, len(meta_analyzer_features_init_50[i])),
+                )
+            )
+
+        # Let's also add some features that's just purely from the meta_analyzer
+        feature_combinations += meta_analyzer_features_last_50
+
+    return all_features, feature_combinations
+
+
+def check_lists(query: list[Any], constraint: list[Any], strict: bool = False) -> int:
+    """Check if at least one value in query is in constraint.
+    If strict=True, then ensures all values of query are in constraint.
+    """
+    if not query or not constraint:
+        return 0
+
+    # Normalize strings
+    query = [q.lower() for q in query]
+    constraint = [c.lower() for c in constraint]
+
+    if strict:
+        return int(all(elem in constraint for elem in query))
+    return int(any(elem in constraint for elem in query))
 
 
 class FeatureExtractor:
@@ -96,7 +150,9 @@ class FeatureExtractor:
             "bertscore_length": self._extract_bertscore_length,
             "cosine_sim": self._extract_cosine_sim,
             "rouge": self._extract_rouge,
-            "domain": self._extract_domain,
+            "analyzer_closed_set": self._extract_analyzer_closed_set,
+            "analyzer_scalar": self._extract_analyzer_scalar,
+            "analyzer_open_set": self._extract_analyzer_open_set,
         }
 
         # Cache data structure
@@ -198,7 +254,7 @@ class FeatureExtractor:
 
         if "::" in s:
             key, params_str = s.split("::")
-            params = dict(item.split("=") for item in params_str.split(","))
+            params = dict(item.split("=") for item in params_str.split("|"))
             params = {k: _convert(v) for k, v in params.items()}
         else:
             key, params = s, {}
@@ -435,36 +491,102 @@ class FeatureExtractor:
         logging.info(f"Filtering instances where score > {threshold}")
         return [1 if score >= threshold else 0 for score in scores]
 
-    def _extract_domain(
+    def _extract_analyzer_closed_set(
         self,
-        include_domains: str = "Information Technology,Mathematics",
-        domain_col: str = "domain",
+        feature_name: str = "subject_of_expertise",
+        constraints: str = "Computer sciences,Mathematics",
+        strict: bool = False,
         **kwargs,
     ) -> list[bool]:
-        FEATURE_NAME = "domain"
-        if domain_col not in self.columns:
+        FEATURE_NAME = feature_name
+        if feature_name not in self.columns:
             raise ValueError(
-                f"No `{domain_col}` field found in the dataset! Skipping this feature"
+                f"No `{feature_name}` field found in the dataset! Skipping this feature"
             )
 
-        if FEATURE_NAME in self.cache and self.use_cache:
-            logging.info(f"Using cached results for {FEATURE_NAME}")
-            scores = self.cache[FEATURE_NAME]
-        else:
-            include_list = [domain.strip() for domain in include_domains.split(",")]
-            instance_domains = self._df[domain_col].to_list()
-            scores = [1 if domain in include_list else 0 for domain in instance_domains]
+        # No caching here
+        include_list = [domain.strip() for domain in constraints.split(",")]
+        instance_features = self._df[feature_name].to_list()
+        scores = [
+            check_lists(query=feat, constraint=include_list, strict=strict)
+            for feat in instance_features
+        ]
 
         if self.keep_features:
             self._save_features(
                 output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
                 extra_columns={
                     FEATURE_NAME: scores,
-                    f"{FEATURE_NAME}_include_list": include_domains,
+                    f"{FEATURE_NAME}_closed_set": constraints,
                 },
             )
 
-        if self.use_cache:
-            self._cache_result(key=FEATURE_NAME, scores=scores)
+        return scores
+
+    def _extract_analyzer_scalar(
+        self,
+        feature_name: str = "expertise_level",
+        value: str = "general public",
+        **kwargs,
+    ) -> list[bool]:
+        FEATURE_NAME = feature_name
+        if feature_name not in self.columns:
+            raise ValueError(
+                f"No `{feature_name}` field found in the dataset! Skipping this feature"
+            )
+
+        # No caching here
+        instance_features = self._df[feature_name].to_list()
+        scores = [feat.lower() == value.lower() for feat in instance_features]
+
+        if self.keep_features:
+            self._save_features(
+                output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
+                extra_columns={
+                    FEATURE_NAME: scores,
+                    f"{FEATURE_NAME}_scalar": value,
+                },
+            )
+
+        return scores
+
+    def _extract_analyzer_open_set(
+        self,
+        feature_name: str = "format_constraints",
+        check_for_existence: bool = True,
+        constraints: Optional[str] = None,
+        strict: bool = False,
+        **kwargs,
+    ):
+        FEATURE_NAME = feature_name
+        if feature_name not in self.columns:
+            raise ValueError(
+                f"No `{feature_name}` field found in the dataset! Skipping this feature"
+            )
+
+        # No caching here
+        instance_features = self._df[feature_name].to_list()
+        if not check_for_existence and not constraints:
+            raise ValueError(
+                "Must pass a value to `value` or set `check_for_instance` to True"
+            )
+
+        if check_for_existence:
+            scores = [1 if feat else 0 for feat in instance_features]
+        if constraints:
+            include_list = [constraint.strip() for constraint in constraints.split(",")]
+            scores = [
+                check_lists(query=feat, constraint=include_list, strict=strict)
+                for feat in instance_features
+            ]
+
+        if self.keep_features:
+            self._save_features(
+                output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
+                extra_columns={
+                    FEATURE_NAME: scores,
+                    f"{FEATURE_NAME}_scalar": constraints,
+                },
+            )
 
         return scores

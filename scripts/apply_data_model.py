@@ -39,7 +39,7 @@ be 0 or 1.
 For example:
 
     [feature_name]::[param1]=[value1],[param2]=[value2]
-    entity_sim::threshold=0.95,model_name=en_core_web_lg,n_process=4
+    entity_sim::threshold=0.95|model_name=en_core_web_lg|n_process=4
 
 You can use the `--show_all_features` flag to get a list of all available
 features.  If you don't pass anything in the `--features` option, this CLI will
@@ -77,7 +77,9 @@ extract all features.
 
 def main():
     args = get_args()
-    all_features, all_combinations = get_all_feature_combinations()
+    all_features, all_combinations = get_all_feature_combinations(
+        meta_analyzer_n_samples=250
+    )
 
     df = pd.read_json(args.input_path, lines=True)
     if not {"pref_human", "pref_gpt4"}.issubset(set(list(df.columns))):
@@ -197,7 +199,11 @@ def apply_data_model(
 
     output_dir.mkdir(parents=True, exist_ok=True)
     tag = "___".join(features).replace("::", "__").replace("=", "-")
-    output_path = output_dir / f"human_datamodel_{num_instances}_FEATS_{tag}.jsonl"
+    num_swaps = extracted_df["is_swapped"].value_counts().to_dict()[True]
+    output_path = (
+        output_dir
+        / f"human_datamodel_{num_instances}_FEATS_{tag}_SWAPS_{num_swaps}.jsonl"
+    )
     with output_path.open("w") as f:
         for annotation in converted_annotations:
             f.write(json.dumps(annotation) + "\n")
