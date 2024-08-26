@@ -200,7 +200,7 @@ def apply_data_model(
     output_dir.mkdir(parents=True, exist_ok=True)
     tag = "___".join(features).replace("::", "__").replace("=", "-")
     swap_stats = extracted_df["is_swapped"].value_counts().to_dict()
-    num_swaps = swap_stats[True] if True in swap_stats else swap_stats[False]
+    num_swaps = swap_stats[True] if True in swap_stats else 0
     output_path = (
         output_dir
         / f"human_datamodel_{num_instances}_FEATS_{tag}_SWAPS_{num_swaps}.jsonl"
