@@ -1,7 +1,9 @@
 import argparse
 import logging
+import re
 import sys
 from pathlib import Path
+from typing import Optional
 
 import pandas as pd
 
@@ -82,6 +84,7 @@ def get_args():
     parser.add_argument("--output_file", type=Path, help="CSV Filepath to save output features and category scores.")
     parser.add_argument("--beaker_workspace", default="ai2/ljm-oe-adapt", help="Beaker workspace to fetch experiments.")
     parser.add_argument("--experiment_prefix", default="rm-eval-", help="Prefix for experiments to fetch.")
+    parser.add_argument("--experiments_file", default=None, type=Path, help="Path to a TXT file containing a list that maps an experiment to the features.")
     parser.add_argument("--gpt4_threshold_score", type=float, default=0.658, help="GPT-4 threshold score to create binary labels")
     # fmt:on
     return parser.parse_args()
@@ -127,21 +130,39 @@ def main():
     df_feats = get_features(
         df_category_scores.reset_index().rename(columns={"index": "experiment"}),
         col_name="experiment",
+        experiments_file=args.experiments_file,
     )
 
-    overall_df = pd.merge(
-        df_feats,
-        df_category_scores,
-        left_index=True,
-        right_index=True,
-    )
-    overall_df = overall_df.merge(df_subset_scores, left_index=True, right_index=True)
-    metadata_cols = ["model_type", "chat_template"]
-    cols = metadata_cols + [
-        col for col in overall_df.columns if col not in metadata_cols
-    ]  # Cleanup dataframe for easier viewing
+    if args.experiments_file:
+        logging.info("Will attempt merge via feature hash")
+
+        def extract_hash(string):
+            match = re.search(r"FEATS_(.*?)_SWAPS", string)
+            return match.group(1) if match else None
+
+        # fmt: off
+        df_feats["hash"] = df_feats.index.to_series().apply(extract_hash)
+        df_category_scores["hash"] = df_category_scores.index.to_series().apply(extract_hash)
+        df_subset_scores["hash"] = df_subset_scores.index.to_series().apply(extract_hash)
+        # fmt: on
+        overall_df = pd.merge(
+            df_feats, df_category_scores, how="inner", on="hash"
+        ).merge(df_subset_scores, how="inner", on="hash")
+
+    else:
+        overall_df = pd.merge(
+            df_feats,
+            df_category_scores,
+            left_index=True,
+            right_index=True,
+        ).merge(df_subset_scores, left_index=True, right_index=True)
+
+    # Cleanup dataframe for easier viewing
+    meta = ["model_type", "chat_template"]
+    cols = meta + [col for col in overall_df.columns if col not in meta]
     overall_df = overall_df[cols]
 
+    # Create labels based on the GPT-4 threshold score
     thresh = args.gpt4_threshold_score
     logging.info(f"Creating labels in column 'label' with GPT-4 threshold '{thresh}'")
     overall_df["label"] = (overall_df["Overall"] > thresh).astype(int)
@@ -166,12 +187,30 @@ def get_category_scores(df_subset: "pd.DataFrame") -> "pd.DataFrame":
     return df_category
 
 
-def get_features(df: "pd.DataFrame", col_name: str) -> "pd.DataFrame":
+def get_features(
+    df: "pd.DataFrame",
+    col_name: str,
+    experiments_file: Optional[Path] = None,
+) -> "pd.DataFrame":
     experiment_to_feats: dict[str, list[str]] = {}
     experiments = df[col_name].to_list()
-    for experiment in experiments:
-        features = experiment.split("FEATS_")[-1].split("___")
-        experiment_to_feats[experiment] = features
+
+    if not experiments_file:
+        logging.info("Deriving features from the experiment names")
+        for experiment in experiments:
+            features = experiment.split("FEATS_")[-1].split("___")
+            experiment_to_feats[experiment] = features
+
+    else:
+        logging.info(f"Deriving features from the experiments file: {experiments_file}")
+        with open(experiments_file, "r") as f:
+            data = f.read().splitlines()
+
+        for d in data:
+            experiment_id, feature_set = d.split("::")
+            experiment_to_feats[experiment_id] = [
+                feature.replace("-", "=") for feature in feature_set.split("___")
+            ]
 
     unique_features = set(f for feats in experiment_to_feats.values() for f in feats)
     df_feats = pd.DataFrame(
@@ -181,6 +220,8 @@ def get_features(df: "pd.DataFrame", col_name: str) -> "pd.DataFrame":
         ],
         index=experiment_to_feats.keys(),
     )
+    # Sort columns alphabetically
+    df_feats = df_feats.reindex(sorted(df_feats.columns), axis=1)
     return df_feats
 
 
