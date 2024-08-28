@@ -261,13 +261,17 @@ class FeatureExtractor:
         return key, params
 
     def _extract_random(self, threshold: float = 0.5, **kwargs) -> list[bool]:
-        return [1 if random.random() >= 0.5 else 0 for _ in range(len(self.prompts))]
+        return [
+            1 if random.random() >= threshold else 0 for _ in range(len(self.prompts))
+        ]
 
     def _extract_entity_sim(
         self,
-        threshold: float = 0.8,
+        min_val: float = 0.0,
+        max_val: float = 0.1,
         model_name: str = "en_core_web_lg",
         n_process: int = 4,
+        # threshold: float = 0.8,
         **kwargs,
     ) -> list[bool]:
         FEATURE_NAME = "entity_sim"
@@ -322,13 +326,15 @@ class FeatureExtractor:
         if self.use_cache:
             self._cache_result(key=FEATURE_NAME, scores=scores)
 
-        logging.info(f"Filtering instances where score > {threshold}")
-        return [1 if score >= threshold else 0 for score in scores]
+        logging.info(f"Filtering instances where score falls in [{min_val}, {max_val}]")
+        return [1 if min_val <= score <= max_val else 0 for score in scores]
 
     def _extract_bertscore(
         self,
         model_type: str = "distilbert-base-uncased",
-        threshold: float = 0.8,
+        min_val: float = 0.0,
+        max_val: float = 0.1,
+        # threshold: float = 0.8,
         **kwargs,
     ) -> list[bool]:
         FEATURE_NAME = "bertscore"
@@ -357,13 +363,15 @@ class FeatureExtractor:
         if self.use_cache:
             self._cache_result(key=FEATURE_NAME, scores=scores)
 
-        logging.info(f"Filtering instances where score > {threshold}")
-        return [1 if score >= threshold else 0 for score in scores]
+        logging.info(f"Filtering instances where score falls in [{min_val}, {max_val}]")
+        return [1 if min_val <= score <= max_val else 0 for score in scores]
 
     def _extract_bertscore_length(
         self,
-        threshold: float = 0.40,
+        min_val: float = 0.0,
+        max_val: float = 0.1,
         model_type: str = "distilbert-base-uncased",
+        # threshold: float = 0.40,
         **kwargs,
     ) -> list[bool]:
         FEATURE_NAME = "bertscore_length"
@@ -415,10 +423,16 @@ class FeatureExtractor:
         if self.use_cache:
             self._cache_result(key=FEATURE_NAME, scores=scores)
 
-        logging.info(f"Filtering instances where score > {threshold}")
-        return [1 if score >= threshold else 0 for score in scores]
+        logging.info(f"Filtering instances where score falls in [{min_val}, {max_val}]")
+        return [1 if min_val <= score <= max_val else 0 for score in scores]
 
-    def _extract_rouge(self, threshold: float = 0.4, **kwargs) -> list[bool]:
+    def _extract_rouge(
+        self,
+        min_val: float = 0.0,
+        max_val: float = 0.1,
+        # threshold: float = 0.4,
+        **kwargs,
+    ) -> list[bool]:
         FEATURE_NAME = "rouge"
 
         if FEATURE_NAME in self.cache and self.use_cache:
@@ -445,14 +459,16 @@ class FeatureExtractor:
         if self.use_cache:
             self._cache_result(key=FEATURE_NAME, scores=scores)
 
-        logging.info(f"Filtering instances where score > {threshold}")
-        return [1 if score >= threshold else 0 for score in scores]
+        logging.info(f"Filtering instances where score falls in [{min_val}, {max_val}]")
+        return [1 if min_val <= score <= max_val else 0 for score in scores]
 
     def _extract_cosine_sim(
         self,
-        threshold: float = 0.8,
+        min_val: float = 0.0,
+        max_val: float = 0.1,
         model_name: str = "all-distilroberta-v1",
         device: str = "cuda",
+        # threshold: float = 0.8,
         **kwargs,
     ) -> list[bool]:
         FEATURE_NAME = "cosine_sim"
@@ -488,8 +504,8 @@ class FeatureExtractor:
         if self.use_cache:
             self._cache_result(key=FEATURE_NAME, scores=scores)
 
-        logging.info(f"Filtering instances where score > {threshold}")
-        return [1 if score >= threshold else 0 for score in scores]
+        logging.info(f"Filtering instances where score falls in [{min_val}, {max_val}]")
+        return [1 if min_val <= score <= max_val else 0 for score in scores]
 
     def _extract_analyzer_closed_set(
         self,
