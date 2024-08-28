@@ -4,13 +4,14 @@ import json
 import logging
 import random
 import sys
+import re
 from pathlib import Path
 from typing import Optional
 
 import pandas as pd
 
 from src.feature_extractor import FeatureExtractor
-from src.feature_extractor import get_all_feature_combinations
+from src.feature_extractor import sample_feature_combinations
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -60,7 +61,7 @@ extract all features.
     shared_args.add_argument("--threshold", type=float, default=1.0, help="Percentage of total features to be active in order to swap w/ human preferences.")
     shared_args.add_argument("--keep_features_dir", type=Path, default=None, help="If set, will store all collected features in this directory.")
     shared_args.add_argument("--append_to_experiments_file", type=Path, default=None, help="If set, will append to an experiments TXT file to be used for submitting TPU training jobs.")
-    shared_args.add_argument("--random_seed", type=int, default=42, help="Set the random seed.")
+    shared_args.add_argument("--random_seed", type=int, default=None, help="Set the random seed.")
 
     # Arguments for 'single' command
     parser_single = subparsers.add_parser("single", help="Run single data model run", parents=[shared_args])
@@ -78,7 +79,7 @@ extract all features.
 
 def main():
     args = get_args()
-    all_features, all_combinations = get_all_feature_combinations(
+    all_features, all_combinations = sample_feature_combinations(
         meta_analyzer_n_samples=500
     )
 
@@ -124,13 +125,9 @@ def main():
             logging.info(
                 f"Ignoring feature combinations that include these features: {', '.join(args.ignore_list)}"
             )
-            feats_to_run = [
-                feature_combination
-                for feature_combination in feats_to_run
-                if not any(
-                    feature in args.ignore_list for feature in feature_combination
-                )
-            ]
+            feats_to_run = filter_ignored_features(
+                feats_to_run, ignore_values=args.ignore_list
+            )
             logging.info(f"Updated number of feature combinations: {len(feats_to_run)}")
 
         logging.info(
@@ -160,11 +157,13 @@ def apply_data_model(
     output_dir: Path,
     features: Optional[list[str]] = None,
     threshold: float = 1.0,
-    random_seed: int = 42,
+    random_seed: Optional[int] = None,
     num_instances: int = 7000,
     append_to_experiments_file: Optional[Path] = None,
 ):
-    random.seed(random_seed)
+    if random_seed:
+        logging.info(f"Setting random seed to {random_seed}")
+        random.seed(random_seed)
     if not features:
         logging.info(
             "Will extract all available features using their default parameters"
@@ -231,11 +230,15 @@ def apply_data_model(
         if experiments_file:
             experiment_name = output_path.stem
             if experiments_file.exists():
-                logging.info(
-                    f"Appending experiment {experiment_name} to {experiments_file}"
-                )
-                with experiments_file.open("a") as f:
-                    f.write("\n" + f"{experiment_name}::{tag}")
+                with experiments_file.open("r") as f:
+                    data = f.read().splitlines()
+                existing_hashes = [extract_hash(d) for d in data]
+                if feats_id in existing_hashes:
+                    logging.info(f"Tag set '{tag}' ({feats_id}) already exists! ")
+                else:
+                    logging.info(f"Appending {experiment_name} to {experiments_file}")
+                    with experiments_file.open("a") as f:
+                        f.write("\n" + f"{experiment_name}::{tag}")
             else:
                 logging.info(
                     f"{experiments_file} not found. Generating new and appending experiment {experiment_name}"
@@ -290,6 +293,27 @@ def convert_to_dpo_format(
         "features_used": instance.get("features_used"),
         "is_swapped": instance.get("is_swapped"),
     }
+
+
+def filter_ignored_features(
+    list_of_features: list[list[str]], ignore_values: list[str]
+) -> list[list[str]]:
+    def contains_ignore_value(feature_list: list[str]):
+        return any(
+            ignore in feature for feature in feature_list for ignore in ignore_values
+        )
+
+    filtered_lists = [
+        feature_list
+        for feature_list in list_of_features
+        if not contains_ignore_value(feature_list)
+    ]
+    return filtered_lists
+
+
+def extract_hash(string):
+    match = re.search(r"FEATS_(.*?)_SWAPS", string)
+    return match.group(1) if match else None
 
 
 if __name__ == "__main__":

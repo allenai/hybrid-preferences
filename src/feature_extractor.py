@@ -5,6 +5,7 @@ import math
 import random
 import re
 import sys
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Optional
 
@@ -15,7 +16,9 @@ import spacy
 from nltk import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from rouge_score import rouge_scorer
+from scipy.stats import percentileofscore
 from sentence_transformers import SentenceTransformer, util
+from transformers import AutoTokenizer
 from tqdm import tqdm
 
 from src.utils import get_meta_analyzer_features
@@ -24,7 +27,8 @@ tqdm_file = sys.stdout
 tqdm_bar_format = "{l_bar}{bar}{r_bar}\n"
 
 
-def get_all_feature_combinations(
+def sample_feature_combinations(
+    n_bins: int = 3,
     max_number: Optional[int] = None,
     meta_analyzer_n_samples: Optional[int] = None,
 ) -> tuple[list[str], list[list[str]]]:
@@ -34,6 +38,7 @@ def get_all_feature_combinations(
     combinations of meta-analyzer tags and attach them randomly to some of the
     initial lexical features.
 
+    n_bins (int): number of bins to create for the lexical features
     max_number (Optional[int]): max number of feature combinations
     meta_analyzer_n_samples (Optional[int]): number of meta analyzer features to include for each feature combination
     """
@@ -47,17 +52,27 @@ def get_all_feature_combinations(
     if max_number is None:
         max_number = len(features) + 1
 
-    feature_combinations = [
-        list(comb)
-        for r in range(1, min(max_number + 1, len(features) + 1))
-        for comb in tqdm(itertools.combinations(features, r))
-    ]
+    def sample_lexical_features(n_bins: int) -> list[list[str]]:
+        edges = np.linspace(0, 1, n_bins + 1)
+        bins = [(edges[i], edges[i + 1]) for i in range(n_bins)]
 
-    if meta_analyzer_n_samples:
-        logging.info("Adding meta analyzer features")
-        # Add meta analyzer features
+        lexical_features = []
+        for r in range(1, min(max_number + 1, len(features) + 1)):
+            for comb in tqdm(itertools.combinations(features, r)):
+                comb = list(comb)
+                comb_with_vals = []
+                for feat in comb:
+                    min_val, max_val = random.choice(bins)
+                    feat_str = (
+                        f"{feat}::min_val={round(min_val,2)}|max_val={round(max_val,2)}"
+                    )
+                    comb_with_vals.append(feat_str)
+                lexical_features.append(comb_with_vals)
+        return lexical_features
+
+    def sample_analyzer_features(n_samples: int) -> list[list[str]]:
         meta_analyzer_features = []
-        for _ in range(meta_analyzer_n_samples):
+        for _ in range(n_samples):
             meta_analyzer_features.append(
                 list(random.choice(v) for v in get_meta_analyzer_features().values())
             )
@@ -67,7 +82,13 @@ def get_all_feature_combinations(
             random.sample(inner, random.randint(1, len(inner)))
             for inner in meta_analyzer_features
         ]
+        return meta_analyzer_features
 
+    lexical_features = sample_lexical_features(n_bins=n_bins)
+
+    if meta_analyzer_n_samples:
+        logging.info("Adding meta analyzer features")
+        meta_analyzer_features = sample_analyzer_features(meta_analyzer_n_samples)
         # Let's split the meta_analyzer_features. The first half we can append to the lexical
         # features, and the last half we can append as-is.
         split_index = int(0.5 * len(meta_analyzer_features))
@@ -76,10 +97,9 @@ def get_all_feature_combinations(
 
         # For each list in feature_combinations, append a random number of elements
         # (between 1 and the length of the corresponding list) from meta_analyzer_features
-        for i in range(
-            min(len(feature_combinations), len(meta_analyzer_features_init_50))
-        ):
-            feature_combinations[i].extend(
+        lexical_with_metadata = deepcopy(lexical_features)
+        for i in range(min(len(lexical_features), len(meta_analyzer_features_init_50))):
+            lexical_with_metadata[i].extend(
                 random.sample(
                     meta_analyzer_features_init_50[i],
                     random.randint(1, len(meta_analyzer_features_init_50[i])),
@@ -87,7 +107,14 @@ def get_all_feature_combinations(
             )
 
         # Let's also add some features that's just purely from the meta_analyzer
-        feature_combinations += meta_analyzer_features_last_50
+        feature_combinations = (
+            lexical_with_metadata
+            + meta_analyzer_features_last_50
+            + lexical_features
+            + sample_lexical_features(n_bins)
+        )
+    else:
+        feature_combinations = sample_lexical_features(n_bins=n_bins)
 
     return all_features, feature_combinations
 
@@ -150,6 +177,10 @@ class FeatureExtractor:
             "bertscore_length": self._extract_bertscore_length,
             "cosine_sim": self._extract_cosine_sim,
             "rouge": self._extract_rouge,
+            "token_len_diff": self._extract_token_len_difference,
+            "prompt_len": self._extract_prompt_len,
+            "len_shorter": self._extract_len_shorter,
+            "len_longer": self._extract_len_longer,
             "analyzer_closed_set": self._extract_analyzer_closed_set,
             "analyzer_scalar": self._extract_analyzer_scalar,
             "analyzer_open_set": self._extract_analyzer_open_set,
@@ -261,13 +292,17 @@ class FeatureExtractor:
         return key, params
 
     def _extract_random(self, threshold: float = 0.5, **kwargs) -> list[bool]:
-        return [1 if random.random() >= 0.5 else 0 for _ in range(len(self.prompts))]
+        return [
+            1 if random.random() >= threshold else 0 for _ in range(len(self.prompts))
+        ]
 
     def _extract_entity_sim(
         self,
-        threshold: float = 0.8,
+        min_val: float = 0.0,
+        max_val: float = 0.1,
         model_name: str = "en_core_web_lg",
         n_process: int = 4,
+        # threshold: float = 0.8,
         **kwargs,
     ) -> list[bool]:
         FEATURE_NAME = "entity_sim"
@@ -322,13 +357,15 @@ class FeatureExtractor:
         if self.use_cache:
             self._cache_result(key=FEATURE_NAME, scores=scores)
 
-        logging.info(f"Filtering instances where score > {threshold}")
-        return [1 if score >= threshold else 0 for score in scores]
+        logging.info(f"Filtering instances where score falls in [{min_val}, {max_val}]")
+        return [1 if min_val <= score <= max_val else 0 for score in scores]
 
     def _extract_bertscore(
         self,
         model_type: str = "distilbert-base-uncased",
-        threshold: float = 0.8,
+        min_val: float = 0.0,
+        max_val: float = 0.1,
+        # threshold: float = 0.8,
         **kwargs,
     ) -> list[bool]:
         FEATURE_NAME = "bertscore"
@@ -357,13 +394,15 @@ class FeatureExtractor:
         if self.use_cache:
             self._cache_result(key=FEATURE_NAME, scores=scores)
 
-        logging.info(f"Filtering instances where score > {threshold}")
-        return [1 if score >= threshold else 0 for score in scores]
+        logging.info(f"Filtering instances where score falls in [{min_val}, {max_val}]")
+        return [1 if min_val <= score <= max_val else 0 for score in scores]
 
     def _extract_bertscore_length(
         self,
-        threshold: float = 0.40,
+        min_val: float = 0.0,
+        max_val: float = 0.1,
         model_type: str = "distilbert-base-uncased",
+        # threshold: float = 0.40,
         **kwargs,
     ) -> list[bool]:
         FEATURE_NAME = "bertscore_length"
@@ -415,10 +454,16 @@ class FeatureExtractor:
         if self.use_cache:
             self._cache_result(key=FEATURE_NAME, scores=scores)
 
-        logging.info(f"Filtering instances where score > {threshold}")
-        return [1 if score >= threshold else 0 for score in scores]
+        logging.info(f"Filtering instances where score falls in [{min_val}, {max_val}]")
+        return [1 if min_val <= score <= max_val else 0 for score in scores]
 
-    def _extract_rouge(self, threshold: float = 0.4, **kwargs) -> list[bool]:
+    def _extract_rouge(
+        self,
+        min_val: float = 0.0,
+        max_val: float = 0.1,
+        # threshold: float = 0.4,
+        **kwargs,
+    ) -> list[bool]:
         FEATURE_NAME = "rouge"
 
         if FEATURE_NAME in self.cache and self.use_cache:
@@ -445,14 +490,16 @@ class FeatureExtractor:
         if self.use_cache:
             self._cache_result(key=FEATURE_NAME, scores=scores)
 
-        logging.info(f"Filtering instances where score > {threshold}")
-        return [1 if score >= threshold else 0 for score in scores]
+        logging.info(f"Filtering instances where score falls in [{min_val}, {max_val}]")
+        return [1 if min_val <= score <= max_val else 0 for score in scores]
 
     def _extract_cosine_sim(
         self,
-        threshold: float = 0.8,
+        min_val: float = 0.0,
+        max_val: float = 0.1,
         model_name: str = "all-distilroberta-v1",
         device: str = "cuda",
+        # threshold: float = 0.8,
         **kwargs,
     ) -> list[bool]:
         FEATURE_NAME = "cosine_sim"
@@ -488,8 +535,200 @@ class FeatureExtractor:
         if self.use_cache:
             self._cache_result(key=FEATURE_NAME, scores=scores)
 
-        logging.info(f"Filtering instances where score > {threshold}")
-        return [1 if score >= threshold else 0 for score in scores]
+        logging.info(f"Filtering instances where score falls in [{min_val}, {max_val}]")
+        return [1 if min_val <= score <= max_val else 0 for score in scores]
+
+    def _extract_token_len_difference(
+        self,
+        min_val: float = 0.0,
+        max_val: float = 0.1,
+        tokenizer_model: str = "oobabooga/llama-tokenizer",
+    ):
+        FEATURE_NAME = "token_len_diff"
+
+        if FEATURE_NAME in self.cache and self.use_cache:
+            logging.info(f"Using cached results for {FEATURE_NAME}")
+            scores = self.cache[FEATURE_NAME]
+        else:
+            if "lens" in self.cache:
+                logging.info("Using cached lengths results")
+                lens = self.cache["lens"]
+            else:
+                tokenizer = AutoTokenizer.from_pretrained(tokenizer_model)
+                lens_x = [
+                    len(tokenizer.convert_tokens_to_ids(tokenizer.tokenize(x)))
+                    for x in self.prompts
+                ]
+                lens_a = [
+                    len(tokenizer.convert_tokens_to_ids(tokenizer.tokenize(a)))
+                    for a in self.completions_a
+                ]
+                lens_b = [
+                    len(tokenizer.convert_tokens_to_ids(tokenizer.tokenize(b)))
+                    for b in self.completions_b
+                ]
+                lens = [(x, a, b) for x, a, b in zip(lens_x, lens_a, lens_b)]
+
+                if self.use_cache:
+                    self._cache_result(key="lens", scores=lens)
+
+        scores = [abs(a - b) for _, a, b in lens]
+        if self.keep_features:
+            self._save_features(
+                output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
+                extra_columns={FEATURE_NAME: scores},
+            )
+
+        if self.use_cache:
+            self._cache_result(key=FEATURE_NAME, scores=scores)
+
+        logging.info(f"Filtering instances where score falls in [{min_val}, {max_val}]")
+        pct_scores = [percentileofscore(scores, i) / 100 for i in scores]
+        return [1 if min_val <= pct_score <= max_val else 0 for pct_score in pct_scores]
+
+    def _extract_prompt_len(
+        self,
+        min_val: float = 0.0,
+        max_val: float = 0.1,
+        tokenizer_model: str = "oobabooga/llama-tokenizer",
+    ):
+        FEATURE_NAME = "prompt_len"
+
+        if FEATURE_NAME in self.cache and self.use_cache:
+            logging.info(f"Using cached results for {FEATURE_NAME}")
+            scores = self.cache[FEATURE_NAME]
+        else:
+            if "lens" in self.cache:
+                logging.info("Using cached lengths results")
+                lens = self.cache["lens"]
+            else:
+                tokenizer = AutoTokenizer.from_pretrained(tokenizer_model)
+                lens_x = [
+                    len(tokenizer.convert_tokens_to_ids(tokenizer.tokenize(x)))
+                    for x in self.prompts
+                ]
+                lens_a = [
+                    len(tokenizer.convert_tokens_to_ids(tokenizer.tokenize(a)))
+                    for a in self.completions_a
+                ]
+                lens_b = [
+                    len(tokenizer.convert_tokens_to_ids(tokenizer.tokenize(b)))
+                    for b in self.completions_b
+                ]
+                lens = [(x, a, b) for x, a, b in zip(lens_x, lens_a, lens_b)]
+
+                if self.use_cache:
+                    self._cache_result(key="lens", scores=lens)
+
+        scores = [x for x, _, _ in lens]
+        if self.keep_features:
+            self._save_features(
+                output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
+                extra_columns={FEATURE_NAME: scores},
+            )
+
+        if self.use_cache:
+            self._cache_result(key=FEATURE_NAME, scores=scores)
+
+        logging.info(f"Filtering instances where score falls in [{min_val}, {max_val}]")
+        pct_scores = [percentileofscore(scores, i) / 100 for i in scores]
+        return [1 if min_val <= pct_score <= max_val else 0 for pct_score in pct_scores]
+
+    def _extract_len_shorter(
+        self,
+        min_val: float = 0.0,
+        max_val: float = 0.1,
+        tokenizer_model: str = "oobabooga/llama-tokenizer",
+    ):
+        FEATURE_NAME = "len_shorter"
+
+        if FEATURE_NAME in self.cache and self.use_cache:
+            logging.info(f"Using cached results for {FEATURE_NAME}")
+            scores = self.cache[FEATURE_NAME]
+        else:
+            if "lens" in self.cache:
+                logging.info("Using cached lengths results")
+                lens = self.cache["lens"]
+            else:
+                tokenizer = AutoTokenizer.from_pretrained(tokenizer_model)
+                lens_x = [
+                    len(tokenizer.convert_tokens_to_ids(tokenizer.tokenize(x)))
+                    for x in self.prompts
+                ]
+                lens_a = [
+                    len(tokenizer.convert_tokens_to_ids(tokenizer.tokenize(a)))
+                    for a in self.completions_a
+                ]
+                lens_b = [
+                    len(tokenizer.convert_tokens_to_ids(tokenizer.tokenize(b)))
+                    for b in self.completions_b
+                ]
+                lens = [(x, a, b) for x, a, b in zip(lens_x, lens_a, lens_b)]
+
+                if self.use_cache:
+                    self._cache_result(key="lens", scores=lens)
+
+        scores = [min(a, b) for _, a, b in lens]
+        if self.keep_features:
+            self._save_features(
+                output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
+                extra_columns={FEATURE_NAME: scores},
+            )
+
+        if self.use_cache:
+            self._cache_result(key=FEATURE_NAME, scores=scores)
+
+        logging.info(f"Filtering instances where score falls in [{min_val}, {max_val}]")
+        pct_scores = [percentileofscore(scores, i) / 100 for i in scores]
+        return [1 if min_val <= pct_score <= max_val else 0 for pct_score in pct_scores]
+
+    def _extract_len_longer(
+        self,
+        min_val: float = 0.0,
+        max_val: float = 0.1,
+        tokenizer_model: str = "oobabooga/llama-tokenizer",
+    ):
+        FEATURE_NAME = "len_longer"
+
+        if FEATURE_NAME in self.cache and self.use_cache:
+            logging.info(f"Using cached results for {FEATURE_NAME}")
+            scores = self.cache[FEATURE_NAME]
+        else:
+            if "lens" in self.cache:
+                logging.info("Using cached lengths results")
+                lens = self.cache["lens"]
+            else:
+                tokenizer = AutoTokenizer.from_pretrained(tokenizer_model)
+                lens_x = [
+                    len(tokenizer.convert_tokens_to_ids(tokenizer.tokenize(x)))
+                    for x in self.prompts
+                ]
+                lens_a = [
+                    len(tokenizer.convert_tokens_to_ids(tokenizer.tokenize(a)))
+                    for a in self.completions_a
+                ]
+                lens_b = [
+                    len(tokenizer.convert_tokens_to_ids(tokenizer.tokenize(b)))
+                    for b in self.completions_b
+                ]
+                lens = [(x, a, b) for x, a, b in zip(lens_x, lens_a, lens_b)]
+
+                if self.use_cache:
+                    self._cache_result(key="lens", scores=lens)
+
+        scores = [max(a, b) for _, a, b in lens]
+        if self.keep_features:
+            self._save_features(
+                output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
+                extra_columns={FEATURE_NAME: scores},
+            )
+
+        if self.use_cache:
+            self._cache_result(key=FEATURE_NAME, scores=scores)
+
+        logging.info(f"Filtering instances where score falls in [{min_val}, {max_val}]")
+        pct_scores = [percentileofscore(scores, i) / 100 for i in scores]
+        return [1 if min_val <= pct_score <= max_val else 0 for pct_score in pct_scores]
 
     def _extract_analyzer_closed_set(
         self,
