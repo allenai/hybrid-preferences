@@ -16,7 +16,9 @@ import spacy
 from nltk import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from rouge_score import rouge_scorer
+from scipy.stats import percentileofscore
 from sentence_transformers import SentenceTransformer, util
+from transformers import AutoTokenizer
 from tqdm import tqdm
 
 from src.utils import get_meta_analyzer_features
@@ -175,6 +177,10 @@ class FeatureExtractor:
             "bertscore_length": self._extract_bertscore_length,
             "cosine_sim": self._extract_cosine_sim,
             "rouge": self._extract_rouge,
+            "token_len_diff": self._extract_token_len_difference,
+            "prompt_len": self._extract_prompt_len,
+            "len_shorter": self._extract_len_shorter,
+            "len_longer": self._extract_len_longer,
             "analyzer_closed_set": self._extract_analyzer_closed_set,
             "analyzer_scalar": self._extract_analyzer_scalar,
             "analyzer_open_set": self._extract_analyzer_open_set,
@@ -531,6 +537,198 @@ class FeatureExtractor:
 
         logging.info(f"Filtering instances where score falls in [{min_val}, {max_val}]")
         return [1 if min_val <= score <= max_val else 0 for score in scores]
+
+    def _extract_token_len_difference(
+        self,
+        min_val: float = 0.0,
+        max_val: float = 0.1,
+        tokenizer_model: str = "oobabooga/llama-tokenizer",
+    ):
+        FEATURE_NAME = "token_len_diff"
+
+        if FEATURE_NAME in self.cache and self.use_cache:
+            logging.info(f"Using cached results for {FEATURE_NAME}")
+            scores = self.cache[FEATURE_NAME]
+        else:
+            if "lens" in self.cache:
+                logging.info("Using cached lengths results")
+                lens = self.cache["lens"]
+            else:
+                tokenizer = AutoTokenizer.from_pretrained(tokenizer_model)
+                lens_x = [
+                    len(tokenizer.convert_tokens_to_ids(tokenizer.tokenize(x)))
+                    for x in self.prompts
+                ]
+                lens_a = [
+                    len(tokenizer.convert_tokens_to_ids(tokenizer.tokenize(a)))
+                    for a in self.completions_a
+                ]
+                lens_b = [
+                    len(tokenizer.convert_tokens_to_ids(tokenizer.tokenize(b)))
+                    for b in self.completions_b
+                ]
+                lens = [(x, a, b) for x, a, b in zip(lens_x, lens_a, lens_b)]
+
+                if self.use_cache:
+                    self._cache_result(key="lens", scores=lens)
+
+        scores = [abs(a - b) for _, a, b in lens]
+        if self.keep_features:
+            self._save_features(
+                output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
+                extra_columns={FEATURE_NAME: scores},
+            )
+
+        if self.use_cache:
+            self._cache_result(key=FEATURE_NAME, scores=scores)
+
+        logging.info(f"Filtering instances where score falls in [{min_val}, {max_val}]")
+        pct_scores = [percentileofscore(scores, i) / 100 for i in scores]
+        return [1 if min_val <= pct_score <= max_val else 0 for pct_score in pct_scores]
+
+    def _extract_prompt_len(
+        self,
+        min_val: float = 0.0,
+        max_val: float = 0.1,
+        tokenizer_model: str = "oobabooga/llama-tokenizer",
+    ):
+        FEATURE_NAME = "prompt_len"
+
+        if FEATURE_NAME in self.cache and self.use_cache:
+            logging.info(f"Using cached results for {FEATURE_NAME}")
+            scores = self.cache[FEATURE_NAME]
+        else:
+            if "lens" in self.cache:
+                logging.info("Using cached lengths results")
+                lens = self.cache["lens"]
+            else:
+                tokenizer = AutoTokenizer.from_pretrained(tokenizer_model)
+                lens_x = [
+                    len(tokenizer.convert_tokens_to_ids(tokenizer.tokenize(x)))
+                    for x in self.prompts
+                ]
+                lens_a = [
+                    len(tokenizer.convert_tokens_to_ids(tokenizer.tokenize(a)))
+                    for a in self.completions_a
+                ]
+                lens_b = [
+                    len(tokenizer.convert_tokens_to_ids(tokenizer.tokenize(b)))
+                    for b in self.completions_b
+                ]
+                lens = [(x, a, b) for x, a, b in zip(lens_x, lens_a, lens_b)]
+
+                if self.use_cache:
+                    self._cache_result(key="lens", scores=lens)
+
+        scores = [x for x, _, _ in lens]
+        if self.keep_features:
+            self._save_features(
+                output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
+                extra_columns={FEATURE_NAME: scores},
+            )
+
+        if self.use_cache:
+            self._cache_result(key=FEATURE_NAME, scores=scores)
+
+        logging.info(f"Filtering instances where score falls in [{min_val}, {max_val}]")
+        pct_scores = [percentileofscore(scores, i) / 100 for i in scores]
+        return [1 if min_val <= pct_score <= max_val else 0 for pct_score in pct_scores]
+
+    def _extract_len_shorter(
+        self,
+        min_val: float = 0.0,
+        max_val: float = 0.1,
+        tokenizer_model: str = "oobabooga/llama-tokenizer",
+    ):
+        FEATURE_NAME = "len_shorter"
+
+        if FEATURE_NAME in self.cache and self.use_cache:
+            logging.info(f"Using cached results for {FEATURE_NAME}")
+            scores = self.cache[FEATURE_NAME]
+        else:
+            if "lens" in self.cache:
+                logging.info("Using cached lengths results")
+                lens = self.cache["lens"]
+            else:
+                tokenizer = AutoTokenizer.from_pretrained(tokenizer_model)
+                lens_x = [
+                    len(tokenizer.convert_tokens_to_ids(tokenizer.tokenize(x)))
+                    for x in self.prompts
+                ]
+                lens_a = [
+                    len(tokenizer.convert_tokens_to_ids(tokenizer.tokenize(a)))
+                    for a in self.completions_a
+                ]
+                lens_b = [
+                    len(tokenizer.convert_tokens_to_ids(tokenizer.tokenize(b)))
+                    for b in self.completions_b
+                ]
+                lens = [(x, a, b) for x, a, b in zip(lens_x, lens_a, lens_b)]
+
+                if self.use_cache:
+                    self._cache_result(key="lens", scores=lens)
+
+        scores = [min(a, b) for _, a, b in lens]
+        if self.keep_features:
+            self._save_features(
+                output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
+                extra_columns={FEATURE_NAME: scores},
+            )
+
+        if self.use_cache:
+            self._cache_result(key=FEATURE_NAME, scores=scores)
+
+        logging.info(f"Filtering instances where score falls in [{min_val}, {max_val}]")
+        pct_scores = [percentileofscore(scores, i) / 100 for i in scores]
+        return [1 if min_val <= pct_score <= max_val else 0 for pct_score in pct_scores]
+
+    def _extract_len_longer(
+        self,
+        min_val: float = 0.0,
+        max_val: float = 0.1,
+        tokenizer_model: str = "oobabooga/llama-tokenizer",
+    ):
+        FEATURE_NAME = "len_longer"
+
+        if FEATURE_NAME in self.cache and self.use_cache:
+            logging.info(f"Using cached results for {FEATURE_NAME}")
+            scores = self.cache[FEATURE_NAME]
+        else:
+            if "lens" in self.cache:
+                logging.info("Using cached lengths results")
+                lens = self.cache["lens"]
+            else:
+                tokenizer = AutoTokenizer.from_pretrained(tokenizer_model)
+                lens_x = [
+                    len(tokenizer.convert_tokens_to_ids(tokenizer.tokenize(x)))
+                    for x in self.prompts
+                ]
+                lens_a = [
+                    len(tokenizer.convert_tokens_to_ids(tokenizer.tokenize(a)))
+                    for a in self.completions_a
+                ]
+                lens_b = [
+                    len(tokenizer.convert_tokens_to_ids(tokenizer.tokenize(b)))
+                    for b in self.completions_b
+                ]
+                lens = [(x, a, b) for x, a, b in zip(lens_x, lens_a, lens_b)]
+
+                if self.use_cache:
+                    self._cache_result(key="lens", scores=lens)
+
+        scores = [max(a, b) for _, a, b in lens]
+        if self.keep_features:
+            self._save_features(
+                output_path=self.keep_features / f"{FEATURE_NAME}.jsonl",
+                extra_columns={FEATURE_NAME: scores},
+            )
+
+        if self.use_cache:
+            self._cache_result(key=FEATURE_NAME, scores=scores)
+
+        logging.info(f"Filtering instances where score falls in [{min_val}, {max_val}]")
+        pct_scores = [percentileofscore(scores, i) / 100 for i in scores]
+        return [1 if min_val <= pct_score <= max_val else 0 for pct_score in pct_scores]
 
     def _extract_analyzer_closed_set(
         self,
