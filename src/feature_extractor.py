@@ -5,6 +5,7 @@ import math
 import random
 import re
 import sys
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Optional
 
@@ -24,7 +25,8 @@ tqdm_file = sys.stdout
 tqdm_bar_format = "{l_bar}{bar}{r_bar}\n"
 
 
-def get_all_feature_combinations(
+def sample_feature_combinations(
+    n_bins: int = 3,
     max_number: Optional[int] = None,
     meta_analyzer_n_samples: Optional[int] = None,
 ) -> tuple[list[str], list[list[str]]]:
@@ -34,6 +36,7 @@ def get_all_feature_combinations(
     combinations of meta-analyzer tags and attach them randomly to some of the
     initial lexical features.
 
+    n_bins (int): number of bins to create for the lexical features
     max_number (Optional[int]): max number of feature combinations
     meta_analyzer_n_samples (Optional[int]): number of meta analyzer features to include for each feature combination
     """
@@ -47,17 +50,27 @@ def get_all_feature_combinations(
     if max_number is None:
         max_number = len(features) + 1
 
-    feature_combinations = [
-        list(comb)
-        for r in range(1, min(max_number + 1, len(features) + 1))
-        for comb in tqdm(itertools.combinations(features, r))
-    ]
+    def sample_lexical_features(n_bins: int) -> list[list[str]]:
+        edges = np.linspace(0, 1, n_bins + 1)
+        bins = [(edges[i], edges[i + 1]) for i in range(n_bins)]
 
-    if meta_analyzer_n_samples:
-        logging.info("Adding meta analyzer features")
-        # Add meta analyzer features
+        lexical_features = []
+        for r in range(1, min(max_number + 1, len(features) + 1)):
+            for comb in tqdm(itertools.combinations(features, r)):
+                comb = list(comb)
+                comb_with_vals = []
+                for feat in comb:
+                    min_val, max_val = random.choice(bins)
+                    feat_str = (
+                        f"{feat}::min_val={round(min_val,2)}|max_val={round(max_val,2)}"
+                    )
+                    comb_with_vals.append(feat_str)
+                lexical_features.append(comb_with_vals)
+        return lexical_features
+
+    def sample_analyzer_features(n_samples: int) -> list[list[str]]:
         meta_analyzer_features = []
-        for _ in range(meta_analyzer_n_samples):
+        for _ in range(n_samples):
             meta_analyzer_features.append(
                 list(random.choice(v) for v in get_meta_analyzer_features().values())
             )
@@ -67,7 +80,13 @@ def get_all_feature_combinations(
             random.sample(inner, random.randint(1, len(inner)))
             for inner in meta_analyzer_features
         ]
+        return meta_analyzer_features
 
+    lexical_features = sample_lexical_features(n_bins=n_bins)
+
+    if meta_analyzer_n_samples:
+        logging.info("Adding meta analyzer features")
+        meta_analyzer_features = sample_analyzer_features(meta_analyzer_n_samples)
         # Let's split the meta_analyzer_features. The first half we can append to the lexical
         # features, and the last half we can append as-is.
         split_index = int(0.5 * len(meta_analyzer_features))
@@ -76,10 +95,9 @@ def get_all_feature_combinations(
 
         # For each list in feature_combinations, append a random number of elements
         # (between 1 and the length of the corresponding list) from meta_analyzer_features
-        for i in range(
-            min(len(feature_combinations), len(meta_analyzer_features_init_50))
-        ):
-            feature_combinations[i].extend(
+        lexical_with_metadata = deepcopy(lexical_features)
+        for i in range(min(len(lexical_features), len(meta_analyzer_features_init_50))):
+            lexical_with_metadata[i].extend(
                 random.sample(
                     meta_analyzer_features_init_50[i],
                     random.randint(1, len(meta_analyzer_features_init_50[i])),
@@ -87,7 +105,14 @@ def get_all_feature_combinations(
             )
 
         # Let's also add some features that's just purely from the meta_analyzer
-        feature_combinations += meta_analyzer_features_last_50
+        feature_combinations = (
+            lexical_with_metadata
+            + meta_analyzer_features_last_50
+            + lexical_features
+            + sample_lexical_features(n_bins)
+        )
+    else:
+        feature_combinations = sample_lexical_features(n_bins=n_bins)
 
     return all_features, feature_combinations
 
