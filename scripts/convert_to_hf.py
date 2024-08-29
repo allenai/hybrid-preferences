@@ -81,8 +81,21 @@ def main():
     logging.info(f"Found {len(params_gcs_paths)} parameter files.")
 
     src_files = [gcs_path.name for gcs_path in params_gcs_paths]
-    batches = make_batch(src_files, batch_size=args.batch_size)
     logging.info(f"Converting into batches of {args.batch_size} to save space")
+
+    # Do not process files that were already done by
+    # checking if the dataset in Beaker already exists
+    existing_datasets = [d.name for d in beaker.workspace.datasets(match="tulu2_13b")]
+    exp_names = [Path(s).parents[0].name.split("--")[0] for s in src_files]
+    diff = [
+        src_file
+        for src_file, experiment in zip(src_files, exp_names)
+        if not any(experiment in b_item for b_item in existing_datasets)
+    ]
+    logging.info(f"Found {len(src_files) - len(diff)} datasets already done!")
+    src_files = diff
+    logging.info(f"Running {len(src_files)} experiments.")
+    batches = make_batch(src_files, batch_size=args.batch_size)
 
     for idx, batch in enumerate(batches):
 
