@@ -140,8 +140,12 @@ def main():
             match = re.search(r"FEATS_(.*?)_SWAPS", string)
             return match.group(1) if match else None
 
+        def extract_swaps(string):
+            return int(string.split("SWAPS")[1].removeprefix("_"))
+
         # fmt: off
         df_feats["hash"] = df_feats.index.to_series().apply(extract_hash)
+        df_feats["num_swaps"] = df_feats.index.to_series().apply(extract_swaps)
         df_category_scores["hash"] = df_category_scores.index.to_series().apply(extract_hash)
         df_subset_scores["hash"] = df_subset_scores.index.to_series().apply(extract_hash)
         # fmt: on
@@ -174,7 +178,7 @@ def main():
     thresh = args.gpt4_threshold_score
     logging.info(f"Creating labels in column 'label' with GPT-4 threshold '{thresh}'")
     overall_df["label"] = (overall_df["Overall"] > thresh).astype(int)
-    overall_df = overall_df.sort_values(by=["Overall"])
+    overall_df = overall_df.sort_values(by=["Overall"], ascending=False)
 
     overall_df.to_csv(args.output_file)
     logging.info(f"Saved on {args.output_file}")

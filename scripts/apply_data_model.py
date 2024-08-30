@@ -213,8 +213,11 @@ def apply_data_model(
             feature_tags.append(feature)
     tag = "___".join(feature_tags).replace("::", "__").replace("=", "-")
     feats_id = hashlib.md5(tag.encode("utf-8")).hexdigest()
-    swap_stats = extracted_df["is_swapped"].value_counts().to_dict()
-    num_swaps = swap_stats[True] if True in swap_stats else 0
+    num_swaps = 0
+    for annotation in converted_annotations:
+        if annotation.get("is_swapped"):
+            num_swaps += 1
+
     if num_swaps != 0:
         output_path = (
             output_dir
