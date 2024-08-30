@@ -145,9 +145,17 @@ def main():
         df_category_scores["hash"] = df_category_scores.index.to_series().apply(extract_hash)
         df_subset_scores["hash"] = df_subset_scores.index.to_series().apply(extract_hash)
         # fmt: on
-        overall_df = pd.merge(
-            df_feats, df_category_scores, how="inner", on="hash"
-        ).merge(df_subset_scores, how="inner", on="hash")
+        overall_df = (
+            pd.merge(
+                df_feats,
+                df_category_scores,
+                how="inner",
+                on="hash",
+            )
+            .reset_index()
+            .merge(df_subset_scores, how="inner", on="hash")
+            .set_index("hash")
+        )
 
     else:
         overall_df = pd.merge(
@@ -166,6 +174,7 @@ def main():
     thresh = args.gpt4_threshold_score
     logging.info(f"Creating labels in column 'label' with GPT-4 threshold '{thresh}'")
     overall_df["label"] = (overall_df["Overall"] > thresh).astype(int)
+    overall_df = overall_df.sort_values(by=["Overall"])
 
     overall_df.to_csv(args.output_file)
     logging.info(f"Saved on {args.output_file}")
