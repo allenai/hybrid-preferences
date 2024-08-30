@@ -13,6 +13,8 @@ gsutil cp gs://hamishi-east1/easylm/llama/tokenizer.model .
 conda run -n EasyLM pip install google-cloud-storage beaker-py
 conda run -n EasyLM pip install huggingface-hub --upgrade
 gcloud auth application-default login
+gcloud set project ai2-allennlp
+beaker account login
 # Copy this script into the machine you're working on
 conda run -n EasyLM python convert_to_hf.py --gcs_bucket <BUCKET_NAME> --gcs_dir_path <PREFIX> --parent_dir <OUTPUT>
 ```
