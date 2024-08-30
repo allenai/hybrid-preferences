@@ -165,7 +165,11 @@ def main():
                 args.beaker_workspace,
             ]
             logging.info(f"Running command: {upload_command}")
-            subprocess.run(upload_command, check=True)
+            try:
+                subprocess.run(upload_command, check=True)
+            except Exception as e:
+                logging.error(f"Error found: {e}")
+                break
 
             # dataset = beaker.dataset.create(
             #     experiment_name,
