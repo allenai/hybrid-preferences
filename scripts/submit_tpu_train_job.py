@@ -186,7 +186,7 @@ def main():
 
     subprocess.run(tpu_command, check=True)
     logging.info(
-        "TPU command sent. You can track the logs by using the following command: "
+        "TPU command sent. You can track the logs by using the following command: \n"
         f'gcloud alpha compute tpus tpu-vm ssh {args.tpu_name} --worker=all --zone={args.zone} --project=ai2-tpu --command="tail -f easylm/experiments.log"'
     )
 
