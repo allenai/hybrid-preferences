@@ -28,7 +28,7 @@ tasks:
     datasets:
       - mountPath: /source/
         source:
-          beaker: 01J65JDDN56JBN1EB38GP2BQ7T
+          beaker: 01J6KBM2VCM9EQ7MER26VBXCCM
     result:
       path: /output
     resources:
