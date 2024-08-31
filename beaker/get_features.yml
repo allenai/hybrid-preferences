@@ -19,10 +19,8 @@ tasks:
       - /output/features/
       - --append_to_experiments_file
       - /output/experiments.txt
-      - --random_seed
-      - 42
       - --n_sample_combinations
-      - 500
+      - 1000
       - --ignore_list
       - random
     datasets:
@@ -65,7 +63,7 @@ tasks:
       - --random_seed
       - 42
       - --n_sample_combinations
-      - 200
+      - 1000
       - --ignore_list
       - random
     datasets:
