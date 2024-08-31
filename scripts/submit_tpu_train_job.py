@@ -108,6 +108,13 @@ def main():
     with experiment_path.open("r") as f:
         experiment_names = f.read().splitlines()
 
+    # Sort experiments based on the number of swaps (descending)
+    experiment_names = sorted(
+        experiment_names,
+        key=lambda x: int(x.split("SWAPS_")[1].split("::")[0]),
+        reverse=True,
+    )
+
     commands_for_experiments = []
     for idx, experiment_str in enumerate(experiment_names):
         experiment_name, _ = experiment_str.split("::")
@@ -179,7 +186,7 @@ def main():
 
     subprocess.run(tpu_command, check=True)
     logging.info(
-        "TPU command sent. You can track the logs by using the following command: "
+        "TPU command sent. You can track the logs by using the following command: \n"
         f'gcloud alpha compute tpus tpu-vm ssh {args.tpu_name} --worker=all --zone={args.zone} --project=ai2-tpu --command="tail -f easylm/experiments.log"'
     )
 
