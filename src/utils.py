@@ -55,6 +55,13 @@ def get_meta_analyzer_features(**kwargs) -> dict[str, list[str]]:
     return feature_params
 
 
+def find_meta_category(query: str) -> str:
+    for category, inner_dict in meta_analyzer_values.items():
+        if query in inner_dict:
+            return category
+    return None
+
+
 meta_analyzer_values = {
     "closed_set": {
         # Reduce this number
