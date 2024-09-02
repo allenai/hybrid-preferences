@@ -19,8 +19,6 @@ tasks:
       - /output/features/
       - --append_to_experiments_file
       - /output/experiments.txt
-      - --ignore_list
-      - random
     datasets:
       - mountPath: /source/
         source:
