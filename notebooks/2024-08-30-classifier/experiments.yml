@@ -14,8 +14,6 @@ tasks:
   - /output/features/
   - --append_to_experiments_file
   - /output/experiments.txt
-  - --ignore_list
-  - random
   - --features
   - bertscore_length::min_val=0.33|max_val=0.67 cosine_sim::min_val=0.67|max_val=1.0
     entity_sim::min_val=0.0|max_val=0.33 rouge::min_val=0.0|max_val=0.33 token_len_difference::min_val=0.67|max_val=1.0
@@ -62,8 +60,6 @@ tasks:
   - /output/features/
   - --append_to_experiments_file
   - /output/experiments.txt
-  - --ignore_list
-  - random
   - --features
   - bertscore_length::min_val=0.33|max_val=0.67 cosine_sim::min_val=0.67|max_val=1.0
     entity_sim::min_val=0.0|max_val=0.33 rouge::min_val=0.0|max_val=0.33 token_len_difference::min_val=0.67|max_val=1.0
@@ -110,8 +106,6 @@ tasks:
   - /output/features/
   - --append_to_experiments_file
   - /output/experiments.txt
-  - --ignore_list
-  - random
   - --features
   - bertscore_length::min_val=0.33|max_val=0.67 cosine_sim::min_val=0.67|max_val=1.0
     entity_sim::min_val=0.0|max_val=0.33 token_len_difference::min_val=0.67|max_val=1.0
@@ -158,8 +152,6 @@ tasks:
   - /output/features/
   - --append_to_experiments_file
   - /output/experiments.txt
-  - --ignore_list
-  - random
   - --features
   - bertscore_length::min_val=0.33|max_val=0.67 cosine_sim::min_val=0.67|max_val=1.0
     entity_sim::min_val=0.0|max_val=0.33 scalar::feature_name=open_endedness|value=high
@@ -207,8 +199,6 @@ tasks:
   - /output/features/
   - --append_to_experiments_file
   - /output/experiments.txt
-  - --ignore_list
-  - random
   - --features
   - bertscore_length::min_val=0.33|max_val=0.67 cosine_sim::min_val=0.67|max_val=1.0
     entity_sim::min_val=0.0|max_val=0.33 prompt_len::min_val=0.67|max_val=1.0
@@ -255,8 +245,6 @@ tasks:
   - /output/features/
   - --append_to_experiments_file
   - /output/experiments.txt
-  - --ignore_list
-  - random
   - --features
   - bertscore_length::min_val=0.33|max_val=0.67 cosine_sim::min_val=0.67|max_val=1.0
     entity_sim::min_val=0.0|max_val=0.33
@@ -303,8 +291,6 @@ tasks:
   - /output/features/
   - --append_to_experiments_file
   - /output/experiments.txt
-  - --ignore_list
-  - random
   - --features
   - scalar::feature_name=complexity_of_intents|value=simple scalar::feature_name=open_endedness|value=no
     scalar::feature_name=safety_concern|value=safe token_len_difference::min_val=0.67|max_val=1.0
@@ -352,8 +338,6 @@ tasks:
   - /output/features/
   - --append_to_experiments_file
   - /output/experiments.txt
-  - --ignore_list
-  - random
   - --features
   - scalar::feature_name=complexity_of_intents|value=simple scalar::feature_name=safety_concern|value=safe
   command:
@@ -399,8 +383,6 @@ tasks:
   - /output/features/
   - --append_to_experiments_file
   - /output/experiments.txt
-  - --ignore_list
-  - random
   - --features
   - scalar::feature_name=complexity_of_intents|value=simple scalar::feature_name=safety_concern|value=safe
     closed_set::feature_name=subject_of_expertise|constraints=Literature open_set::feature_name=type_of_in_context_material|check_for_existence=1
@@ -447,8 +429,6 @@ tasks:
   - /output/features/
   - --append_to_experiments_file
   - /output/experiments.txt
-  - --ignore_list
-  - random
   - --features
   - scalar::feature_name=complexity_of_intents|value=simple scalar::feature_name=open_endedness|value=no
     scalar::feature_name=safety_concern|value=safe closed_set::feature_name=subject_of_expertise|constraints=Sociology
