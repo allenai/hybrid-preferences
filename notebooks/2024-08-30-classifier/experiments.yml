@@ -1,0 +1,486 @@
+budget: ai2/oe-adapt
+description: Get features using datamodel approach
+tasks:
+- arguments:
+  - --input_path
+  - /source/helpsteer2_human_vs_gpt4_weighted_for_llama.jsonl
+  - --output_dir
+  - /output/data/
+  - --num_instances
+  - 7000
+  - --threshold
+  - 1
+  - --keep_features_dir
+  - /output/features/
+  - --append_to_experiments_file
+  - /output/experiments.txt
+  - --ignore_list
+  - random
+  - --features
+  - bertscore_length::min_val=0.33|max_val=0.67 cosine_sim::min_val=0.67|max_val=1.0
+    entity_sim::min_val=0.0|max_val=0.33 rouge::min_val=0.0|max_val=0.33 token_len_difference::min_val=0.67|max_val=1.0
+  command:
+  - python
+  - -m
+  - scripts.apply_data_model
+  - single
+  constraints:
+    cluster:
+    - ai2/allennlp-cirrascale
+    - ai2/jupiter-cirrascale-2
+  context:
+    preemptible: true
+    priority: normal
+  datasets:
+  - mountPath: /source/
+    source:
+      beaker: 01J6KBM2VCM9EQ7MER26VBXCCM
+  envVars:
+  - name: OPENAI_API_KEY
+    secret: OPENAI_API_KEY
+  - name: TOKENIZERS_PARALLELISM
+    value: 'false'
+  hostNetworking: false
+  image:
+    beaker: ljm/human-datamodel
+  leaderSelection: false
+  name: get-features-datamodel-0
+  resources:
+    gpuCount: 2
+  result:
+    path: /output
+- arguments:
+  - --input_path
+  - /source/helpsteer2_human_vs_gpt4_weighted_for_llama.jsonl
+  - --output_dir
+  - /output/data/
+  - --num_instances
+  - 7000
+  - --threshold
+  - 1
+  - --keep_features_dir
+  - /output/features/
+  - --append_to_experiments_file
+  - /output/experiments.txt
+  - --ignore_list
+  - random
+  - --features
+  - bertscore_length::min_val=0.33|max_val=0.67 cosine_sim::min_val=0.67|max_val=1.0
+    entity_sim::min_val=0.0|max_val=0.33 rouge::min_val=0.0|max_val=0.33 token_len_difference::min_val=0.67|max_val=1.0
+  command:
+  - python
+  - -m
+  - scripts.apply_data_model
+  - single
+  constraints:
+    cluster:
+    - ai2/allennlp-cirrascale
+    - ai2/jupiter-cirrascale-2
+  context:
+    preemptible: true
+    priority: normal
+  datasets:
+  - mountPath: /source/
+    source:
+      beaker: 01J6KBM2VCM9EQ7MER26VBXCCM
+  envVars:
+  - name: OPENAI_API_KEY
+    secret: OPENAI_API_KEY
+  - name: TOKENIZERS_PARALLELISM
+    value: 'false'
+  hostNetworking: false
+  image:
+    beaker: ljm/human-datamodel
+  leaderSelection: false
+  name: get-features-datamodel-1
+  resources:
+    gpuCount: 2
+  result:
+    path: /output
+- arguments:
+  - --input_path
+  - /source/helpsteer2_human_vs_gpt4_weighted_for_llama.jsonl
+  - --output_dir
+  - /output/data/
+  - --num_instances
+  - 7000
+  - --threshold
+  - 1
+  - --keep_features_dir
+  - /output/features/
+  - --append_to_experiments_file
+  - /output/experiments.txt
+  - --ignore_list
+  - random
+  - --features
+  - bertscore_length::min_val=0.33|max_val=0.67 cosine_sim::min_val=0.67|max_val=1.0
+    entity_sim::min_val=0.0|max_val=0.33 token_len_difference::min_val=0.67|max_val=1.0
+  command:
+  - python
+  - -m
+  - scripts.apply_data_model
+  - single
+  constraints:
+    cluster:
+    - ai2/allennlp-cirrascale
+    - ai2/jupiter-cirrascale-2
+  context:
+    preemptible: true
+    priority: normal
+  datasets:
+  - mountPath: /source/
+    source:
+      beaker: 01J6KBM2VCM9EQ7MER26VBXCCM
+  envVars:
+  - name: OPENAI_API_KEY
+    secret: OPENAI_API_KEY
+  - name: TOKENIZERS_PARALLELISM
+    value: 'false'
+  hostNetworking: false
+  image:
+    beaker: ljm/human-datamodel
+  leaderSelection: false
+  name: get-features-datamodel-2
+  resources:
+    gpuCount: 2
+  result:
+    path: /output
+- arguments:
+  - --input_path
+  - /source/helpsteer2_human_vs_gpt4_weighted_for_llama.jsonl
+  - --output_dir
+  - /output/data/
+  - --num_instances
+  - 7000
+  - --threshold
+  - 1
+  - --keep_features_dir
+  - /output/features/
+  - --append_to_experiments_file
+  - /output/experiments.txt
+  - --ignore_list
+  - random
+  - --features
+  - bertscore_length::min_val=0.33|max_val=0.67 cosine_sim::min_val=0.67|max_val=1.0
+    entity_sim::min_val=0.0|max_val=0.33 scalar::feature_name=open_endedness|value=high
+    prompt_len::min_val=0.67|max_val=1.0
+  command:
+  - python
+  - -m
+  - scripts.apply_data_model
+  - single
+  constraints:
+    cluster:
+    - ai2/allennlp-cirrascale
+    - ai2/jupiter-cirrascale-2
+  context:
+    preemptible: true
+    priority: normal
+  datasets:
+  - mountPath: /source/
+    source:
+      beaker: 01J6KBM2VCM9EQ7MER26VBXCCM
+  envVars:
+  - name: OPENAI_API_KEY
+    secret: OPENAI_API_KEY
+  - name: TOKENIZERS_PARALLELISM
+    value: 'false'
+  hostNetworking: false
+  image:
+    beaker: ljm/human-datamodel
+  leaderSelection: false
+  name: get-features-datamodel-3
+  resources:
+    gpuCount: 2
+  result:
+    path: /output
+- arguments:
+  - --input_path
+  - /source/helpsteer2_human_vs_gpt4_weighted_for_llama.jsonl
+  - --output_dir
+  - /output/data/
+  - --num_instances
+  - 7000
+  - --threshold
+  - 1
+  - --keep_features_dir
+  - /output/features/
+  - --append_to_experiments_file
+  - /output/experiments.txt
+  - --ignore_list
+  - random
+  - --features
+  - bertscore_length::min_val=0.33|max_val=0.67 cosine_sim::min_val=0.67|max_val=1.0
+    entity_sim::min_val=0.0|max_val=0.33 prompt_len::min_val=0.67|max_val=1.0
+  command:
+  - python
+  - -m
+  - scripts.apply_data_model
+  - single
+  constraints:
+    cluster:
+    - ai2/allennlp-cirrascale
+    - ai2/jupiter-cirrascale-2
+  context:
+    preemptible: true
+    priority: normal
+  datasets:
+  - mountPath: /source/
+    source:
+      beaker: 01J6KBM2VCM9EQ7MER26VBXCCM
+  envVars:
+  - name: OPENAI_API_KEY
+    secret: OPENAI_API_KEY
+  - name: TOKENIZERS_PARALLELISM
+    value: 'false'
+  hostNetworking: false
+  image:
+    beaker: ljm/human-datamodel
+  leaderSelection: false
+  name: get-features-datamodel-4
+  resources:
+    gpuCount: 2
+  result:
+    path: /output
+- arguments:
+  - --input_path
+  - /source/helpsteer2_human_vs_gpt4_weighted_for_llama.jsonl
+  - --output_dir
+  - /output/data/
+  - --num_instances
+  - 7000
+  - --threshold
+  - 1
+  - --keep_features_dir
+  - /output/features/
+  - --append_to_experiments_file
+  - /output/experiments.txt
+  - --ignore_list
+  - random
+  - --features
+  - bertscore_length::min_val=0.33|max_val=0.67 cosine_sim::min_val=0.67|max_val=1.0
+    entity_sim::min_val=0.0|max_val=0.33
+  command:
+  - python
+  - -m
+  - scripts.apply_data_model
+  - single
+  constraints:
+    cluster:
+    - ai2/allennlp-cirrascale
+    - ai2/jupiter-cirrascale-2
+  context:
+    preemptible: true
+    priority: normal
+  datasets:
+  - mountPath: /source/
+    source:
+      beaker: 01J6KBM2VCM9EQ7MER26VBXCCM
+  envVars:
+  - name: OPENAI_API_KEY
+    secret: OPENAI_API_KEY
+  - name: TOKENIZERS_PARALLELISM
+    value: 'false'
+  hostNetworking: false
+  image:
+    beaker: ljm/human-datamodel
+  leaderSelection: false
+  name: get-features-datamodel-5
+  resources:
+    gpuCount: 2
+  result:
+    path: /output
+- arguments:
+  - --input_path
+  - /source/helpsteer2_human_vs_gpt4_weighted_for_llama.jsonl
+  - --output_dir
+  - /output/data/
+  - --num_instances
+  - 7000
+  - --threshold
+  - 1
+  - --keep_features_dir
+  - /output/features/
+  - --append_to_experiments_file
+  - /output/experiments.txt
+  - --ignore_list
+  - random
+  - --features
+  - scalar::feature_name=complexity_of_intents|value=simple scalar::feature_name=open_endedness|value=no
+    scalar::feature_name=safety_concern|value=safe token_len_difference::min_val=0.67|max_val=1.0
+    open_set::feature_name=type_of_in_context_material|check_for_existence=1
+  command:
+  - python
+  - -m
+  - scripts.apply_data_model
+  - single
+  constraints:
+    cluster:
+    - ai2/allennlp-cirrascale
+    - ai2/jupiter-cirrascale-2
+  context:
+    preemptible: true
+    priority: normal
+  datasets:
+  - mountPath: /source/
+    source:
+      beaker: 01J6KBM2VCM9EQ7MER26VBXCCM
+  envVars:
+  - name: OPENAI_API_KEY
+    secret: OPENAI_API_KEY
+  - name: TOKENIZERS_PARALLELISM
+    value: 'false'
+  hostNetworking: false
+  image:
+    beaker: ljm/human-datamodel
+  leaderSelection: false
+  name: get-features-datamodel-6
+  resources:
+    gpuCount: 2
+  result:
+    path: /output
+- arguments:
+  - --input_path
+  - /source/helpsteer2_human_vs_gpt4_weighted_for_llama.jsonl
+  - --output_dir
+  - /output/data/
+  - --num_instances
+  - 7000
+  - --threshold
+  - 1
+  - --keep_features_dir
+  - /output/features/
+  - --append_to_experiments_file
+  - /output/experiments.txt
+  - --ignore_list
+  - random
+  - --features
+  - scalar::feature_name=complexity_of_intents|value=simple scalar::feature_name=safety_concern|value=safe
+  command:
+  - python
+  - -m
+  - scripts.apply_data_model
+  - single
+  constraints:
+    cluster:
+    - ai2/allennlp-cirrascale
+    - ai2/jupiter-cirrascale-2
+  context:
+    preemptible: true
+    priority: normal
+  datasets:
+  - mountPath: /source/
+    source:
+      beaker: 01J6KBM2VCM9EQ7MER26VBXCCM
+  envVars:
+  - name: OPENAI_API_KEY
+    secret: OPENAI_API_KEY
+  - name: TOKENIZERS_PARALLELISM
+    value: 'false'
+  hostNetworking: false
+  image:
+    beaker: ljm/human-datamodel
+  leaderSelection: false
+  name: get-features-datamodel-7
+  resources:
+    gpuCount: 2
+  result:
+    path: /output
+- arguments:
+  - --input_path
+  - /source/helpsteer2_human_vs_gpt4_weighted_for_llama.jsonl
+  - --output_dir
+  - /output/data/
+  - --num_instances
+  - 7000
+  - --threshold
+  - 1
+  - --keep_features_dir
+  - /output/features/
+  - --append_to_experiments_file
+  - /output/experiments.txt
+  - --ignore_list
+  - random
+  - --features
+  - scalar::feature_name=complexity_of_intents|value=simple scalar::feature_name=safety_concern|value=safe
+    closed_set::feature_name=subject_of_expertise|constraints=Literature open_set::feature_name=type_of_in_context_material|check_for_existence=1
+  command:
+  - python
+  - -m
+  - scripts.apply_data_model
+  - single
+  constraints:
+    cluster:
+    - ai2/allennlp-cirrascale
+    - ai2/jupiter-cirrascale-2
+  context:
+    preemptible: true
+    priority: normal
+  datasets:
+  - mountPath: /source/
+    source:
+      beaker: 01J6KBM2VCM9EQ7MER26VBXCCM
+  envVars:
+  - name: OPENAI_API_KEY
+    secret: OPENAI_API_KEY
+  - name: TOKENIZERS_PARALLELISM
+    value: 'false'
+  hostNetworking: false
+  image:
+    beaker: ljm/human-datamodel
+  leaderSelection: false
+  name: get-features-datamodel-8
+  resources:
+    gpuCount: 2
+  result:
+    path: /output
+- arguments:
+  - --input_path
+  - /source/helpsteer2_human_vs_gpt4_weighted_for_llama.jsonl
+  - --output_dir
+  - /output/data/
+  - --num_instances
+  - 7000
+  - --threshold
+  - 1
+  - --keep_features_dir
+  - /output/features/
+  - --append_to_experiments_file
+  - /output/experiments.txt
+  - --ignore_list
+  - random
+  - --features
+  - scalar::feature_name=complexity_of_intents|value=simple scalar::feature_name=open_endedness|value=no
+    scalar::feature_name=safety_concern|value=safe closed_set::feature_name=subject_of_expertise|constraints=Sociology
+    open_set::feature_name=type_of_in_context_material|check_for_existence=1
+  command:
+  - python
+  - -m
+  - scripts.apply_data_model
+  - single
+  constraints:
+    cluster:
+    - ai2/allennlp-cirrascale
+    - ai2/jupiter-cirrascale-2
+  context:
+    preemptible: true
+    priority: normal
+  datasets:
+  - mountPath: /source/
+    source:
+      beaker: 01J6KBM2VCM9EQ7MER26VBXCCM
+  envVars:
+  - name: OPENAI_API_KEY
+    secret: OPENAI_API_KEY
+  - name: TOKENIZERS_PARALLELISM
+    value: 'false'
+  hostNetworking: false
+  image:
+    beaker: ljm/human-datamodel
+  leaderSelection: false
+  name: get-features-datamodel-9
+  resources:
+    gpuCount: 2
+  result:
+    path: /output
+version: v2
