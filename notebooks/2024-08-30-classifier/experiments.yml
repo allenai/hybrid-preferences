@@ -16,7 +16,7 @@ tasks:
   - /output/experiments.txt
   - --features
   - bertscore_length::min_val=0.33|max_val=0.67 cosine_sim::min_val=0.67|max_val=1.0
-    entity_sim::min_val=0.0|max_val=0.33 rouge::min_val=0.0|max_val=0.33 token_len_difference::min_val=0.67|max_val=1.0
+    entity_sim::min_val=0.0|max_val=0.33 rouge::min_val=0.0|max_val=0.33 token_len_diff::min_val=0.67|max_val=1.0
   command:
   - python
   - -m
@@ -62,7 +62,7 @@ tasks:
   - /output/experiments.txt
   - --features
   - bertscore_length::min_val=0.33|max_val=0.67 cosine_sim::min_val=0.67|max_val=1.0
-    entity_sim::min_val=0.0|max_val=0.33 rouge::min_val=0.0|max_val=0.33 token_len_difference::min_val=0.67|max_val=1.0
+    entity_sim::min_val=0.0|max_val=0.33 rouge::min_val=0.0|max_val=0.33 token_len_diff::min_val=0.67|max_val=1.0
   command:
   - python
   - -m
@@ -108,7 +108,7 @@ tasks:
   - /output/experiments.txt
   - --features
   - bertscore_length::min_val=0.33|max_val=0.67 cosine_sim::min_val=0.67|max_val=1.0
-    entity_sim::min_val=0.0|max_val=0.33 token_len_difference::min_val=0.67|max_val=1.0
+    entity_sim::min_val=0.0|max_val=0.33 token_len_diff::min_val=0.67|max_val=1.0
   command:
   - python
   - -m
@@ -293,7 +293,7 @@ tasks:
   - /output/experiments.txt
   - --features
   - scalar::feature_name=complexity_of_intents|value=simple scalar::feature_name=open_endedness|value=no
-    scalar::feature_name=safety_concern|value=safe token_len_difference::min_val=0.67|max_val=1.0
+    scalar::feature_name=safety_concern|value=safe token_len_diff::min_val=0.67|max_val=1.0
     open_set::feature_name=type_of_in_context_material|check_for_existence=1
   command:
   - python
