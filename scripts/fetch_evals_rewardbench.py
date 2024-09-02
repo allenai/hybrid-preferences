@@ -178,8 +178,13 @@ def main():
     thresh = args.gpt4_threshold_score
     logging.info(f"Creating labels in column 'label' with GPT-4 threshold '{thresh}'")
     overall_df["label"] = (overall_df["Overall"] > thresh).astype(int)
-    overall_df = overall_df.sort_values(by=["Overall"], ascending=False)
+    overall_df = overall_df.sort_values(
+        by=["Overall"],
+        ascending=False,
+    ).drop(columns=["index"])
+    overall_df = overall_df[~overall_df.index.duplicated(keep="first")]
 
+    logging.info(f"Saving {len(overall_df)} results to {args.output_file}")
     overall_df.to_csv(args.output_file)
     logging.info(f"Saved on {args.output_file}")
 
