@@ -1,3 +1,4 @@
 *.jsonl
 *.csv
 experiments.txt
+*_next.txt
