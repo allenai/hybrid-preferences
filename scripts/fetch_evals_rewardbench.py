@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
+from tqdm import tqdm
 
 from beaker import Beaker, Experiment
 
@@ -117,7 +118,7 @@ def main():
     # Let's keep them, but let's also compute the category and overall scores.
     subset_scores: dict[str, dict[str, float]] = {
         experiment.name: beaker.experiment.metrics(experiment)
-        for experiment in experiments
+        for experiment in tqdm(experiments)
     }
     df_subset_scores = pd.DataFrame(subset_scores).transpose().drop(columns=["model"])
     logging.info("Computing category scores...")
@@ -178,8 +179,13 @@ def main():
     thresh = args.gpt4_threshold_score
     logging.info(f"Creating labels in column 'label' with GPT-4 threshold '{thresh}'")
     overall_df["label"] = (overall_df["Overall"] > thresh).astype(int)
-    overall_df = overall_df.sort_values(by=["Overall"], ascending=False)
+    overall_df = overall_df.sort_values(
+        by=["Overall"],
+        ascending=False,
+    ).drop(columns=["index"])
+    overall_df = overall_df[~overall_df.index.duplicated(keep="first")]
 
+    logging.info(f"Saving {len(overall_df)} results to {args.output_file}")
     overall_df.to_csv(args.output_file)
     logging.info(f"Saved on {args.output_file}")
 
@@ -217,10 +223,10 @@ def get_features(
     else:
         logging.info(f"Deriving features from the experiments file: {experiments_file}")
         with open(experiments_file, "r") as f:
-            data = f.read().splitlines()
+            lines = f.read().splitlines()
 
-        for d in data:
-            experiment_id, feature_set = d.split("::")
+        for line in lines:
+            experiment_id, feature_set = line.split("::")
             experiment_to_feats[experiment_id] = [
                 feature.replace("-", "=") for feature in feature_set.split("___")
             ]

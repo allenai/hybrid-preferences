@@ -20,6 +20,7 @@ from scipy.stats import percentileofscore
 from sentence_transformers import SentenceTransformer, util
 from transformers import AutoTokenizer
 from tqdm import tqdm
+import torch
 
 from src.utils import get_meta_analyzer_features
 
@@ -163,6 +164,9 @@ class FeatureExtractor:
         self.pref_humans = df["pref_human"].to_list()
         self.pref_gpt4 = df["pref_gpt4"].to_list()
         logging.info(f"Found {len(self.prompts)} prompts with cols: {self.columns}")
+
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        logging.info(f"Using device: {self.device}")
 
         self.keep_features: Optional[Path] = keep_features
         if self.keep_features:
@@ -381,7 +385,7 @@ class FeatureExtractor:
                 verbose=True,
                 use_fast_tokenizer=True,
                 nthreads=8,
-                device="cuda",
+                device=self.device,
                 model_type=model_type,
             )["f1"]
 
@@ -425,7 +429,7 @@ class FeatureExtractor:
                     verbose=True,
                     use_fast_tokenizer=True,
                     nthreads=8,
-                    device="cuda",
+                    device=self.device,
                     model_type=model_type,
                 )["f1"]
 
@@ -498,7 +502,7 @@ class FeatureExtractor:
         min_val: float = 0.0,
         max_val: float = 0.1,
         model_name: str = "all-distilroberta-v1",
-        device: str = "cuda",
+        # device: str = "cuda",
         # threshold: float = 0.8,
         **kwargs,
     ) -> list[bool]:
@@ -508,20 +512,20 @@ class FeatureExtractor:
             logging.info(f"Using cached results for {FEATURE_NAME}")
             scores = self.cache[FEATURE_NAME]
         else:
-            model = SentenceTransformer(model_name, device=device)
+            model = SentenceTransformer(model_name, device=self.device)
             model.max_seq_length = 200
 
             embeddings_a = model.encode(
                 self.completions_a,
                 convert_to_tensor=True,
                 show_progress_bar=True,
-                device=device,
+                device=self.device,
             )
             embeddings_b = model.encode(
                 self.completions_b,
                 convert_to_tensor=True,
                 show_progress_bar=True,
-                device=device,
+                device=self.device,
             )
             cosine_scores = util.cos_sim(embeddings_a, embeddings_b)
             scores = cosine_scores.diag().cpu().numpy().tolist()

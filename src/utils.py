@@ -1,6 +1,13 @@
 import random
 
 
+def find_meta_category(query: str) -> str:
+    for category, inner_dict in meta_analyzer_values.items():
+        if query in inner_dict:
+            return category
+    return None
+
+
 def get_meta_analyzer_features(**kwargs) -> dict[str, list[str]]:
     """Get meta-analyzer features
 
@@ -53,6 +60,13 @@ def get_meta_analyzer_features(**kwargs) -> dict[str, list[str]]:
             raise ValueError(f"Unknown extractor name: {extractor_name}")
 
     return feature_params
+
+
+def find_meta_category(query: str) -> str:
+    for category, inner_dict in meta_analyzer_values.items():
+        if query in inner_dict:
+            return category
+    return None
 
 
 meta_analyzer_values = {
