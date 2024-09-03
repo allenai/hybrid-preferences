@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
+from tqdm import tqdm
 
 from beaker import Beaker, Experiment
 
@@ -117,7 +118,7 @@ def main():
     # Let's keep them, but let's also compute the category and overall scores.
     subset_scores: dict[str, dict[str, float]] = {
         experiment.name: beaker.experiment.metrics(experiment)
-        for experiment in experiments
+        for experiment in tqdm(experiments)
     }
     df_subset_scores = pd.DataFrame(subset_scores).transpose().drop(columns=["model"])
     logging.info("Computing category scores...")
@@ -222,10 +223,10 @@ def get_features(
     else:
         logging.info(f"Deriving features from the experiments file: {experiments_file}")
         with open(experiments_file, "r") as f:
-            data = f.read().splitlines()
+            lines = f.read().splitlines()
 
-        for d in data:
-            experiment_id, feature_set = d.split("::")
+        for line in lines:
+            experiment_id, feature_set = line.split("::")
             experiment_to_feats[experiment_id] = [
                 feature.replace("-", "=") for feature in feature_set.split("___")
             ]

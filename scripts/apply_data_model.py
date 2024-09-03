@@ -61,6 +61,7 @@ extract all features.
     shared_args.add_argument("--threshold", type=float, default=1.0, help="Percentage of total features to be active in order to swap w/ human preferences.")
     shared_args.add_argument("--keep_features_dir", type=Path, default=None, help="If set, will store all collected features in this directory.")
     shared_args.add_argument("--append_to_experiments_file", type=Path, default=None, help="If set, will append to an experiments TXT file to be used for submitting TPU training jobs.")
+    shared_args.add_argument("--min_num_swaps", type=int, default=1000, help="If set, will not save combinations that have human swaps less than this number.")
     shared_args.add_argument("--random_seed", type=int, default=None, help="Set the random seed.")
 
     # Arguments for 'single' command
@@ -111,6 +112,7 @@ def main():
             random_seed=args.random_seed,
             num_instances=args.num_instances,
             append_to_experiments_file=args.append_to_experiments_file,
+            min_num_swaps=args.min_num_swaps,
         )
     elif args.command == "multi":
 
@@ -149,6 +151,7 @@ def main():
                 random_seed=args.random_seed,
                 num_instances=args.num_instances,
                 append_to_experiments_file=args.append_to_experiments_file,
+                min_num_swaps=args.min_num_swaps,
             )
 
 
@@ -161,6 +164,7 @@ def apply_data_model(
     random_seed: Optional[int] = None,
     num_instances: int = 7000,
     append_to_experiments_file: Optional[Path] = None,
+    min_num_swaps: int = 0,
 ):
     if random_seed:
         logging.info(f"Setting random seed to {random_seed}")
@@ -219,7 +223,7 @@ def apply_data_model(
         if annotation.get("is_swapped"):
             num_swaps += 1
 
-    if num_swaps != 0:
+    if num_swaps > min_num_swaps:
         output_path = (
             output_dir
             / f"human_datamodel_{num_instances}_FEATS_{feats_id}_SWAPS_{num_swaps}.jsonl"
@@ -250,7 +254,9 @@ def apply_data_model(
                 with experiments_file.open("w") as f:
                     f.write(f"{experiment_name}::{tag}")
     else:
-        logging.info(f"Tag set '{tag}' resulted into 0 swaps! Skipping")
+        logging.info(
+            f"Tag set '{tag}' resulted into {num_swaps} swaps (< {min_num_swaps})! Skipping"
+        )
 
 
 def convert_to_dpo_format(
