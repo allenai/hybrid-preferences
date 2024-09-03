@@ -82,10 +82,6 @@ gcloud alpha compute tpus tpu-vvm ssh $TPU_NAME \
     --command="tail -f easylm/experiments.log"
 ```
 
-🐛 **Known bug**: sometimes, connecting to the wandb server fails in a node and that would cause the whole training process to hang indefinitely.
-When that happens, just kill the process and remove the `--log_to_wandb` flag.
-Your training should proceed, but it will not log to wandb anymore.
-
 ### Stopping jobs
 
 You need to run these two commands:
