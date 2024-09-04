@@ -2,5 +2,5 @@
 *.csv
 experiments.txt
 *_next.txt
-experiments.yml
+experiments*.yml
 !validation_set.jsonl
