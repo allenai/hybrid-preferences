@@ -3,3 +3,4 @@
 experiments.txt
 *_next.txt
 experiments.yml
+!validation_set.jsonl
