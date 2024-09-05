@@ -19,6 +19,8 @@ tasks:
       - /output/features/
       - --append_to_experiments_file
       - /output/experiments.txt
+      - --min_num_swaps
+      - 800
     datasets:
       - mountPath: /source/
         source:
