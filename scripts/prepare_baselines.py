@@ -1,5 +1,15 @@
+import sys
 import argparse
 from pathlib import Path
+import logging
+
+
+logging.basicConfig(
+    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[logging.StreamHandler(sys.stdout)],
+    level=logging.INFO,
+)
 
 
 def get_args():
@@ -8,12 +18,36 @@ def get_args():
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--output_dir", type=Path, help="Directory to save the JSONL files and the TXT experiments file.")
     parser.add_argument("--input_filepath", type=Path, help="Dataset path to create baselines on.")
+    parser.add_argument("--num_instances", type=int, default=7000, help="Number of instances to sample.")
     # fmt: on
     return parser.parse_args()
 
 
 def main():
     args = get_args()
+
+    annotations = annotation_df.to_dict(orient="records")
+    converted_annotations = []
+    for annotation in annotations:
+        if "model_a" not in annotation:
+            annotation["model_a"] = ""
+        if "model_b" not in annotation:
+            annotation["model_b"] = ""
+        if "source" not in annotation:
+            annotation["source"] = ""
+        if "highest_level_degree" not in annotation:
+            annotation["highest_level_degree"] = ""
+        assert "id" in annotation, "Missing 'id' key in instance."
+        assert "pref" in annotation, "Missing 'pref' key in instance."
+        converted_instance = convert_to_dpo_format(annotation, annotation["pref"])
+        if converted_instance is not None:
+            converted_annotations.append(converted_instance)
+    logging.info(f"Number of instances after selection: {len(converted_annotations)}")
+
+    # Sample converted instances
+    if num_instances < len(converted_annotations):
+        converted_annotations = random.sample(converted_annotations, num_instances)
+        logging.info(f"Sampled {num_instances} instances from the total.")
 
 
 def convert_to_dpo_format(
