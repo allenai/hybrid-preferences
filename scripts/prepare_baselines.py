@@ -5,6 +5,7 @@ import logging
 import random
 
 import pandas as pd
+import numpy as np
 
 
 logging.basicConfig(
@@ -37,23 +38,34 @@ def main():
     assert "pref_human" in annotation_df.columns, "Must contain 'pref_human' column!"
     assert "pref_gpt4" in annotation_df.columns, "Must contain 'pref_gpt4' column!"
 
-    baselines = ["human", "human_75", "human_50", "human_25", "gpt4", "random"]
-    for baseline in baselines:
-        if baseline == "human":
-            annotation_df["pref"] = annotation_df["pref_human"]
-        elif baseline == "human_75":
-            annotation_df["pref"] = annotation_df["pref_human"]
-        elif baseline == "human_50":
-            annotation_df["pref"] = annotation_df["pref_human"]
-        elif baseline == "human_25":
-            annotation_df["pref"] = annotation_df["pref_human"]
-        elif baseline == "gpt4":
-            annotation_df["pref"] = annotation_df["pref_gpt4"]
-        else:
-            raise ValueError("Unknown baseline")
+    def swap_prefs(df, r: float, random_mode: bool = False):
+        if not random_mode:
+            df["is_swapped"] = np.random.rand(len(df)) < r
+            df["pref"] = np.where(df["is_swapped"], df["pref_human"], df["pref_gpt4"])
+        return df
 
-    annotations = annotation_df.to_dict(orient="records")
-    converted_instances = get_converted_instances(annotations, args.num_instances)
+    baselines = {
+        "human": swap_prefs(annotation_df, r=1),
+        "human_75": swap_prefs(annotation_df, r=0.75),
+        "human_50": swap_prefs(annotation_df, r=0.50),
+        "human_25": swap_prefs(annotation_df, r=0.25),
+        "gpt4": swap_prefs(annotation_df, r=0),
+        "random": swap_prefs(annotation_df, r=0.50),
+    }
+
+    for baseline, annotation_df in baselines.items():
+        annotations = annotation_df.to_dict(orient="records")
+        converted_instances = get_converted_instances(annotations, args.num_instances)
+        num_swaps = 0
+        for instance in converted_instances:
+            if instance.get("is_swapped"):
+                num_swaps += 1
+
+        logging.info(f"Baseline '{baseline}' has {num_swaps} swaps!")
+        experiment_name = f"{args.prefix}_{baseline}_SWAPS_{num_swaps}_SEED_{args.seed}"
+        output_file: Path = args.output_dir / f"{experiment_name}.jsonl"
+        breakpoint()
+        # add to experiments.txt
 
 
 def get_converted_instances(
