@@ -22,6 +22,7 @@ def get_args():
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--output_dir", type=Path, help="Directory to save the JSONL files and the TXT experiments file.")
     parser.add_argument("--prefix", type=str, help="Prefix to add to the output files.")
+    parser.add_argument("--id_col", type=str, default=None, help="Column that contains the unique ID for each instance.")
     parser.add_argument("--input_filepath", type=Path, help="Dataset path to create baselines on.")
     parser.add_argument("--num_instances", type=int, default=7000, help="Number of instances to sample.")
     parser.add_argument("--random_seed", type=int, default=42, help="Set random seed.")
@@ -37,6 +38,9 @@ def main():
     annotation_df = pd.read_json(args.input_filepath, lines=True)
     assert "pref_human" in annotation_df.columns, "Must contain 'pref_human' column!"
     assert "pref_gpt4" in annotation_df.columns, "Must contain 'pref_gpt4' column!"
+
+    if args.id_col:
+        annotation_df["id"] = annotation_df[args.id_col]
 
     def swap_prefs(df, r: float, random_mode: bool = False):
         if not random_mode:
