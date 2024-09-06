@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-for seed in 42 10010 21; do
+for random_seed in 42 10010 21; do
     mkdir -p data/baselines/helpsteer2
     python3 -m scripts.prepare_baselines \
         --output_dir data/baselines/helpsteer2/ \
@@ -11,7 +11,7 @@ for seed in 42 10010 21; do
         --prompt_col text \
         --completion_a_col response_a \
         --completion_b_col response_b \
-        --seed $seed
+        --random_seed $random_seed
 
     mkdir -p data/baselines/multipref
     python3 -m scripts.prepare_baselines \
@@ -22,16 +22,27 @@ for seed in 42 10010 21; do
         --prompt_col text \
         --completion_a_col response_a \
         --completion_b_col response_b \
-        --seed $seed
+        --random_seed $random_seed
 
     mkdir -p data/baselines/alpacafarm
     python3 -m scripts.prepare_baselines \
         --output_dir data/baselines/alpacafarm/ \
-        --prefix multipref \
-        --id_col comparison_id \
+        --prefix alpacafarm \
+        --id_col prompt_hash \
         --input_path data/human_vs_gpt4/alpacafarm_human_vs_gpt4_alpacaeval.jsonl \
         --prompt_col text \
         --completion_a_col response_a \
         --completion_b_col response_b \
-        --seed $seed
+        --random_seed $random_seed
+
+    mkdir -p data/baselines/chatarena
+    python3 -m scripts.prepare_baselines \
+        --output_dir data/baselines/chatarena/ \
+        --prefix chatarena \
+        --id_col prompt_hash \
+        --input_path data/human_vs_gpt4/chatarena_human_vs_gpt4_alpacaeval.jsonl \
+        --prompt_col text \
+        --completion_a_col response_a \
+        --completion_b_col response_b \
+        --random_seed $random_seed
 done
