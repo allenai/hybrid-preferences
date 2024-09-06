@@ -2,6 +2,9 @@ import sys
 import argparse
 from pathlib import Path
 import logging
+import random
+
+import pandas as pd
 
 
 logging.basicConfig(
@@ -17,16 +20,45 @@ def get_args():
     description = "Get baseline datasets and their respective experiments.txt file"
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--output_dir", type=Path, help="Directory to save the JSONL files and the TXT experiments file.")
+    parser.add_argument("--prefix", type=str, help="Prefix to add to the output files.")
     parser.add_argument("--input_filepath", type=Path, help="Dataset path to create baselines on.")
     parser.add_argument("--num_instances", type=int, default=7000, help="Number of instances to sample.")
+    parser.add_argument("--random_seed", type=int, default=42, help="Set random seed.")
     # fmt: on
     return parser.parse_args()
 
 
 def main():
     args = get_args()
+    logging.info("Setting random seed to {args.random_seed}")
+    random.seed(args.random_seed)
+
+    annotation_df = pd.read_json(args.input_filepath, lines=True)
+    assert "pref_human" in annotation_df.columns, "Must contain 'pref_human' column!"
+    assert "pref_gpt4" in annotation_df.columns, "Must contain 'pref_gpt4' column!"
+
+    baselines = ["human", "human_75", "human_50", "human_25", "gpt4", "random"]
+    for baseline in baselines:
+        if baseline == "human":
+            annotation_df["pref"] = annotation_df["pref_human"]
+        elif baseline == "human_75":
+            annotation_df["pref"] = annotation_df["pref_human"]
+        elif baseline == "human_50":
+            annotation_df["pref"] = annotation_df["pref_human"]
+        elif baseline == "human_25":
+            annotation_df["pref"] = annotation_df["pref_human"]
+        elif baseline == "gpt4":
+            annotation_df["pref"] = annotation_df["pref_gpt4"]
+        else:
+            raise ValueError("Unknown baseline")
 
     annotations = annotation_df.to_dict(orient="records")
+    converted_instances = get_converted_instances(annotations, args.num_instances)
+
+
+def get_converted_instances(
+    annotations: list[dict[str, str]], num_instances: int
+) -> list[dict[str, str]]:
     converted_annotations = []
     for annotation in annotations:
         if "model_a" not in annotation:
