@@ -96,6 +96,7 @@ It is recommended that the name of the dataset is the name of your experiment, s
     parser.add_argument("--vocab_gcs_path", type=str, default="gs://hamishi-east1/easylm/llama/tokenizer.model", help="GCS filepath containing the tokenizer.")
     parser.add_argument("--train_dpo", action="store_true", default=False, help="If set, will train a DPO model instead of a Sequence Regression RM.")
     parser.add_argument("--timeout", type=int, default=300, help="Set timeout (in seconds) in between training runs.")
+    parser.add_argument("--worker", type=str, default="all", help="Worker passed to the --worker argument in gcloud.")
     parser.add_argument("--log_to_wandb", action="store_true", default=False, help="If set, will log online to WandB.")
     # fmt: on
     return parser.parse_args()
@@ -170,7 +171,7 @@ def main():
         args.tpu_name,
         f"--zone={args.zone}",
         "--project=ai2-tpu",
-        "--worker=all",
+        f"--worker={args.worker}",
         "--command="
         + (
             "cd easylm; git pull; "
@@ -187,7 +188,7 @@ def main():
     subprocess.run(tpu_command, check=True)
     logging.info(
         "TPU command sent. You can track the logs by using the following command: \n"
-        f'gcloud alpha compute tpus tpu-vm ssh {args.tpu_name} --worker=all --zone={args.zone} --project=ai2-tpu --command="tail -f easylm/experiments.log"'
+        f'gcloud alpha compute tpus tpu-vm ssh {args.tpu_name} --worker={args.worker} --zone={args.zone} --project=ai2-tpu --command="tail -f easylm/experiments.log"'
     )
 
 
