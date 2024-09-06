@@ -22,7 +22,10 @@ def get_args():
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--output_dir", type=Path, help="Directory to save the JSONL files and the TXT experiments file.")
     parser.add_argument("--prefix", type=str, help="Prefix to add to the output files.")
-    parser.add_argument("--id_col", type=str, default=None, help="Column that contains the unique ID for each instance.")
+    parser.add_argument("--id_col", type=str, default="id", help="Column that contains the unique ID for each instance.")
+    parser.add_argument("--prompt_col", type=str, default="text", help="Column that contains the text.")
+    parser.add_argument("--completion_a_col", type=str, default="response_a", help="Column that contains response A.")
+    parser.add_argument("--completion_b_col", type=str, default="response_b", help="Column that contains response B.")
     parser.add_argument("--input_filepath", type=Path, help="Dataset path to create baselines on.")
     parser.add_argument("--num_instances", type=int, default=7000, help="Number of instances to sample.")
     parser.add_argument("--random_seed", type=int, default=42, help="Set random seed.")
@@ -32,20 +35,22 @@ def get_args():
 
 def main():
     args = get_args()
-    logging.info("Setting random seed to {args.random_seed}")
+    logging.info(f"Setting random seed to {args.random_seed}")
     random.seed(args.random_seed)
 
     annotation_df = pd.read_json(args.input_filepath, lines=True)
     assert "pref_human" in annotation_df.columns, "Must contain 'pref_human' column!"
     assert "pref_gpt4" in annotation_df.columns, "Must contain 'pref_gpt4' column!"
 
-    if args.id_col:
-        annotation_df["id"] = annotation_df[args.id_col]
+    # Normalize column names
+    annotation_df["id"] = annotation_df[args.id_col]
+    annotation_df["prompt"] = annotation_df[args.prompt_col]
+    annotation_df["completion_a"] = annotation_df[args.completion_a_col]
+    annotation_df["completion_b"] = annotation_df[args.completion_b_col]
 
-    def swap_prefs(df, r: float, random_mode: bool = False):
-        if not random_mode:
-            df["is_swapped"] = np.random.rand(len(df)) < r
-            df["pref"] = np.where(df["is_swapped"], df["pref_human"], df["pref_gpt4"])
+    def swap_prefs(df, r: float):
+        df["is_swapped"] = np.random.rand(len(df)) < r
+        df["pref"] = np.where(df["is_swapped"], df["pref_human"], df["pref_gpt4"])
         return df
 
     baselines = {
@@ -65,8 +70,11 @@ def main():
             if instance.get("is_swapped"):
                 num_swaps += 1
 
-        logging.info(f"Baseline '{baseline}' has {num_swaps} swaps!")
-        experiment_name = f"{args.prefix}_{baseline}_SWAPS_{num_swaps}_SEED_{args.seed}"
+        pct_swaps = (num_swaps / len(converted_instances)) * 100
+        logging.info(f"Baseline '{baseline}' has {num_swaps} ({pct_swaps:.2f}) swaps!")
+        experiment_name = (
+            f"{args.prefix}_{baseline}_SWAPS_{num_swaps}_SEED_{args.random_seed}"
+        )
         output_file: Path = args.output_dir / f"{experiment_name}.jsonl"
         breakpoint()
         # add to experiments.txt
@@ -96,6 +104,8 @@ def get_converted_instances(
     if num_instances < len(converted_annotations):
         converted_annotations = random.sample(converted_annotations, num_instances)
         logging.info(f"Sampled {num_instances} instances from the total.")
+
+    return converted_annotations
 
 
 def convert_to_dpo_format(
