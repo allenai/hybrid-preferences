@@ -3,6 +3,7 @@ import argparse
 from pathlib import Path
 import logging
 import random
+import json
 
 import pandas as pd
 import numpy as np
@@ -21,12 +22,12 @@ def get_args():
     description = "Get baseline datasets and their respective experiments.txt file"
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--output_dir", type=Path, help="Directory to save the JSONL files and the TXT experiments file.")
+    parser.add_argument("--input_path", type=Path, help="Dataset path to create baselines on.")
     parser.add_argument("--prefix", type=str, help="Prefix to add to the output files.")
     parser.add_argument("--id_col", type=str, default="id", help="Column that contains the unique ID for each instance.")
     parser.add_argument("--prompt_col", type=str, default="text", help="Column that contains the text.")
     parser.add_argument("--completion_a_col", type=str, default="response_a", help="Column that contains response A.")
     parser.add_argument("--completion_b_col", type=str, default="response_b", help="Column that contains response B.")
-    parser.add_argument("--input_filepath", type=Path, help="Dataset path to create baselines on.")
     parser.add_argument("--num_instances", type=int, default=7000, help="Number of instances to sample.")
     parser.add_argument("--random_seed", type=int, default=42, help="Set random seed.")
     # fmt: on
@@ -38,7 +39,7 @@ def main():
     logging.info(f"Setting random seed to {args.random_seed}")
     random.seed(args.random_seed)
 
-    annotation_df = pd.read_json(args.input_filepath, lines=True)
+    annotation_df = pd.read_json(args.input_path, lines=True)
     assert "pref_human" in annotation_df.columns, "Must contain 'pref_human' column!"
     assert "pref_gpt4" in annotation_df.columns, "Must contain 'pref_gpt4' column!"
 
@@ -49,12 +50,13 @@ def main():
     annotation_df["completion_b"] = annotation_df[args.completion_b_col]
 
     def swap_prefs(df, r: float):
-        df["is_swapped"] = np.random.rand(len(df)) < r
-        df["pref"] = np.where(df["is_swapped"], df["pref_human"], df["pref_gpt4"])
-        return df
+        _df = df.copy(deep=True)
+        _df["is_swapped"] = np.random.rand(len(_df)) < r
+        _df["pref"] = np.where(_df["is_swapped"], _df["pref_human"], _df["pref_gpt4"])
+        return _df
 
     baselines = {
-        "human": swap_prefs(annotation_df, r=1),
+        "human": swap_prefs(annotation_df, r=1.0),
         "human_75": swap_prefs(annotation_df, r=0.75),
         "human_50": swap_prefs(annotation_df, r=0.50),
         "human_25": swap_prefs(annotation_df, r=0.25),
@@ -62,6 +64,7 @@ def main():
         "random": swap_prefs(annotation_df, r=0.50),
     }
 
+    experiments = []
     for baseline, annotation_df in baselines.items():
         annotations = annotation_df.to_dict(orient="records")
         converted_instances = get_converted_instances(annotations, args.num_instances)
@@ -75,9 +78,20 @@ def main():
         experiment_name = (
             f"{args.prefix}_{baseline}_SWAPS_{num_swaps}_SEED_{args.random_seed}"
         )
-        output_file: Path = args.output_dir / f"{experiment_name}.jsonl"
-        breakpoint()
-        # add to experiments.txt
+        experiments.append(experiment_name)
+        output_path: Path = args.output_dir / f"{experiment_name}.jsonl"
+        with output_path.open("w") as f:
+            for instance in converted_instances:
+                f.write(json.dumps(instance) + "\n")
+        logging.info(f"Saved to {output_path}")
+
+    experiments_file: Path = (
+        args.output_dir / f"{args.prefix}-experiments-SEED-{args.random_seed}.txt"
+    )
+    experiments_file.write_text("\n".join(experiments))
+    logging.info(f"Saved experiments to {experiments_file}")
+    logging.info(f"Upload the JSONL files to GCS under the {args.prefix}/ directory")
+    logging.info("And then, run the `scripts/submit_tpu_train_job.py` file.")
 
 
 def get_converted_instances(
