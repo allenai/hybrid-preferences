@@ -121,7 +121,6 @@ def train_lightgbm_regressor(X_train, X_test, y_train, y_test):
     y_pred = model.predict(X_test)
     mse = mean_squared_error(y_test, y_pred)
     rmse = root_mean_squared_error(y_test, y_pred)
-
     return model, {"mse": mse, "rmse": rmse}
 
 
