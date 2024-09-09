@@ -102,16 +102,33 @@ def main():
     else:
         logging.info(f"Logged-in as {account.name} ({account.email})")
 
-    experiments = [
-        experiment
-        for experiment in beaker.workspace.experiments(
-            args.beaker_workspace,
-            match=args.experiment_prefix,
-        )
-        if is_done(experiment)
-    ]
+    overall_df = fetch_evals_rewardbench(
+        beaker=beaker,
+        beaker_workspace=args.beaker_workspace,
+        experiment_prefix=args.experiment_prefix,
+        experiments_file=args.experiments_file,
+        gpt4_threshold_score=args.gpt4_threshold_score,
+    )
+
+    logging.info(f"Saving {len(overall_df)} results to {args.output_file}")
+    overall_df.to_csv(args.output_file)
+    logging.info(f"Saved on {args.output_file}")
+
+
+def fetch_evals_rewardbench(
+    beaker: Beaker,
+    beaker_workspace: str,
+    experiment_prefix: str,
+    experiments_file: Optional[Path],
+    gpt4_threshold_score: Optional[float],
+) -> pd.DataFrame:
+    beaker_experiments = beaker.workspace.experiments(
+        beaker_workspace,
+        match=experiment_prefix,
+    )
+    experiments = [exp for exp in beaker_experiments if is_done(exp)]
     logging.info(
-        f"Found {len(experiments)} experiments that match '{args.experiment_prefix}'"
+        f"Found {len(experiments)} experiments that match '{experiment_prefix}'"
     )
 
     # The scores saved on Beaker are subset scores.
@@ -127,14 +144,14 @@ def main():
         ascending=False,
     )
 
-    if args.experiments_file:
+    if experiments_file:
         logging.info("Will attempt merge via feature hash")
 
         # Turn features into a binary matrix
         df_feats = get_features(
             df_category_scores.reset_index().rename(columns={"index": "experiment"}),
             col_name="experiment",
-            experiments_file=args.experiments_file,
+            experiments_file=experiments_file,
         )
 
         def extract_hash(string):
@@ -173,7 +190,7 @@ def main():
     overall_df = overall_df[cols]
 
     # Create labels based on the GPT-4 threshold score
-    thresh = args.gpt4_threshold_score
+    thresh = gpt4_threshold_score
     if thresh:
         logging.info(f"Creating labels in 'label' with GPT-4 threshold '{thresh}'")
         overall_df["label"] = (overall_df["Overall"] > thresh).astype(int)
@@ -185,10 +202,7 @@ def main():
     if "index" in overall_df.columns:
         overall_df = overall_df.drop(columns=["index"])
     overall_df = overall_df[~overall_df.index.duplicated(keep="first")]
-
-    logging.info(f"Saving {len(overall_df)} results to {args.output_file}")
-    overall_df.to_csv(args.output_file)
-    logging.info(f"Saved on {args.output_file}")
+    return overall_df
 
 
 def is_done(experiment: "Experiment") -> bool:

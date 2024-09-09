@@ -1,17 +1,16 @@
 import argparse
+import pandas as pd
+from pathlib import Path
 import tqdm
 
 
 def get_args():
     # fmt: off
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
-    subparsers = parser.add_subparsers(dest="command")
-
-    # Arguments for 'prepare_data' command
-    parser_prepare_data = subparsers.add_parser("prepare_data", help="Prepare dataset for training and evaluation.")
-    parser_prepare_data.add_argument("--feats_dataset_id", type=str, default="01J6KF3JRCATRJQ9CPJTRV5VBM", help="Beaker ID containing the extracted lexical features and subsets.")
-    parser_prepare_data.add_argument("--reference_dataset_id", type=str, default="01J6KBM2VCM9EQ7MER26VBXCCM", help="Beaker ID containing the metadata features.")
-    parser_prepare_data.add_argument("--dataset")
+    parser.add_argument("--results_path", type=Path, help="Path to the 'experiments.csv' file obtained from running fetch_evals_rewardbench.py")
+    parser.add_argument("--mixes_dir", type=Path, help="Directory containing all the JSONL subset files.")
+    parser.add_argument("--feats_dataset_id", type=str, default="01J7C755BWNJGA0ZEB9NM5D12P", help="Beaker ID containing the extracted lexical features and metadata features.")
+    parser.add_argument("--dataset")
     # fmt: on
     pass
 
