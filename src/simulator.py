@@ -31,6 +31,8 @@ class Simulator:
     def sample_combinations(
         self,
         n: int = 1000,
+        min_score: int = 0.75,
+        min_human_swaps: int = 1000,
         feat_transformer: Optional[callable] = None,
         create_beaker_experiment: Optional[Path] = None,
     ):
@@ -58,8 +60,14 @@ class Simulator:
         sim_df["pred"] = self.model.predict(sim_df)
         sim_df = sim_df.sort_values(by="pred", ascending=False).reset_index(drop=True)
 
-        # Precompute
-        # TODO
+        if min_score:
+            # Only keep simulations that are higher than min_score
+            sim_df = sim_df[sim_df["pred"] >= min_score].reset_index(drop=True)
+
+        if min_human_swaps:
+            # Precompute
+            # TODO
+            pass
 
         if create_beaker_experiment:
             # TODO
