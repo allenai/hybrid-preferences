@@ -60,8 +60,6 @@ tasks:
       - /output/features/
       - --append_to_experiments_file
       - /output/experiments.txt
-      - --random_seed
-      - 42
       - --n_sample_combinations
       - 1000
       - --ignore_list
@@ -69,7 +67,7 @@ tasks:
     datasets:
       - mountPath: /source/
         source:
-          beaker: 01J60EX37YBNQM9T6GJX5Q8X0C
+          beaker: 01J6WJTFY5YRXJYPJQ8BE6GT7J
     result:
       path: /output
     resources:
