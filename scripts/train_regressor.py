@@ -30,7 +30,7 @@ def get_args():
     parser.add_argument("--experiment_prefix", default="rm-eval-", help="Prefix for experiments to fetch.")
     parser.add_argument("--experiments_file", default=None, type=Path, help="Path to a TXT file containing a list that maps an experiment to the features.")
     parser.add_argument("--use_count_feats", action="store_true", default=False, help="If set, will transform features using count-based features.")
-    parser.add_argument("--model", choices=["lightgbm", "linear"], help="Model to use for training the regressor.")
+    parser.add_argument("--model", choices=["lightgbm", "linear"], default="linear", help="Model to use for training the regressor.")
     parser.add_argument("--random_seed", type=int, default=42, help="Set the random seed.")
     # fmt: on
     return parser.parse_args()
