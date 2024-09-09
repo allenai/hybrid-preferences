@@ -11,6 +11,7 @@ from sklearn.metrics import mean_squared_error, root_mean_squared_error
 from sklearn.linear_model import LinearRegression
 
 from beaker import Beaker
+from src.simulator import Simulator
 from scripts.fetch_evals_rewardbench import fetch_evals_rewardbench as fetch_results
 
 
@@ -57,8 +58,11 @@ def main():
     )
     logging.debug(f"Found {len(results_df)} results!")
     # fmt: off
-    feats_df = pd.read_json(BytesIO(b"".join(beaker.dataset.stream_file(args.feats_dataset_id, "features.jsonl"))),lines=True)
-    logging.debug(f"Dataset contains {len(feats_df)} instances with {len(feats_df.columns)} features!")
+    if args.feats_dataset_id:
+        feats_df = pd.read_json(BytesIO(b"".join(beaker.dataset.stream_file(args.feats_dataset_id, "features.jsonl"))),lines=True)
+        logging.debug(f"Dataset contains {len(feats_df)} instances with {len(feats_df.columns)} features!")
+    else:
+        feats_df = None
     # fmt: on
 
     # Get columns that are features (by default, these are binary columns)
@@ -91,6 +95,14 @@ def main():
         num_train = int(len(X_train) * pct)
         _, scores = train_fn(X_train[:num_train], X_test, y_train[:num_train], y_test)
         logging.debug(f"Performance at {pct:.2%} of train samples: {scores}")
+
+    logging.info("*** Simulation proper ***")
+    simulator = Simulator(
+        model=model,
+        ordered_feat_list=X_train.columns,
+        precomputed_features=feats_df,
+    )
+    simulator.sample_combinations(n=2_000)
 
 
 def train_linear_regressor(X_train, X_test, y_train, y_test):
