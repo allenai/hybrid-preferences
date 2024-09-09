@@ -13,13 +13,6 @@ from sklearn.linear_model import LinearRegression
 from beaker import Beaker
 from scripts.fetch_evals_rewardbench import fetch_evals_rewardbench as fetch_results
 
-logging.basicConfig(
-    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-    handlers=[logging.StreamHandler(sys.stdout)],
-    level=logging.INFO,
-)
-
 
 def get_args():
     # fmt: off
@@ -31,6 +24,7 @@ def get_args():
     parser.add_argument("--experiments_file", default=None, type=Path, help="Path to a TXT file containing a list that maps an experiment to the features.")
     parser.add_argument("--use_count_feats", action="store_true", default=False, help="If set, will transform features using count-based features.")
     parser.add_argument("--model", choices=["lightgbm", "linear"], default="linear", help="Model to use for training the regressor.")
+    parser.add_argument("--log_level", default="DEBUG", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], help="Set the logging level.")
     parser.add_argument("--random_seed", type=int, default=42, help="Set the random seed.")
     # fmt: on
     return parser.parse_args()
@@ -38,6 +32,14 @@ def get_args():
 
 def main():
     args = get_args()
+
+    logging.basicConfig(
+        format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        handlers=[logging.StreamHandler(sys.stdout)],
+        level=getattr(logging, args.log_level),
+    )
+
     beaker = Beaker.from_env(default_workspace=args.beaker_workspace)
     try:
         account = beaker.account.whoami()
@@ -53,17 +55,17 @@ def main():
         experiment_prefix=args.experiment_prefix,
         experiments_file=args.experiments_file,
     )
-    logging.info(f"Found {len(results_df)} results!")
+    logging.debug(f"Found {len(results_df)} results!")
     # fmt: off
     feats_df = pd.read_json(BytesIO(b"".join(beaker.dataset.stream_file(args.feats_dataset_id, "features.jsonl"))),lines=True)
-    logging.info(f"Dataset contains {len(feats_df)} instances with {len(feats_df.columns)} features!")
+    logging.debug(f"Dataset contains {len(feats_df)} instances with {len(feats_df.columns)} features!")
     # fmt: on
 
     # Get columns that are features (by default, these are binary columns)
     modeling_df = results_df[results_df.columns[results_df.isin([0, 1]).all()]]
 
     if args.use_count_feats:
-        logging.info("Transforming features to use counts")
+        logging.debug("Transforming features to use counts")
         modeling_df = []
 
     logging.info("*** Modeling proper ***")
@@ -88,7 +90,7 @@ def main():
     for pct in pct_of_train:
         num_train = int(len(X_train) * pct)
         _, scores = train_fn(X_train[:num_train], X_test, y_train[:num_train], y_test)
-        logging.info(f"Performance at {pct:.2%} of train samples: {scores}")
+        logging.debug(f"Performance at {pct:.2%} of train samples: {scores}")
 
 
 def train_linear_regressor(X_train, X_test, y_train, y_test):
