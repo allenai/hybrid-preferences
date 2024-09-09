@@ -99,10 +99,11 @@ def main():
     logging.info("*** Simulation proper ***")
     simulator = Simulator(
         model=model,
-        ordered_feat_list=X_train.columns,
+        feat_list=X_train.columns,
         precomputed_features=feats_df,
     )
-    simulator.sample_combinations(n=2_000)
+    simulated_feats = simulator.sample_combinations(n=3_000)
+    breakpoint()
 
 
 def train_linear_regressor(X_train, X_test, y_train, y_test):
