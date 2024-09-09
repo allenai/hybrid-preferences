@@ -68,18 +68,19 @@ def main():
 
     logging.info("*** Modeling proper ***")
     X = modeling_df
-    y = results_df["Overall"]
+    y = results_df["Overall"].astype(float)
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=args.random_seed
     )
+    logging.info(f"Training size: {len(X_train)}, test_size: {len(X_test)}")
 
     models: dict[str, callable] = {
         "lightgbm": train_lightgbm_regressor,
         "linear": train_linear_regressor,
     }
     train_fn = models.get(args.model)
-    results = train_fn(X_train, X_test, y_train, y_test)
-    logging.info(f"Regression results for {args.model}: {results}")
+    model, results = train_fn(X_train, X_test, y_train, y_test)
+    logging.info(f"Regression results for {args.model} ({model}): {results}")
 
     # Training curve
     logging.info("Computing the train curve...")
