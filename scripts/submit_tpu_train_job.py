@@ -98,6 +98,7 @@ It is recommended that the name of the dataset is the name of your experiment, s
     parser.add_argument("--timeout", type=int, default=300, help="Set timeout (in seconds) in between training runs.")
     parser.add_argument("--worker", type=str, default="all", help="Worker passed to the --worker argument in gcloud.")
     parser.add_argument("--log_to_wandb", action="store_true", default=False, help="If set, will log online to WandB.")
+    parser.add_argument("--sort_by_swaps", action="store_true", default=False, help="If set, will prioritize running experiments with high swaps.")
     # fmt: on
     return parser.parse_args()
 
@@ -110,15 +111,19 @@ def main():
         experiment_names = f.read().splitlines()
 
     # Sort experiments based on the number of swaps (descending)
-    experiment_names = sorted(
-        experiment_names,
-        key=lambda x: int(x.split("SWAPS_")[1].split("::")[0]),
-        reverse=True,
-    )
+    if args.sort_by_swaps:
+        experiment_names = sorted(
+            experiment_names,
+            key=lambda x: int(x.split("SWAPS_")[1].split("::")[0]),
+            reverse=True,
+        )
 
     commands_for_experiments = []
     for idx, experiment_str in enumerate(experiment_names):
-        experiment_name, _ = experiment_str.split("::")
+        if "::" in experiment_str:
+            experiment_name, _ = experiment_str.split("::")
+        else:
+            experiment_name = experiment_str
         if args.train_dpo:
             cmd = DPO_JOB_TEMPLATE.format(
                 experiment_name=experiment_name,
