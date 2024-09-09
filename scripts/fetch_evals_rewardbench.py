@@ -119,8 +119,8 @@ def fetch_evals_rewardbench(
     beaker: Beaker,
     beaker_workspace: str,
     experiment_prefix: str,
-    experiments_file: Optional[Path],
-    gpt4_threshold_score: Optional[float],
+    experiments_file: Optional[Path] = None,
+    gpt4_threshold_score: Optional[float] = None,
 ) -> pd.DataFrame:
     beaker_experiments = beaker.workspace.experiments(
         beaker_workspace,
