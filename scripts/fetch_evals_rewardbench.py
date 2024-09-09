@@ -86,7 +86,7 @@ def get_args():
     parser.add_argument("--beaker_workspace", default="ai2/ljm-oe-adapt", help="Beaker workspace to fetch experiments.")
     parser.add_argument("--experiment_prefix", default="rm-eval-", help="Prefix for experiments to fetch.")
     parser.add_argument("--experiments_file", default=None, type=Path, help="Path to a TXT file containing a list that maps an experiment to the features.")
-    parser.add_argument("--gpt4_threshold_score", type=float, default=0.658, help="GPT-4 threshold score to create binary labels")
+    parser.add_argument("--gpt4_threshold_score", type=float, default=None, help="GPT-4 threshold score to create binary labels")
     # fmt:on
     return parser.parse_args()
 
@@ -127,15 +127,15 @@ def main():
         ascending=False,
     )
 
-    # Turn features into a binary matrix
-    df_feats = get_features(
-        df_category_scores.reset_index().rename(columns={"index": "experiment"}),
-        col_name="experiment",
-        experiments_file=args.experiments_file,
-    )
-
     if args.experiments_file:
         logging.info("Will attempt merge via feature hash")
+
+        # Turn features into a binary matrix
+        df_feats = get_features(
+            df_category_scores.reset_index().rename(columns={"index": "experiment"}),
+            col_name="experiment",
+            experiments_file=args.experiments_file,
+        )
 
         def extract_hash(string):
             match = re.search(r"FEATS_(.*?)_SWAPS", string)
@@ -163,12 +163,9 @@ def main():
         )
 
     else:
-        overall_df = pd.merge(
-            df_feats,
-            df_category_scores,
-            left_index=True,
-            right_index=True,
-        ).merge(df_subset_scores, left_index=True, right_index=True)
+        overall_df = df_category_scores.merge(
+            df_subset_scores, left_index=True, right_index=True
+        )
 
     # Cleanup dataframe for easier viewing
     meta = ["model_type", "chat_template"]
@@ -177,12 +174,16 @@ def main():
 
     # Create labels based on the GPT-4 threshold score
     thresh = args.gpt4_threshold_score
-    logging.info(f"Creating labels in column 'label' with GPT-4 threshold '{thresh}'")
-    overall_df["label"] = (overall_df["Overall"] > thresh).astype(int)
+    if thresh:
+        logging.info(f"Creating labels in 'label' with GPT-4 threshold '{thresh}'")
+        overall_df["label"] = (overall_df["Overall"] > thresh).astype(int)
+
     overall_df = overall_df.sort_values(
         by=["Overall"],
         ascending=False,
-    ).drop(columns=["index"])
+    )  # .drop(columns=["index"])
+    if "index" in overall_df.columns:
+        overall_df = overall_df.drop(columns=["index"])
     overall_df = overall_df[~overall_df.index.duplicated(keep="first")]
 
     logging.info(f"Saving {len(overall_df)} results to {args.output_file}")
