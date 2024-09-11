@@ -131,9 +131,8 @@ def main():
         tags.append(f"{swaps_outfile.stem}::{counts_outfile.stem}")
 
     experiments_file = output_dir / "experiments.txt"
-    with experiments_file.open("a") as f:
-        for tag in tags:
-            f.write(tag + "\n")
+    with experiments_file.open("w") as f:
+        f.write("\n".join(tags))
 
 
 def get_instances(df: "pd.DataFrame", feature_str: str) -> list[str]:
