@@ -293,6 +293,7 @@ def convert_to_dpo_format(
     else:
         raise ValueError(f"Invalid preference label: {preference_label}")
     return {
+        "id": instance["id"],
         "source": instance["source"],
         "highest_level_degree": instance["highest_level_degree"],
         "prompt": instance["prompt"],
