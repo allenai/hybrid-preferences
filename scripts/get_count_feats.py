@@ -41,6 +41,10 @@ def main():
         key, params = FeatureExtractor.parse_feature(feature_str)
         if "min_val" in params or "max_val" in params:
             min_val, max_val = params["min_val"], params["max_val"]
+
+            if key in ("prompt_len", "token_len_diff", "len_shorter", "len_longer"):
+                df[key] = df[key].rank(pct=True)
+
             filtered_df = df[(df[key] >= min_val) & (df[key] <= max_val)]
         elif "analyzer_closed_set" in feature_str:
             feature_name, constraints = params["feature_name"], params["constraints"]
@@ -50,11 +54,16 @@ def main():
             filtered_df = df[df[feature_name] == value]
         elif "analyzer_open_set" in feature_str:
             feature_name = params["feature_name"]
-            filtered_df = df[df[feature_name].apply(lambda x: len(x) > 0)]
-            breakpoint()
+            filtered_df = df[
+                df[feature_name].apply(lambda x: x is not None and len(x) > 0)
+            ]
 
         if len(filtered_df) > 0:
             feat_instance_map[feature_str] = filtered_df["id"].to_list()
+        else:
+            feat_instance_map[feature_str] = []
+
+    breakpoint()
 
 
 if __name__ == "__main__":
