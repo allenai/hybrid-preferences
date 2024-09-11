@@ -28,6 +28,34 @@ tqdm_file = sys.stdout
 tqdm_bar_format = "{l_bar}{bar}{r_bar}\n"
 
 
+def get_all_features(n_bins: int = 3) -> list[str]:
+    """Returns the current list of available features"""
+    # Lexical features
+
+    # Apply bins to lexical features
+    _lexical_features = [
+        mem.removeprefix("_extract_")
+        for mem, _ in inspect.getmembers(FeatureExtractor)
+        if mem.startswith("_extract") and "analyzer" not in mem and "random" not in mem
+    ]
+    edges = np.linspace(0, 1, n_bins + 1)
+    bins = [(edges[i], edges[i + 1]) for i in range(n_bins)]
+    lexical_features = []
+    for feat in _lexical_features:
+        for bin in bins:
+            min_val, max_val = bin
+            feat_str = f"{feat}::min_val={round(min_val,2)}|max_val={round(max_val,2)}"
+            lexical_features.append(feat_str)
+
+    metadata_features = [
+        feat for category in get_meta_analyzer_features().values() for feat in category
+    ]
+
+    all_features = lexical_features + metadata_features
+    logging.info(f"Returning {len(all_features)} features")
+    return all_features
+
+
 def sample_feature_combinations(
     n_bins: int = 3,
     max_number: Optional[int] = None,
