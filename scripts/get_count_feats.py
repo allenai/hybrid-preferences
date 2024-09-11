@@ -28,7 +28,7 @@ def get_args():
     parser.add_argument("--output_dir", type=Path, help="Path to store the sampled outputs.")
     parser.add_argument("--create_experiments_file", type=Path, default=None, help="Store all generated outputs and their hashes in this experiments file.")
     parser.add_argument("--n_train_instances", type=int, default=200, help="Number of regression training instances to create.")
-    parser.add_argument("--n_samples", type=int, default=None, help="Number of samples to create for DPO.")
+    parser.add_argument("--n_samples", type=int, default=7000, help="Number of samples to create for DPO.")
     parser.add_argument("--random_seed", type=int, default=None, help="Set random seed.")
     parser.add_argument("--id_col", type=str, default="id", help="Name of the id column.")
     parser.add_argument("--text_col", type=str, default="text", help="Name of the text column.")
@@ -62,10 +62,6 @@ def main():
         }
     )
 
-    if args.n_samples:
-        logging.info(f"Sampling original dataset to {args.n_samples} instances")
-        df = df.sample(n=args.n_samples).reset_index(drop=True)
-
     logging.info("Creating feature map...")
     # Create a dictionary of features and the `id` of instances that contain it
     feat_instance_map: dict[str, list[str]] = {}
@@ -80,14 +76,8 @@ def main():
     uuids = [uuid.uuid4().hex for _ in range(len(budgets))]
     for id, budget in tqdm(zip(uuids, budgets)):
         instances_to_swap = run_knapsack(capacity=budget, items=feat_instance_map)
-        to_swap_df = df[df["id"].isin(instances_to_swap)].reset_index(drop=True)
 
-        budget_instance_map = {}
-        for feature_str in all_features:
-            instances = get_instances(to_swap_df, feature_str)
-            budget_instance_map[feature_str] = len(instances)
-
-        tag = f"{id}__BUDGET_{budget}"
+        tag = f"ID__{id}__BUDGET_{budget}"
 
         # Save the swaps
         df_swapped = df.copy(deep=True)
@@ -103,17 +93,48 @@ def main():
         annotations = df_swapped.to_dict(orient="records")
         converted_annotations = []
         for annotation in annotations:
+            if "model_a" not in annotation:
+                annotation["model_a"] = ""
+            if "model_b" not in annotation:
+                annotation["model_b"] = ""
+            if "source" not in annotation:
+                annotation["source"] = ""
+            if "highest_level_degree" not in annotation:
+                annotation["highest_level_degree"] = ""
             converted_instance = convert_to_dpo_format(annotation, annotation["pref"])
+            if converted_instance is not None:
+                converted_annotations.append(converted_instance)
+
+        if args.n_samples < len(converted_annotations):
+            converted_annotations = random.sample(converted_annotations, args.n_samples)
+            logging.info(f"Sampled {args.n_samples} instances from the total.")
+
+        swaps_outfile = (
+            swaps_dir / f"human_datamodel_counts_{args.n_samples}_{tag}.jsonl"
+        )
+        with swaps_outfile.open("w") as f:
+            for annotation in converted_annotations:
+                f.write(json.dumps(annotation) + "\n")
 
         # Save the budget
+        budget_instance_map = {}
+        swapped_ids = [eg["id"] for eg in converted_annotations if eg["is_swapped"]]
+        swapped_df = df[df["id"].isin(swapped_ids)].reset_index(drop=True)
+        for feature_str in all_features:
+            instances = get_instances(swapped_df, feature_str)
+            budget_instance_map[feature_str] = len(instances)
+
         counts_outfile = counts_dir / f"regressor_feats_{tag}.json"
         with counts_outfile.open("w") as file:
             json.dump(budget_instance_map, file, indent=4)
 
         # Save the tag file to create the experiments.txt later
+        tags.append(f"{swaps_outfile.stem}::{counts_outfile.stem}")
 
-    # budgets += [0, len(df)]  # Add lower and upper-bounds
-    breakpoint()
+    experiments_file = output_dir / "experiments.txt"
+    with experiments_file.open("a") as f:
+        for tag in tags:
+            tag.write(tag + "\n")
 
 
 def get_instances(df: "pd.DataFrame", feature_str: str) -> list[str]:
