@@ -74,10 +74,10 @@ def main():
     logging.info("Getting subsets for each budget...")
     tags = []
     uuids = [uuid.uuid4().hex for _ in range(len(budgets))]
-    for id, budget in tqdm(zip(uuids, budgets)):
+    for id, budget in tqdm(zip(uuids, budgets), total=len(budgets)):
         instances_to_swap = run_knapsack(capacity=budget, items=feat_instance_map)
 
-        tag = f"ID__{id}__BUDGET_{budget}"
+        tag = f"ID__{id}__SWAPS_{budget}"
 
         # Save the swaps
         df_swapped = df.copy(deep=True)
@@ -107,7 +107,6 @@ def main():
 
         if args.n_samples < len(converted_annotations):
             converted_annotations = random.sample(converted_annotations, args.n_samples)
-            logging.info(f"Sampled {args.n_samples} instances from the total.")
 
         swaps_outfile = (
             swaps_dir / f"human_datamodel_counts_{args.n_samples}_{tag}.jsonl"
@@ -134,7 +133,7 @@ def main():
     experiments_file = output_dir / "experiments.txt"
     with experiments_file.open("a") as f:
         for tag in tags:
-            tag.write(tag + "\n")
+            f.write(tag + "\n")
 
 
 def get_instances(df: "pd.DataFrame", feature_str: str) -> list[str]:
