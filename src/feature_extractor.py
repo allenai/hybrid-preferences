@@ -28,6 +28,34 @@ tqdm_file = sys.stdout
 tqdm_bar_format = "{l_bar}{bar}{r_bar}\n"
 
 
+def get_all_features(n_bins: int = 3) -> list[str]:
+    """Returns the current list of available features"""
+    # Lexical features
+
+    # Apply bins to lexical features
+    _lexical_features = [
+        mem.removeprefix("_extract_")
+        for mem, _ in inspect.getmembers(FeatureExtractor)
+        if mem.startswith("_extract") and "analyzer" not in mem and "random" not in mem
+    ]
+    edges = np.linspace(0, 1, n_bins + 1)
+    bins = [(edges[i], edges[i + 1]) for i in range(n_bins)]
+    lexical_features = []
+    for feat in _lexical_features:
+        for bin in bins:
+            min_val, max_val = bin
+            feat_str = f"{feat}::min_val={round(min_val,2)}|max_val={round(max_val,2)}"
+            lexical_features.append(feat_str)
+
+    metadata_features = [
+        feat for category in get_meta_analyzer_features().values() for feat in category
+    ]
+
+    all_features = lexical_features + metadata_features
+    logging.info(f"Returning {len(all_features)} features")
+    return all_features
+
+
 def sample_feature_combinations(
     n_bins: int = 3,
     max_number: Optional[int] = None,
@@ -181,7 +209,7 @@ class FeatureExtractor:
             "bertscore_length": self._extract_bertscore_length,
             "cosine_sim": self._extract_cosine_sim,
             "rouge": self._extract_rouge,
-            "token_len_diff": self._extract_token_len_difference,
+            "token_len_diff": self._extract_token_len_diff,
             "prompt_len": self._extract_prompt_len,
             "len_shorter": self._extract_len_shorter,
             "len_longer": self._extract_len_longer,
@@ -278,7 +306,8 @@ class FeatureExtractor:
     def _cache_result(self, key: str, scores: list[Any]):
         self.cache[key] = scores
 
-    def parse_feature(self, s: str) -> tuple[str, dict[str, Any]]:
+    @classmethod
+    def parse_feature(cls, s: str) -> tuple[str, dict[str, Any]]:
         def _convert(v):
             if v.isdigit():
                 return int(v)
@@ -542,7 +571,7 @@ class FeatureExtractor:
         logging.info(f"Filtering instances where score falls in [{min_val}, {max_val}]")
         return [1 if min_val <= score <= max_val else 0 for score in scores]
 
-    def _extract_token_len_difference(
+    def _extract_token_len_diff(
         self,
         min_val: float = 0.0,
         max_val: float = 0.1,
