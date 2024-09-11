@@ -209,7 +209,7 @@ class FeatureExtractor:
             "bertscore_length": self._extract_bertscore_length,
             "cosine_sim": self._extract_cosine_sim,
             "rouge": self._extract_rouge,
-            "token_len_diff": self._extract_token_len_difference,
+            "token_len_diff": self._extract_token_len_diff,
             "prompt_len": self._extract_prompt_len,
             "len_shorter": self._extract_len_shorter,
             "len_longer": self._extract_len_longer,
@@ -306,7 +306,8 @@ class FeatureExtractor:
     def _cache_result(self, key: str, scores: list[Any]):
         self.cache[key] = scores
 
-    def parse_feature(self, s: str) -> tuple[str, dict[str, Any]]:
+    @classmethod
+    def parse_feature(cls, s: str) -> tuple[str, dict[str, Any]]:
         def _convert(v):
             if v.isdigit():
                 return int(v)
@@ -570,7 +571,7 @@ class FeatureExtractor:
         logging.info(f"Filtering instances where score falls in [{min_val}, {max_val}]")
         return [1 if min_val <= score <= max_val else 0 for score in scores]
 
-    def _extract_token_len_difference(
+    def _extract_token_len_diff(
         self,
         min_val: float = 0.0,
         max_val: float = 0.1,
