@@ -63,7 +63,7 @@ def main():
     )
 
     if args.n_samples:
-        logging.info("Sampling original dataset")
+        logging.info(f"Sampling original dataset to {args.n_samples} instances")
         df = df.sample(n=args.n_samples).reset_index(drop=True)
 
     logging.info("Creating feature map...")
