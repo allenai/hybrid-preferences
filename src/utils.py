@@ -8,6 +8,19 @@ def find_meta_category(query: str) -> str:
     return None
 
 
+def tag_to_normal(feat: str) -> str:
+    """Convert tags used for data model to tags used for results"""
+    if "analyzer" in feat:
+        feature_name_str, value_str = feat.split("::")[1].split("|")
+        feature_name, value = (
+            feature_name_str.split("=")[-1],
+            value_str.split("=")[-1],
+        )
+        return f"{feature_name}={value}"
+    else:
+        return feat.replace("::", "__")
+
+
 def get_meta_analyzer_features(**kwargs) -> dict[str, list[str]]:
     """Get meta-analyzer features
 
