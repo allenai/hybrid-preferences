@@ -46,18 +46,13 @@ RUN pip install --upgrade pip && \
     huggingface-hub \
     gradio
 
-# Install gcloud and set path
-# RUN curl https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz | tar -C /usr/local -xzf - && \
-#     /usr/local/google-cloud-sdk/install.sh --quiet && \
-#     echo "export PATH=$PATH:/usr/local/google-cloud-sdk/bin" >> ~/.bashrc
-
 RUN curl https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz | tar -C /usr/local -xzf - && \
     /usr/local/google-cloud-sdk/install.sh --quiet 
 
 ENV PATH="/usr/local/google-cloud-sdk/bin:${PATH}"
 
 # Clone EasyLM repository
-RUN git clone https://github.com/hamishivi/EasyLM.git && cd EasyLM && \
+RUN git clone https://github.com/hamishivi/EasyLM.git  . && \
     git checkout bc241782b67bbe926e148ec9d2046d76b7ba58c8
 
 COPY ai2-allennlp-79f5e3a8e95a.json /root/.config/gcloud/application_default_credentials.json
@@ -68,4 +63,5 @@ RUN gcloud auth activate-service-account --key-file=/root/.config/gcloud/applica
     gcloud config set project ai2-allennlp
 
 # # Copy tokenizer model
-RUN gsutil cp gs://hamishi-east1/easylm/llama/tokenizer.model EasyLM/
+RUN gsutil cp gs://hamishi-east1/easylm/llama/tokenizer.model .
+COPY convert_to_hf.py .
