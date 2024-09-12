@@ -86,6 +86,7 @@ def get_args():
     parser.add_argument("--beaker_workspace", default="ai2/ljm-oe-adapt", help="Beaker workspace to fetch experiments.")
     parser.add_argument("--experiment_prefix", default="rm-eval-", help="Prefix for experiments to fetch.")
     parser.add_argument("--experiments_file", default=None, type=Path, help="Path to a TXT file containing a list that maps an experiment to the features.")
+    parser.add_argument("--feature_counts_dir", default=None, type=Path, help="Path to a directory containing JSON files that contain feature counts.")
     parser.add_argument("--gpt4_threshold_score", type=float, default=None, help="GPT-4 threshold score to create binary labels")
     # fmt:on
     return parser.parse_args()
@@ -107,6 +108,7 @@ def main():
         beaker_workspace=args.beaker_workspace,
         experiment_prefix=args.experiment_prefix,
         experiments_file=args.experiments_file,
+        feature_counts_dir=args.feature_counts_dir,
         gpt4_threshold_score=args.gpt4_threshold_score,
     )
 
@@ -120,6 +122,7 @@ def fetch_evals_rewardbench(
     beaker_workspace: str,
     experiment_prefix: str,
     experiments_file: Optional[Path] = None,
+    feature_counts_dir: Optional[Path] = None,
     gpt4_threshold_score: Optional[float] = None,
 ) -> pd.DataFrame:
     beaker_experiments = beaker.workspace.experiments(
@@ -145,39 +148,46 @@ def fetch_evals_rewardbench(
     )
 
     if experiments_file:
-        logging.info("Will attempt merge via feature hash")
 
-        # Turn features into a binary matrix
-        df_feats = get_features(
-            df_category_scores.reset_index().rename(columns={"index": "experiment"}),
-            col_name="experiment",
-            experiments_file=experiments_file,
-        )
+        if feature_counts_dir:
+            logging.info("Will read features from a features directory")
 
-        def extract_hash(string):
-            match = re.search(r"FEATS_(.*?)_SWAPS", string)
-            return match.group(1) if match else None
+        else:
+            logging.info("Will attempt merge via feature hash")
 
-        def extract_swaps(string):
-            return int(string.split("SWAPS")[1].removeprefix("_"))
-
-        # fmt: off
-        df_feats["hash"] = df_feats.index.to_series().apply(extract_hash)
-        df_feats["num_swaps"] = df_feats.index.to_series().apply(extract_swaps)
-        df_category_scores["hash"] = df_category_scores.index.to_series().apply(extract_hash)
-        df_subset_scores["hash"] = df_subset_scores.index.to_series().apply(extract_hash)
-        # fmt: on
-        overall_df = (
-            pd.merge(
-                df_feats,
-                df_category_scores,
-                how="inner",
-                on="hash",
+            # Turn features into a binary matrix
+            df_feats = get_features(
+                df_category_scores.reset_index().rename(
+                    columns={"index": "experiment"}
+                ),
+                col_name="experiment",
+                experiments_file=experiments_file,
             )
-            .reset_index()
-            .merge(df_subset_scores, how="inner", on="hash")
-            .set_index("hash")
-        )
+
+            def extract_hash(string):
+                match = re.search(r"FEATS_(.*?)_SWAPS", string)
+                return match.group(1) if match else None
+
+            def extract_swaps(string):
+                return int(string.split("SWAPS")[1].removeprefix("_"))
+
+            # fmt: off
+            df_feats["hash"] = df_feats.index.to_series().apply(extract_hash)
+            df_feats["num_swaps"] = df_feats.index.to_series().apply(extract_swaps)
+            df_category_scores["hash"] = df_category_scores.index.to_series().apply(extract_hash)
+            df_subset_scores["hash"] = df_subset_scores.index.to_series().apply(extract_hash)
+            # fmt: on
+            overall_df = (
+                pd.merge(
+                    df_feats,
+                    df_category_scores,
+                    how="inner",
+                    on="hash",
+                )
+                .reset_index()
+                .merge(df_subset_scores, how="inner", on="hash")
+                .set_index("hash")
+            )
 
     else:
         overall_df = df_category_scores.merge(
