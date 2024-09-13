@@ -38,6 +38,7 @@ The value passed to `--output_file` is the `--input_file` for this command.
     parser.add_argument("--simulator_n_instances", type=int, default=100, help="Number of instances for the simulator.")
     parser.add_argument("--simulator_n_train_samples", type=int, default=7000, help="Number of train samples for each simulated instance.")
     parser.add_argument("--simulator_output_dir", type=Path, default=Path("data/simulator"), help="Directory to save the simulated swaps.")
+    parser.add_argument("--simulator_max_budget", default=None, help="If set, will remove instances that exceed the max budget.")
     parser.add_argument("--id_col", type=str, default="id", help="Name of the id column.")
     parser.add_argument("--text_col", type=str, default="text", help="Name of the text column.")
     parser.add_argument("--response_a_col", type=str, default="completion_a", help="Name of the response A column.")
@@ -121,6 +122,11 @@ def main():
             sim_df.index.str.extract(r"SWAPS_(\d+)")[0].astype(int).to_list()
         )
         sim_df = sim_df.sort_values(by="predicted", ascending=False)
+
+        if args.simulator_max_budget:
+            logging.info(f"Removing instances that exceed {args.simulator_max_budget}")
+            sim_df = sim_df[sim_df["budget"] <= args.simulator_max_budget]
+
         sim_results_path = Path(args.simulator_output_dir) / "simulation_results.csv"
         sim_df.to_csv(sim_results_path)
         logging.info(f"Saving files to {sim_results_path}")
