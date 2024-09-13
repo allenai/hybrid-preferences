@@ -2,15 +2,19 @@ import argparse
 import logging
 import sys
 from pathlib import Path
+import random
 
 import lightgbm as lgb
 import pandas as pd
+import tqdm
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, root_mean_squared_error
 from sklearn.model_selection import train_test_split
 
 from src.simulator import Simulator
 from src.feature_extractor import get_all_features
+from scripts.get_count_feats import generate_instances
+from scripts.apply_data_model import convert_to_dpo_format
 
 
 def get_args():
@@ -34,6 +38,10 @@ The value passed to `--output_file` is the `--input_file` for this command.
     parser.add_argument("--input_file", type=Path, help="Path to the full training dataset (the dev dataset will be extracted from here).")
     parser.add_argument("--model", choices=["lightgbm", "linear"], default="linear", help="Model to use for training the regressor.")
     parser.add_argument("--log_level", default="DEBUG", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], help="Set the logging level.")
+    parser.add_argument("--simulator_reference", default=None, help="Path to the 'all-features.jsonl' file to simulate data points.")
+    parser.add_argument("--simulator_n_instances", type=int, default=100, help="Number of instances for the simulator.")
+    parser.add_argument("--simulator_n_train_samples", type=int, default=7000, help="Number of train samples for each simulated instance.")
+    parser.add_argument("--simulator_output_dir", type=Path, default=Path("data/simulator"), help="Directory to save the simulated swaps.")
     parser.add_argument("--random_seed", type=int, default=42, help="Set the random seed.")
     # fmt: on
     return parser.parse_args()
@@ -82,10 +90,25 @@ def main():
         {"feat": model.feature_names_in_, "coef": model.coef_}
     ).sort_values(by="coef", ascending=False)
     print("Top-5 and bottom-5 features")
-    print(feat_impt_df.head(5).to_markdown())
-    print(feat_impt_df.tail(5).to_markdown())
+    print(feat_impt_df.head(5).to_markdown(tablefmt="github"))
+    print(feat_impt_df.tail(5).to_markdown(tablefmt="github"))
 
-    logging.info("*** Simulation proper ***")
+    if args.simulator_reference:
+        logging.info("*** Simulation proper ***")
+        sim_df = pd.read_json(args.simulator_reference, lines=True)
+
+        budget_instances = generate_instances(
+            df=sim_df,
+            n_train_instances=args.simulator_n_instances,
+            n_samples=args.simulator_n_train_samples,
+            output_dir=args.simulator_output_dir,
+        )
+        breakpoint()
+    else:
+        logging.info(
+            "No value passed in --simulator_reference, will not run simulator."
+        )
+
     # simulator = Simulator(
     #     model=model,
     #     feat_list=X_train.columns,

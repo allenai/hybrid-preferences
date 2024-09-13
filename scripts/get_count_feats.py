@@ -43,14 +43,6 @@ def main():
     args = get_args()
     logging.info(f"Setting random seed to {args.random_seed}")
     random.seed(args.random_seed)
-
-    output_dir = Path(args.output_dir)
-    counts_dir = output_dir / "counts"
-    counts_dir.mkdir(parents=True, exist_ok=True)
-    swaps_dir = output_dir / "swaps"
-    swaps_dir.mkdir(parents=True, exist_ok=True)
-
-    all_features = get_all_features(n_bins=3)
     df = pd.read_json(args.input_path, lines=True)
 
     # Normalize column names
@@ -63,6 +55,28 @@ def main():
         }
     )
 
+    generate_instances(
+        df=df,
+        n_train_instances=args.n_train_instances,
+        n_samples=args.n_samples,
+        output_dir=args.output_dir,
+    )
+
+
+def generate_instances(
+    df: pd.DataFrame,
+    n_train_instances: int,
+    n_samples: int,
+    output_dir: Path,
+) -> dict[str, dict[str, int]]:
+
+    all_features = get_all_features(n_bins=3)
+
+    counts_dir = output_dir / "counts"
+    counts_dir.mkdir(parents=True, exist_ok=True)
+    swaps_dir = output_dir / "swaps"
+    swaps_dir.mkdir(parents=True, exist_ok=True)
+
     logging.info("Creating feature map...")
     # Create a dictionary of features and the `id` of instances that contain it
     feat_instance_map: dict[str, list[str]] = {}
@@ -70,11 +84,12 @@ def main():
         instances = get_instances(df, feature_str=feature_str)
         feat_instance_map[feature_str] = instances if len(instances) > 0 else []
 
-    budgets = random.sample(range(1, len(df) + 1), args.n_train_instances)
+    budgets = random.sample(range(1, len(df) + 1), n_train_instances)
 
     logging.info("Getting subsets for each budget...")
     tags = []
     uuids = [uuid.uuid4().hex for _ in range(len(budgets))]
+    budget_instances: dict[str, dict[str, int]] = {}
     for id, budget in tqdm(zip(uuids, budgets), total=len(budgets)):
         instances_to_swap = run_knapsack(capacity=budget, items=feat_instance_map)
 
@@ -106,12 +121,10 @@ def main():
             if converted_instance is not None:
                 converted_annotations.append(converted_instance)
 
-        if args.n_samples < len(converted_annotations):
-            converted_annotations = random.sample(converted_annotations, args.n_samples)
+        if n_samples < len(converted_annotations):
+            converted_annotations = random.sample(converted_annotations, n_samples)
 
-        swaps_outfile = (
-            swaps_dir / f"human_datamodel_counts_{args.n_samples}_{tag}.jsonl"
-        )
+        swaps_outfile = swaps_dir / f"human_datamodel_counts_{n_samples}_{tag}.jsonl"
         with swaps_outfile.open("w") as f:
             for annotation in converted_annotations:
                 f.write(json.dumps(annotation) + "\n")
@@ -128,12 +141,16 @@ def main():
         with counts_outfile.open("w") as file:
             json.dump(budget_instance_map, file, indent=4)
 
+        budget_instances[tag] = budget_instance_map
+
         # Save the tag file to create the experiments.txt later
         tags.append(f"{swaps_outfile.stem}::{counts_outfile.stem}")
 
     experiments_file = output_dir / "experiments.txt"
     with experiments_file.open("w") as f:
         f.write("\n".join(tags))
+
+    return budget_instances
 
 
 def get_instances(df: "pd.DataFrame", feature_str: str) -> list[str]:
