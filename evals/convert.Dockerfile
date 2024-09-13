@@ -20,6 +20,7 @@ RUN pip install --upgrade pip && \
     tqdm \
     sentencepiece \
     jax==0.4.14 \
+    jaxlib==0.4.14 \ 
     flax==0.7.0 \
     optax==0.1.7 \
     distrax==0.1.4 \

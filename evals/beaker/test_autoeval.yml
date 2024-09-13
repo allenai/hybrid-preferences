@@ -9,7 +9,6 @@ tasks:
     arguments:
       - --gcs_bucket
       - ljm-dev
-      - --output_dir
       - --gcs_dir_path
       - human-preferences/rm_checkpoints/helpsteer2/tulu2_13b_rm_human_datamodel_counts_7000_ID__12d300927a0d4eb08226bf126065bec5__SWAPS_2978
       - --prefix
