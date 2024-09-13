@@ -3,15 +3,14 @@ import hashlib
 import json
 import logging
 import random
-import sys
 import re
+import sys
 from pathlib import Path
 from typing import Optional
 
 import pandas as pd
 
-from src.feature_extractor import FeatureExtractor
-from src.feature_extractor import sample_feature_combinations
+from src.feature_extractor import FeatureExtractor, sample_feature_combinations
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",

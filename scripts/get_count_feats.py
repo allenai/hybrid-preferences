@@ -1,15 +1,16 @@
-import sys
 import argparse
-import logging
-from pathlib import Path
-import pandas as pd
-import random
-import uuid
 import json
+import logging
+import random
+import sys
+import uuid
+from pathlib import Path
+
+import pandas as pd
 from tqdm import tqdm
 
-from src.feature_extractor import get_all_features, FeatureExtractor
 from scripts.apply_data_model import convert_to_dpo_format
+from src.feature_extractor import FeatureExtractor, get_all_features
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",

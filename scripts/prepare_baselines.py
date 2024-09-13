@@ -1,13 +1,12 @@
-import sys
 import argparse
-from pathlib import Path
+import json
 import logging
 import random
-import json
+import sys
+from pathlib import Path
 
-import pandas as pd
 import numpy as np
-
+import pandas as pd
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
