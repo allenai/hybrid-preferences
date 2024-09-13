@@ -2,19 +2,15 @@ import argparse
 import logging
 import sys
 from pathlib import Path
-import random
 
 import lightgbm as lgb
 import pandas as pd
-import tqdm
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, root_mean_squared_error
 from sklearn.model_selection import train_test_split
 
-from src.simulator import Simulator
 from src.feature_extractor import get_all_features
 from scripts.get_count_feats import generate_instances
-from scripts.apply_data_model import convert_to_dpo_format
 
 
 def get_args():
@@ -101,7 +97,7 @@ def main():
         logging.info("*** Simulation proper ***")
         ref_df = pd.read_json(args.simulator_reference, lines=True)
 
-        ref_df = sim_df.rename(
+        ref_df = ref_df.rename(
             columns={
                 args.id_col: "id",
                 args.text_col: "prompt",
@@ -120,8 +116,9 @@ def main():
         ).transpose()
 
         sim_df["predicted"] = model.predict(sim_df)
+        sim_df["uuid"] = sim_df.index.str.extract(r"ID__(\w+)__")[0]
+        sim_df["budget"] = sim_df.index.str.extract(r"SWAPS_(\d+)")[0].astype(int)
         sim_df = sim_df.sort_values(by="predicted", ascending=False)
-        breakpoint()
 
     else:
         logging.info(
