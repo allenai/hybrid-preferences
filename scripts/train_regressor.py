@@ -42,6 +42,10 @@ The value passed to `--output_file` is the `--input_file` for this command.
     parser.add_argument("--simulator_n_instances", type=int, default=100, help="Number of instances for the simulator.")
     parser.add_argument("--simulator_n_train_samples", type=int, default=7000, help="Number of train samples for each simulated instance.")
     parser.add_argument("--simulator_output_dir", type=Path, default=Path("data/simulator"), help="Directory to save the simulated swaps.")
+    parser.add_argument("--id_col", type=str, default="id", help="Name of the id column.")
+    parser.add_argument("--text_col", type=str, default="text", help="Name of the text column.")
+    parser.add_argument("--response_a_col", type=str, default="completion_a", help="Name of the response A column.")
+    parser.add_argument("--response_b_col", type=str, default="completion_b", help="Name of the response A column.")
     parser.add_argument("--random_seed", type=int, default=42, help="Set the random seed.")
     # fmt: on
     return parser.parse_args()
@@ -95,15 +99,30 @@ def main():
 
     if args.simulator_reference:
         logging.info("*** Simulation proper ***")
-        sim_df = pd.read_json(args.simulator_reference, lines=True)
+        ref_df = pd.read_json(args.simulator_reference, lines=True)
 
-        budget_instances = generate_instances(
-            df=sim_df,
-            n_train_instances=args.simulator_n_instances,
-            n_samples=args.simulator_n_train_samples,
-            output_dir=args.simulator_output_dir,
+        ref_df = sim_df.rename(
+            columns={
+                args.id_col: "id",
+                args.text_col: "prompt",
+                args.response_a_col: "completion_a",
+                args.response_b_col: "completion_b",
+            }
         )
+
+        sim_df = pd.DataFrame(
+            generate_instances(
+                df=ref_df,
+                n_train_instances=args.simulator_n_instances,
+                n_samples=args.simulator_n_train_samples,
+                output_dir=args.simulator_output_dir,
+            )
+        ).transpose()
+
+        sim_df["predicted"] = model.predict(sim_df)
+        sim_df = sim_df.sort_values(by="predicted", ascending=False)
         breakpoint()
+
     else:
         logging.info(
             "No value passed in --simulator_reference, will not run simulator."
