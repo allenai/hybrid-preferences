@@ -2,20 +2,20 @@ version: v2
 budget: ai2/oe-adapt
 description: "Convert model to pytorch and launch a rewardbench eval job"
 tasks:
-  - name: test-convert
+  - name: template
     image:
       beaker: ljm/easylm-convert
     command: ["python", "convert_to_hf.py"]
     arguments:
       - --gcs_bucket
       - ljm-dev
-      - --gcs_dir_path
-      - human-preferences/rm_checkpoints/helpsteer2/tulu2_13b_rm_human_datamodel_counts_7000_ID__12d300927a0d4eb08226bf126065bec5__SWAPS_2978
       - --prefix
       - helpsteer2-counts
       - --batch_size
       - 1
       - --is_reward_model
+    result:
+      path: /output
     resources:
       gpuCount: 1
     context:
