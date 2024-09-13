@@ -116,10 +116,14 @@ def main():
         ).transpose()
 
         sim_df["predicted"] = model.predict(sim_df)
-        sim_df["uuid"] = sim_df.index.str.extract(r"ID__(\w+)__")[0]
-        sim_df["budget"] = sim_df.index.str.extract(r"SWAPS_(\d+)")[0].astype(int)
+        sim_df["uuid"] = sim_df.index.str.extract(r"ID__(\w+)__")[0].to_list()
+        sim_df["budget"] = (
+            sim_df.index.str.extract(r"SWAPS_(\d+)")[0].astype(int).to_list()
+        )
         sim_df = sim_df.sort_values(by="predicted", ascending=False)
-
+        sim_results_path = Path(args.simulator_output_dir) / "simulation_results.csv"
+        sim_df.to_csv(sim_results_path)
+        logging.info(f"Saving files to {sim_results_path}")
     else:
         logging.warn(
             "No value passed in --simulator_reference, will not run simulator."
