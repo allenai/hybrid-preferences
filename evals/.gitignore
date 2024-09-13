@@ -1,2 +1,2 @@
 *.json
-experiments.yml
+experiments*.yml
