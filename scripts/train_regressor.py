@@ -121,17 +121,9 @@ def main():
         sim_df = sim_df.sort_values(by="predicted", ascending=False)
 
     else:
-        logging.info(
+        logging.warn(
             "No value passed in --simulator_reference, will not run simulator."
         )
-
-    # simulator = Simulator(
-    #     model=model,
-    #     feat_list=X_train.columns,
-    #     # precomputed_features=feats_df,
-    # )
-    # simulated_feats = simulator.sample_combinations(n=3_000)
-    breakpoint()
 
 
 def train_linear_regressor(X_train, X_test, y_train, y_test):
