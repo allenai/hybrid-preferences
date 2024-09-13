@@ -67,5 +67,8 @@ RUN gcloud auth activate-service-account --key-file=/root/.config/gcloud/applica
 RUN gsutil cp gs://hamishi-east1/easylm/llama/tokenizer.model .
 COPY convert_to_hf.py .
 COPY download-beaker.sh .
-RUN chmod +x ./download-beaker.sh && ./download-beaker.sh
+RUN apt-get update && \
+    apt-get -y install sudo && \
+    chmod +x ./download-beaker.sh && \
+    ./download-beaker.sh
 RUN beaker --version
