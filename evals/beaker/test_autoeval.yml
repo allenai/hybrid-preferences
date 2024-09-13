@@ -1,6 +1,6 @@
 version: v2
 budget: ai2/oe-adapt
-description: "Get features using datamodel approach"
+description: "Convert model to pytorch and launch a rewardbench eval job"
 tasks:
   - name: test-convert
     image:
