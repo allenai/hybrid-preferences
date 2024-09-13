@@ -1,9 +1,9 @@
+from pathlib import Path
 from typing import Optional
 
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from pathlib import Path
 
 from src.feature_extractor import sample_feature_combinations
 from src.utils import tag_to_normal

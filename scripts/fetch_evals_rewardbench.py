@@ -1,4 +1,5 @@
 import argparse
+import json
 import logging
 import re
 import sys
@@ -86,7 +87,9 @@ def get_args():
     parser.add_argument("--beaker_workspace", default="ai2/ljm-oe-adapt", help="Beaker workspace to fetch experiments.")
     parser.add_argument("--experiment_prefix", default="rm-eval-", help="Prefix for experiments to fetch.")
     parser.add_argument("--experiments_file", default=None, type=Path, help="Path to a TXT file containing a list that maps an experiment to the features.")
-    parser.add_argument("--gpt4_threshold_score", type=float, default=None, help="GPT-4 threshold score to create binary labels")
+    parser.add_argument("--feature_counts_dir", default=None, type=Path, help="Path to a directory containing JSON files that contain feature counts.")
+    parser.add_argument("--gpt4_threshold_score", type=float, default=None, help="GPT-4 threshold score to create binary labels.")
+    parser.add_argument("--dataset_total_size", type=int, default=None, help="Number of instances in the original dataset before downsampling.")
     # fmt:on
     return parser.parse_args()
 
@@ -107,7 +110,9 @@ def main():
         beaker_workspace=args.beaker_workspace,
         experiment_prefix=args.experiment_prefix,
         experiments_file=args.experiments_file,
+        feature_counts_dir=args.feature_counts_dir,
         gpt4_threshold_score=args.gpt4_threshold_score,
+        dataset_total_size=args.dataset_total_size,
     )
 
     logging.info(f"Saving {len(overall_df)} results to {args.output_file}")
@@ -120,7 +125,9 @@ def fetch_evals_rewardbench(
     beaker_workspace: str,
     experiment_prefix: str,
     experiments_file: Optional[Path] = None,
+    feature_counts_dir: Optional[Path] = None,
     gpt4_threshold_score: Optional[float] = None,
+    dataset_total_size: Optional[int] = None,
 ) -> pd.DataFrame:
     beaker_experiments = beaker.workspace.experiments(
         beaker_workspace,
@@ -144,7 +151,39 @@ def fetch_evals_rewardbench(
         ascending=False,
     )
 
-    if experiments_file:
+    if feature_counts_dir:
+        logging.info("Will read features from a features directory")
+        df_category_scores["uuid"] = df_category_scores.index.to_series().apply(
+            lambda x: re.search(r"ID__([a-f0-9]+)__", x).group(1)
+        )
+        df_category_scores["budget"] = df_category_scores.index.to_series().apply(
+            lambda x: re.search(r"SWAPS_(\d+)", x).group(1)
+        )
+        if dataset_total_size:
+            logging.info("Scaling the budget to current dataset size")
+            df_category_scores["budget"] = df_category_scores["budget"].apply(
+                lambda x: int(int(x) * 7000 / dataset_total_size)
+            )
+        df_subset_scores["uuid"] = df_subset_scores.index.to_series().apply(
+            lambda x: re.search(r"ID__([a-f0-9]+)__", x).group(1)
+        )
+
+        feats = []
+        for feat_file in feature_counts_dir.glob("*.json"):
+            uuid = re.search(r"ID__([a-f0-9]+)__", feat_file.stem).group(1)
+            df_feat = (
+                pd.read_json(feat_file, typ="dictionary")
+                .rename(index=uuid)
+                .reset_index()
+                .set_index("index")
+                .transpose()
+            )
+            feats.append(df_feat)
+        df_feats = pd.concat(feats).reset_index().rename(columns={"index": "uuid"})
+        df_scores = df_category_scores.merge(df_subset_scores, on="uuid", how="left")
+        overall_df = df_scores.merge(df_feats, on="uuid", how="left")
+
+    elif experiments_file:
         logging.info("Will attempt merge via feature hash")
 
         # Turn features into a binary matrix

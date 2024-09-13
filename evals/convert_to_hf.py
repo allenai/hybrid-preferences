@@ -61,6 +61,7 @@ def get_args():
     parser.add_argument("--is_reward_model", default=False, action="store_true", help="Set if converting a reward model.")
     parser.add_argument("--beaker_workspace", default="ai2/ljm-oe-adapt", help="Beaker workspace to upload datasets.")
     parser.add_argument("--max_workers", default=1, type=int, help="Number of workers to spawn when uploading to Beaker datasets.")
+    parser.add_argument("--force", action="store_true", default=False, help="If force, just convert the model.")
     # fmt: on
     return parser.parse_args()
 
@@ -88,14 +89,15 @@ def main():
     # Do not process files that were already done by
     # checking if the dataset in Beaker already exists
     existing_datasets = [d.name for d in beaker.workspace.datasets(match="tulu2_13b")]
-    exp_names = [Path(s).parents[0].name.split("--")[0] for s in src_files]
-    diff = [
-        src_file
-        for src_file, experiment in zip(src_files, exp_names)
-        if not any(experiment in b_item for b_item in existing_datasets)
-    ]
-    logging.info(f"Found {len(src_files) - len(diff)} datasets already done!")
-    src_files = diff
+    if args.force:
+        exp_names = [Path(s).parents[0].name.split("--")[0] for s in src_files]
+        diff = [
+            src_file
+            for src_file, experiment in zip(src_files, exp_names)
+            if not any(experiment in b_item for b_item in existing_datasets)
+        ]
+        logging.info(f"Found {len(src_files) - len(diff)} datasets already done!")
+        src_files = diff
     logging.info(f"Running {len(src_files)} experiments.")
     batches = make_batch(src_files, batch_size=args.batch_size)
 
