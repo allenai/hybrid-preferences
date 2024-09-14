@@ -1,14 +1,13 @@
 import argparse
 import logging
-import subprocess
 import sys
+import time
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, Optional
+from tqdm import tqdm
 
-from beaker.client import Beaker, Constraints, DataMount, DataSource, EnvVar
-from beaker.client import ExperimentSpec, ImageSource, ResultSpec, TaskContext
-from beaker.client import TaskResources, TaskSpec
+from beaker.client import Beaker
+from beaker.client import ExperimentSpec
 
 from evals.convert_to_hf import list_directories_with_prefix
 
@@ -35,6 +34,7 @@ def get_args():
     parser.add_argument("--gcs_bucket", type=str, help="GCS bucket where the models are stored (NO need for gs:// prefix).")
     parser.add_argument("--gcs_dir_path", type=str, help="The directory path (or prefix) of models (e.g., human-preferences/rm_checkpoints/tulu2_13b_rm_human_datamodel_).")
     parser.add_argument("--beaker_workspace", default="ai2/ljm-oe-adapt", help="Beaker workspace to upload datasets.")
+    parser.add_argument("--cleanup", action="store_true", default=False, help="If set, will delete uncommitted datasets (make sure no other jobs are running!)")
     # fmt: on
     return parser.parse_args()
 
@@ -60,7 +60,23 @@ def main():
 
     # Do not process files that were already done by
     # checking if the dataset in Beaker already exists
-    existing_datasets = [d.name for d in beaker.workspace.datasets(match="tulu2_13b")]
+    existing_datasets = [
+        d.name for d in beaker.workspace.datasets(match="tulu2_13b", uncommitted=False)
+    ]
+
+    # Delete datasets that weren't committed
+    if args.cleanup:
+        logging.info("Deleting uncommitted datasets")
+        uncommited_datasets = beaker.workspace.datasets(
+            match="tulu2_13b", uncommitted=True
+        )
+        for uncommited_dataset in tqdm(
+            uncommited_datasets, total=len(uncommited_datasets)
+        ):
+            logging.debug(f"Deleting {uncommited_dataset.name}")
+            beaker.dataset.delete(uncommited_dataset)
+            time.sleep(3)
+
     exp_names = [Path(s).parents[0].name.split("--")[0] for s in src_files]
     diff = [
         src_file
