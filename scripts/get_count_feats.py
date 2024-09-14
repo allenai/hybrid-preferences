@@ -5,6 +5,7 @@ import random
 import sys
 import uuid
 from pathlib import Path
+from typing import Optional
 
 import pandas as pd
 from tqdm import tqdm
@@ -65,9 +66,10 @@ def main():
 
 def generate_instances(
     df: pd.DataFrame,
-    n_train_instances: int,
     n_samples: int,
     output_dir: Path,
+    n_train_instances: Optional[int] = None,
+    budgets: Optional[list[int]] = None,
 ) -> dict[str, dict[str, int]]:
 
     all_features = get_all_features(n_bins=3)
@@ -84,7 +86,9 @@ def generate_instances(
         instances = get_instances(df, feature_str=feature_str)
         feat_instance_map[feature_str] = instances if len(instances) > 0 else []
 
-    budgets = random.sample(range(1, len(df) + 1), n_train_instances)
+    if not budgets:
+        logging.info("Generating random budgets")
+        budgets = random.sample(range(1, len(df) + 1), n_train_instances)
 
     logging.info("Getting subsets for each budget...")
     tags = []

@@ -45,8 +45,10 @@ def main():
 
     # Given a budget, get the top-k and compute the cumulative gain
     for budget in args.budgets:
+        if 0 <= budget <= 1:
+            budget = int(len(input_df) * budget)
+        logging.info(f"Creating DPO swaps for budget: {budget}")
         breakpoint()
-        pass
 
     # Might also need to get the predicted score from the model
 
