@@ -39,3 +39,40 @@ tasks:
         secret: OPENAI_API_KEY
       - name: TOKENIZERS_PARALLELISM
         value: false
+  - name: get-features-datamodel-multipref-overall
+    image:
+      beaker: ljm/human-datamodel
+    command: ["python", "-m", "scripts.get_count_feats"]
+    arguments:
+      - --input_path
+      - /source/features.jsonl
+      - --output_dir
+      - /output/
+      - --n_train_instances
+      - 500
+      - --n_samples
+      - 7000
+      - --response_a_col
+      - response_a
+      - --response_b_col
+      - response_b
+    datasets:
+      - mountPath: /source/
+        source:
+          beaker: 01J7KYTWAJFSEQMQCHTWYDV48A
+    result:
+      path: /output
+    resources:
+      gpuCount: 1
+    context:
+      priority: normal
+      preemptible: true
+    constraints:
+      cluster:
+        - ai2/allennlp-cirrascale
+        - ai2/jupiter-cirrascale-2
+    envVars:
+      - name: OPENAI_API_KEY
+        secret: OPENAI_API_KEY
+      - name: TOKENIZERS_PARALLELISM
+        value: false
