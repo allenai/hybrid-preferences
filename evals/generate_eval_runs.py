@@ -1,14 +1,12 @@
 import argparse
 import logging
-import subprocess
 import sys
+import time
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, Optional
 
-from beaker.client import Beaker, Constraints, DataMount, DataSource, EnvVar
-from beaker.client import ExperimentSpec, ImageSource, ResultSpec, TaskContext
-from beaker.client import TaskResources, TaskSpec
+from beaker.client import Beaker
+from beaker.client import ExperimentSpec
 
 from evals.convert_to_hf import list_directories_with_prefix
 
@@ -60,7 +58,18 @@ def main():
 
     # Do not process files that were already done by
     # checking if the dataset in Beaker already exists
-    existing_datasets = [d.name for d in beaker.workspace.datasets(match="tulu2_13b")]
+    existing_datasets = [
+        d.name for d in beaker.workspace.datasets(match="tulu2_13b", uncommitted=False)
+    ]
+
+    # Delete datasets that weren't committed
+    logging.info("Deleting uncommitted datasets")
+    for uncommited_dataset in beaker.workspace.datasets(
+        match="tulu2_13b", uncommitted=True
+    ):
+        beaker.dataset.delete(uncommited_dataset)
+        time.sleep(5)
+
     exp_names = [Path(s).parents[0].name.split("--")[0] for s in src_files]
     diff = [
         src_file
