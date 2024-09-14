@@ -3,15 +3,15 @@ import logging
 import sys
 from pathlib import Path
 
-import lightgbm as lgb
 import joblib
+import lightgbm as lgb
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, root_mean_squared_error
 from sklearn.model_selection import train_test_split
 
-from src.feature_extractor import get_all_features
 from scripts.get_count_feats import generate_instances
+from src.feature_extractor import get_all_features
 
 
 def get_args():

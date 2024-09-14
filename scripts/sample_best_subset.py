@@ -1,13 +1,17 @@
-import sys
+import argparse
+import json
 import logging
 import random
-import argparse
+import sys
+import uuid
 from pathlib import Path
 
-
-import pandas as pd
 import joblib
+import pandas as pd
 from tqdm import tqdm
+
+from scripts.apply_data_model import convert_to_dpo_format
+from scripts.get_count_feats import get_instances
 from src.feature_extractor import FeatureExtractor
 
 logging.basicConfig(
@@ -26,6 +30,11 @@ def get_args():
     parser.add_argument("--output_dir", type=Path, required=True, help="Path to save the experiments.txt file and the DPO dataset for training.")
     parser.add_argument("--model_path", type=Path, required=True, help="Path to the model PKL file."),
     parser.add_argument("--budgets", nargs="*", type=float, required=True, help="Budget: percentage of the dataset to be routed to humans.")
+    parser.add_argument("--n_samples", type=int default=7000, help="Number of instances per proxy dataset.")
+    parser.add_argument("--id_col", type=str, default="id", help="Name of the id column.")
+    parser.add_argument("--text_col", type=str, default="text", help="Name of the text column.")
+    parser.add_argument("--response_a_col", type=str, default="completion_a", help="Name of the response A column.")
+    parser.add_argument("--response_b_col", type=str, default="completion_b", help="Name of the response A column.")
     # fmt: on
     return parser.parse_args()
 
@@ -33,7 +42,23 @@ def get_args():
 def main():
     args = get_args()
     input_df = pd.read_json(args.input_path, lines=True)
+    # Normalize column names
+    input_df = input_df.rename(
+        columns={
+            args.id_col: "id",
+            args.text_col: "prompt",
+            args.response_a_col: "completion_a",
+            args.response_b_col: "completion_b",
+        }
+    )
     model = joblib.load(args.model_path)
+
+    # Setup output directories
+    output_dir = Path(args.output_dir)
+    counts_dir = output_dir / "counts"
+    counts_dir.mkdir(parents=True, exist_ok=True)
+    swaps_dir = output_dir / "swaps"
+    swaps_dir.mkdir(parents=True, exist_ok=True)
 
     # Compute gains
     weights_df = pd.DataFrame({"feat": model.feature_names_in_, "coef": model.coef_})
@@ -44,10 +69,70 @@ def main():
     gain_df = gain_df.sort_values(by="gain", ascending=False).reset_index(drop=True)
 
     # Given a budget, get the top-k and compute the cumulative gain
-    for budget in args.budgets:
+
+    budgets = args.budgets
+    uuids = [uuid.uuid4().hex for _ in range(len(budgets))]
+    tags = []
+    budget_instances: dict[str, dict[str, int]] = {}
+    for id, budget in tqdm(zip(uuids, budgets), total=len(budgets)):
         if 0 <= budget <= 1:
             budget = int(len(input_df) * budget)
         logging.info(f"Creating DPO swaps for budget: {budget}")
+        instances_to_swap = gain_df[:budget]["id"].to_list()
+
+        df_swapped = input_df.copy(deep=True)
+        df_swapped["pref"] = df_swapped.apply(
+            lambda row: (
+                row["pref_human"]
+                if row["id"] in instances_to_swap
+                else row["pref_gpt4"]
+            ),
+            axis=1,
+        )
+        df_swapped["is_swapped"] = input_df["id"].apply(lambda x: x in instances_to_swap)
+        annotations = df_swapped.to_dict(orient="records")
+        converted_annotations = []
+        for annotation in annotations:
+            if "model_a" not in annotation:
+                annotation["model_a"] = ""
+            if "model_b" not in annotation:
+                annotation["model_b"] = ""
+            if "source" not in annotation:
+                annotation["source"] = ""
+            if "highest_level_degree" not in annotation:
+                annotation["highest_level_degree"] = ""
+            converted_instance = convert_to_dpo_format(annotation, annotation["pref"])
+            if converted_instance is not None:
+                converted_annotations.append(converted_instance)
+
+        if args.n_samples < len(converted_annotations):
+            converted_annotations = random.sample(converted_annotations, args.n_samples)
+
+        gain = gain_df[:budget]["gain"].sum()
+        tag = f"GAIN_{gain:.3f}__ID__{id}__SWAPS_{budget}"
+
+        swaps_outfile = swaps_dir / f"human_datamodel_counts_{args.n_samples}_{tag}.jsonl"
+        with swaps_outfile.open("w") as f:
+            for annotation in converted_annotations:
+                f.write(json.dumps(annotation) + "\n")
+
+        # Save the budget
+        budget_instance_map = {}
+        swapped_ids = [eg["id"] for eg in converted_annotations if eg["is_swapped"]]
+        swapped_df = input_df[input_df["id"].isin(swapped_ids)].reset_index(drop=True)
+        all_features = weights_df["feat"].to_list()
+        for feature_str in all_features:
+            instances = get_instances(swapped_df, feature_str)
+            budget_instance_map[feature_str] = len(instances)
+
+        counts_outfile = counts_dir / f"regressor_feats_{tag}.json"
+        with counts_outfile.open("w") as file:
+            json.dump(budget_instance_map, file, indent=4)
+
+        budget_instances[tag] = budget_instance_map
+
+        # Save the tag file to create the experiments.txt later
+        tags.append(f"{swaps_outfile.stem}::{counts_outfile.stem}")
         breakpoint()
 
     # Might also need to get the predicted score from the model
