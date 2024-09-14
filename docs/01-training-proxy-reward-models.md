@@ -2,6 +2,8 @@
 
 > In this guide, we will train **proxy reward models** on a Google Cloud Engine TPU.
 
+These instructions are also the same when you start training the best mixes, or any other reward / DPO models you need in your experiment.
+
 ## Create proxy DPO training datasets
 
 First, we need to create **proxy DPO training datasets** that simulate different mixes of direct and synthetic human preferences.

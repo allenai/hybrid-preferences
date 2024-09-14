@@ -1,10 +1,10 @@
-## Evaluating proxy reward models
+# Evaluating proxy reward models
 
 > In this guide we will **evaluate proxy reward models** on [RewardBench](https://huggingface.co/spaces/allenai/reward-bench) ([Lambert et al., 2024](https://arxiv.org/abs/2403.13787)) to get the target values for our regressor.
 
 ## Converting to Pytorch format and getting the RewardBench results
 
-So now you've trained a reward model, and the output gets stored in Google Cloud Storage.
+So now [you've trained a reward model, and the output gets stored in Google Cloud Storage](https://github.com/allenai/human-pref-datamodel/blob/main/docs/01-training-proxy-reward-models.md#train-reward-models-on-a-tpu).
 In order to evaluate that model, we need to convert it to the Pytorch format first&mdash; easy to say but this stuff takes time and has a lot of steps (around ~15-20 minutes even on Cirrascale).
 
 We need to run things in parallel.
