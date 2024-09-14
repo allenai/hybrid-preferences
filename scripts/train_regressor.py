@@ -22,17 +22,17 @@ In order to get the training data, you need to run the following command:
 ```
 # Assuming you want helpsteer2's count features
 DATASET=helpsteer2 python3 scripts/fetch_evals_rewardbench.py \
-    --output_file data/$DATASET-counts-runs.csv \
+    --output_path data/$DATASET-counts-runs.csv \
     --experiment_prefix rm-eval-$DATASET-count \
     --feature_counts_dir data/$DATASET_count_feats/counts/ \
     --dataset_total_size 10160
 ```
 
-The value passed to `--output_file` is the `--input_file` for this command.
+The value passed to `--output_path` is the `--input_path` for this command.
 """
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter, description=description)
-    parser.add_argument("--input_file", type=Path, required=True, help="Path to the full training dataset (the dev dataset will be extracted from here).")
-    parser.add_argument("--save_features_path", type=Path, required=True, help="Path to save the features")
+    parser.add_argument("--input_path", type=Path, required=True, help="Path to the full training dataset (the dev dataset will be extracted from here).")
+    parser.add_argument("--output_path", type=Path, required=True, help="Path to save the features as a JSON file.")
     parser.add_argument("--model", choices=["lightgbm", "linear"], default="linear", help="Model to use for training the regressor.")
     parser.add_argument("--log_level", default="DEBUG", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], help="Set the logging level.")
     parser.add_argument("--simulator_reference", default=None, help="Path to the 'all-features.jsonl' file to simulate data points.")
@@ -59,7 +59,7 @@ def main():
         level=getattr(logging, args.log_level),
     )
 
-    input_df = pd.read_csv(args.input_file)
+    input_df = pd.read_csv(args.input_path)
     all_feats = get_all_features()
     modeling_df = input_df[[col for col in input_df.columns if col in all_feats]]
 

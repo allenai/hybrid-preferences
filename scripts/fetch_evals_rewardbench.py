@@ -83,7 +83,7 @@ def get_args():
     # fmt: off
     description = "Get results from Beaker that evaluates on RewardBench"
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output_file", type=Path, help="CSV Filepath to save output features and category scores.")
+    parser.add_argument("--output_path", type=Path, help="CSV Filepath to save output features and category scores.")
     parser.add_argument("--beaker_workspace", default="ai2/ljm-oe-adapt", help="Beaker workspace to fetch experiments.")
     parser.add_argument("--experiment_prefix", default="rm-eval-", help="Prefix for experiments to fetch.")
     parser.add_argument("--experiments_file", default=None, type=Path, help="Path to a TXT file containing a list that maps an experiment to the features.")
@@ -115,9 +115,9 @@ def main():
         dataset_total_size=args.dataset_total_size,
     )
 
-    logging.info(f"Saving {len(overall_df)} results to {args.output_file}")
-    overall_df.to_csv(args.output_file)
-    logging.info(f"Saved on {args.output_file}")
+    logging.info(f"Saving {len(overall_df)} results to {args.output_path}")
+    overall_df.to_csv(args.output_path)
+    logging.info(f"Saved on {args.output_path}")
 
 
 def fetch_evals_rewardbench(
