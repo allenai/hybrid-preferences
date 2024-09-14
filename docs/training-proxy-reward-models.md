@@ -26,10 +26,10 @@ This command will produce three types of artifacts in the output directory:
 
 ## Train reward models on a TPU
 
-## Submitting TPU jobs
+### Submitting TPU jobs
 
 You need to upload the JSONL datasets in Google Cloud Storage.
-In addition, you also need to get the `experiments.txt` (the file created when you pass something to `--append_to_experiments_file`) file as this automatically lists all experiments we want to run in the TPU.
+In addition, you also need to get the `experiments.txt` file as this automatically lists all experiments we want to run in the TPU.
 Remember, the name of the dataset will also be the name of the experiment.
 
 First, create and setup the TPU environment:
