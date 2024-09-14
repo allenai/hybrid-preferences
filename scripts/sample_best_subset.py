@@ -74,7 +74,7 @@ def main():
     uuids = [uuid.uuid4().hex for _ in range(len(budgets))]
     tags = []
     budget_instances: dict[str, dict[str, int]] = {}
-    for id, budget in tqdm(zip(uuids, budgets), total=len(budgets)):
+    for id, budget in zip(uuids, budgets):
         if 0 <= budget <= 1:
             budget = int(len(input_df) * budget)
         logging.info(f"Creating DPO swaps for budget: {budget}")
