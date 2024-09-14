@@ -32,7 +32,7 @@ The value passed to `--output_path` is the `--input_path` for this command.
 """
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter, description=description)
     parser.add_argument("--input_path", type=Path, required=True, help="Path to the full training dataset (the dev dataset will be extracted from here).")
-    parser.add_argument("--output_path", type=Path, required=True, help="Path to save the features as a JSON file.")
+    parser.add_argument("--output_path", type=Path, required=True, help="Path to save the features as a JSONL file.")
     parser.add_argument("--model", choices=["lightgbm", "linear"], default="linear", help="Model to use for training the regressor.")
     parser.add_argument("--log_level", default="DEBUG", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], help="Set the logging level.")
     parser.add_argument("--simulator_reference", default=None, help="Path to the 'all-features.jsonl' file to simulate data points.")
@@ -132,9 +132,14 @@ def main():
         sim_df.to_csv(sim_results_path)
         logging.info(f"Saving files to {sim_results_path}")
     else:
-        logging.warn(
+        logging.warning(
             "No value passed in --simulator_reference, will not run simulator."
         )
+
+    output_path = Path(args.output_path)
+    logging.info(f"Saving model coefficients to {output_path}")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    feat_impt_df.to_json(output_path, lines=True, orient="records")
 
 
 def train_linear_regressor(X_train, X_test, y_train, y_test):
