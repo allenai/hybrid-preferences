@@ -111,7 +111,7 @@ def main():
             converted_annotations = random.sample(converted_annotations, args.n_samples)
 
         gain = gain_df[:budget]["gain"].sum()
-        tag = f"GAIN_{gain:.3f}__ID__{id}__SWAPS_{budget}"
+        tag = f"ID__{id}__SWAPS_{budget}"
 
         swaps_outfile = (
             swaps_dir / f"human_datamodel_counts_{args.n_samples}_{tag}.jsonl"
