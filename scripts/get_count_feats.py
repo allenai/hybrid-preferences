@@ -171,6 +171,8 @@ def get_instances(df: "pd.DataFrame", feature_str: str) -> list[str]:
     elif "analyzer_open_set" in feature_str:
         feature_name = params["feature_name"]
         filtered_df = df[df[feature_name].apply(lambda x: x is not None and len(x) > 0)]
+    else:
+        raise ValueError(f"Unknown feature: {feature_str}")
 
     return filtered_df["id"].to_list()
 
