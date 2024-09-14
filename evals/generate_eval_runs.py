@@ -4,6 +4,7 @@ import sys
 import time
 from copy import deepcopy
 from pathlib import Path
+from tqdm import tqdm
 
 from beaker.client import Beaker
 from beaker.client import ExperimentSpec
@@ -66,8 +67,11 @@ def main():
     # Delete datasets that weren't committed
     if args.cleanup:
         logging.info("Deleting uncommitted datasets")
-        for uncommited_dataset in beaker.workspace.datasets(
+        uncommited_datasets = beaker.workspace.datasets(
             match="tulu2_13b", uncommitted=True
+        )
+        for uncommited_dataset in tqdm(
+            uncommited_datasets, total=len(uncommited_datasets)
         ):
             logging.debug(f"Deleting {uncommited_dataset.name}")
             beaker.dataset.delete(uncommited_dataset)
