@@ -33,4 +33,17 @@ Each job uses the [ljm/easylm-convert](https://beaker.org/im/01J7MR9BM7DR5EGYGMW
 The Dockerfile for this image can be found at `evals/convert.Dockerfile`.
 
 The important script there is the `convert_to_hf.py` file.
-What it does is it (1) downloads a specific reward model from GCS, (2) converts the model from EasyLM to Pytorch, (3) reuploads the model as a Beaker dataset, and (4) start a RewardBench eval job using
+What it does is it (1) downloads a specific reward model from GCS, (2) converts the model from EasyLM to Pytorch, (3) reuploads the model as a Beaker dataset, and (4) launch another Beaker experiment that performs the RewardBench eval job.
+
+Here's a single `convert_to_hf.py` job looks like:
+
+```sh
+python3 convert_to_hf.py \
+    --gcs_bucket ljm-dev
+    --gcs_dir_path human-preferences/rm_checkpoints/helpsteer2/tulu2_13b_rm_human_datamodel_counts_7000_ID__07add08aa33a4fa6a5294c7bc41ae1f9__SWAPS_4026--a6bf226b9e8e43f387810e0da3096526/streaming_params_437 \
+    --batch_size 1 \
+    --prefix helpsteer2-counts \
+    --is_reward_model
+```
+
+- **Why do you need to upload the model as a Beaker dataset again if you can just store the output as a Beaker Result?** Yeah, that's how it should be done. I was running the `convert_to_hf.py` manually back then and I wasn't able to optimize the process. PRs welcome!
