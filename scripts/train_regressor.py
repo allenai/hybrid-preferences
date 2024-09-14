@@ -31,7 +31,8 @@ DATASET=helpsteer2 python3 scripts/fetch_evals_rewardbench.py \
 The value passed to `--output_file` is the `--input_file` for this command.
 """
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter, description=description)
-    parser.add_argument("--input_file", type=Path, help="Path to the full training dataset (the dev dataset will be extracted from here).")
+    parser.add_argument("--input_file", type=Path, required=True, help="Path to the full training dataset (the dev dataset will be extracted from here).")
+    parser.add_argument("--save_features_path", type=Path, required=True, help="Path to save the features")
     parser.add_argument("--model", choices=["lightgbm", "linear"], default="linear", help="Model to use for training the regressor.")
     parser.add_argument("--log_level", default="DEBUG", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], help="Set the logging level.")
     parser.add_argument("--simulator_reference", default=None, help="Path to the 'all-features.jsonl' file to simulate data points.")
