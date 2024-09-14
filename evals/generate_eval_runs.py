@@ -69,8 +69,9 @@ def main():
         for uncommited_dataset in beaker.workspace.datasets(
             match="tulu2_13b", uncommitted=True
         ):
+            logging.debug(f"Deleting {uncommited_dataset.name}")
             beaker.dataset.delete(uncommited_dataset)
-            time.sleep(5)
+            time.sleep(3)
 
     exp_names = [Path(s).parents[0].name.split("--")[0] for s in src_files]
     diff = [
