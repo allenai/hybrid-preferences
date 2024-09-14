@@ -33,6 +33,7 @@ def get_args():
     parser.add_argument("--gcs_bucket", type=str, help="GCS bucket where the models are stored (NO need for gs:// prefix).")
     parser.add_argument("--gcs_dir_path", type=str, help="The directory path (or prefix) of models (e.g., human-preferences/rm_checkpoints/tulu2_13b_rm_human_datamodel_).")
     parser.add_argument("--beaker_workspace", default="ai2/ljm-oe-adapt", help="Beaker workspace to upload datasets.")
+    parser.add_argument("--cleanup", action="store_true", default=False, help="If set, will delete uncommitted datasets (make sure no other jobs are running!)")
     # fmt: on
     return parser.parse_args()
 
@@ -63,12 +64,13 @@ def main():
     ]
 
     # Delete datasets that weren't committed
-    logging.info("Deleting uncommitted datasets")
-    for uncommited_dataset in beaker.workspace.datasets(
-        match="tulu2_13b", uncommitted=True
-    ):
-        beaker.dataset.delete(uncommited_dataset)
-        time.sleep(5)
+    if args.cleanup:
+        logging.info("Deleting uncommitted datasets")
+        for uncommited_dataset in beaker.workspace.datasets(
+            match="tulu2_13b", uncommitted=True
+        ):
+            beaker.dataset.delete(uncommited_dataset)
+            time.sleep(5)
 
     exp_names = [Path(s).parents[0].name.split("--")[0] for s in src_files]
     diff = [
