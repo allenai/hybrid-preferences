@@ -1,7 +1,6 @@
 import argparse
 import logging
 import sys
-from io import BytesIO
 from pathlib import Path
 
 import lightgbm as lgb
@@ -10,23 +9,41 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, root_mean_squared_error
 from sklearn.model_selection import train_test_split
 
-from beaker import Beaker
-from scripts.fetch_evals_rewardbench import \
-    fetch_evals_rewardbench as fetch_results
-from src.simulator import Simulator
+from src.feature_extractor import get_all_features
+from scripts.get_count_feats import generate_instances
 
 
 def get_args():
     # fmt: off
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument("--input_mixes_dir", type=Path, help="Directory containing all the JSONL subset files.")
-    parser.add_argument("--feats_dataset_id", type=str, default="01J7C8W3ZNQX9HEH4NSSKB8H3B", help="Beaker ID containing the extracted lexical features and metadata features.")
-    parser.add_argument("--beaker_workspace", default="ai2/ljm-oe-adapt", help="Beaker workspace to fetch experiments.")
-    parser.add_argument("--experiment_prefix", default="rm-eval-", help="Prefix for experiments to fetch.")
-    parser.add_argument("--experiments_file", default=None, type=Path, help="Path to a TXT file containing a list that maps an experiment to the features.")
-    parser.add_argument("--use_count_feats", action="store_true", default=False, help="If set, will transform features using count-based features.")
+    description = """Train a regressor using the counts-based features
+
+In order to get the training data, you need to run the following command:
+
+```
+# Assuming you want helpsteer2's count features
+DATASET=helpsteer2 python3 scripts/fetch_evals_rewardbench.py \
+    --output_path data/$DATASET-counts-runs.csv \
+    --experiment_prefix rm-eval-$DATASET-count \
+    --feature_counts_dir data/$DATASET_count_feats/counts/ \
+    --dataset_total_size 10160
+```
+
+The value passed to `--output_path` is the `--input_path` for this command.
+"""
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter, description=description)
+    parser.add_argument("--input_path", type=Path, required=True, help="Path to the full training dataset (the dev dataset will be extracted from here).")
+    parser.add_argument("--output_path", type=Path, required=True, help="Path to save the features as a JSONL file.")
     parser.add_argument("--model", choices=["lightgbm", "linear"], default="linear", help="Model to use for training the regressor.")
     parser.add_argument("--log_level", default="DEBUG", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], help="Set the logging level.")
+    parser.add_argument("--simulator_reference", default=None, help="Path to the 'all-features.jsonl' file to simulate data points.")
+    parser.add_argument("--simulator_n_instances", type=int, default=100, help="Number of instances for the simulator.")
+    parser.add_argument("--simulator_n_train_samples", type=int, default=7000, help="Number of train samples for each simulated instance.")
+    parser.add_argument("--simulator_output_dir", type=Path, default=Path("data/simulator"), help="Directory to save the simulated swaps.")
+    parser.add_argument("--simulator_max_budget", default=None, help="If set, will remove instances that exceed the max budget.")
+    parser.add_argument("--id_col", type=str, default="id", help="Name of the id column.")
+    parser.add_argument("--text_col", type=str, default="text", help="Name of the text column.")
+    parser.add_argument("--response_a_col", type=str, default="completion_a", help="Name of the response A column.")
+    parser.add_argument("--response_b_col", type=str, default="completion_b", help="Name of the response A column.")
     parser.add_argument("--random_seed", type=int, default=42, help="Set the random seed.")
     # fmt: on
     return parser.parse_args()
@@ -42,40 +59,13 @@ def main():
         level=getattr(logging, args.log_level),
     )
 
-    beaker = Beaker.from_env(default_workspace=args.beaker_workspace)
-    try:
-        account = beaker.account.whoami()
-    except Exception as e:
-        logging.error(f"Please authenticate using `beaker account login`: {e}")
-        raise
-    else:
-        logging.info(f"Logged-in as {account.name} ({account.email})")
-
-    results_df = fetch_results(
-        beaker=beaker,
-        beaker_workspace=args.beaker_workspace,
-        experiment_prefix=args.experiment_prefix,
-        experiments_file=args.experiments_file,
-    )
-    logging.debug(f"Found {len(results_df)} results!")
-    # fmt: off
-    if args.feats_dataset_id:
-        feats_df = pd.read_json(BytesIO(b"".join(beaker.dataset.stream_file(args.feats_dataset_id, "features.jsonl"))),lines=True)
-        logging.debug(f"Dataset contains {len(feats_df)} instances with {len(feats_df.columns)} features!")
-    else:
-        feats_df = None
-    # fmt: on
-
-    # Get columns that are features (by default, these are binary columns)
-    modeling_df = results_df[results_df.columns[results_df.isin([0, 1]).all()]]
-
-    if args.use_count_feats:
-        logging.debug("Transforming features to use counts")
-        modeling_df = []
+    input_df = pd.read_csv(args.input_path)
+    all_feats = get_all_features()
+    modeling_df = input_df[[col for col in input_df.columns if col in all_feats]]
 
     logging.info("*** Modeling proper ***")
     X = modeling_df
-    y = results_df["Overall"].astype(float)
+    y = input_df["Overall"].astype(float)
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=args.random_seed
     )
@@ -97,14 +87,59 @@ def main():
         _, scores = train_fn(X_train[:num_train], X_test, y_train[:num_train], y_test)
         logging.debug(f"Performance at {pct:.2%} of train samples: {scores}")
 
-    logging.info("*** Simulation proper ***")
-    simulator = Simulator(
-        model=model,
-        feat_list=X_train.columns,
-        precomputed_features=feats_df,
-    )
-    simulated_feats = simulator.sample_combinations(n=3_000)
-    breakpoint()
+    logging.info("*** Feature importance ***")
+    feat_impt_df = pd.DataFrame(
+        {"feat": model.feature_names_in_, "coef": model.coef_}
+    ).sort_values(by="coef", ascending=False)
+    print("Top-5 and bottom-5 features")
+    print(feat_impt_df.head(5).to_markdown(tablefmt="github"))
+    print(feat_impt_df.tail(5).to_markdown(tablefmt="github"))
+
+    if args.simulator_reference:
+        logging.info("*** Simulation proper ***")
+        ref_df = pd.read_json(args.simulator_reference, lines=True)
+
+        ref_df = ref_df.rename(
+            columns={
+                args.id_col: "id",
+                args.text_col: "prompt",
+                args.response_a_col: "completion_a",
+                args.response_b_col: "completion_b",
+            }
+        )
+
+        sim_df = pd.DataFrame(
+            generate_instances(
+                df=ref_df,
+                n_train_instances=args.simulator_n_instances,
+                n_samples=args.simulator_n_train_samples,
+                output_dir=args.simulator_output_dir,
+            )
+        ).transpose()
+
+        sim_df["predicted"] = model.predict(sim_df)
+        sim_df["uuid"] = sim_df.index.str.extract(r"ID__(\w+)__")[0].to_list()
+        sim_df["budget"] = (
+            sim_df.index.str.extract(r"SWAPS_(\d+)")[0].astype(int).to_list()
+        )
+        sim_df = sim_df.sort_values(by="predicted", ascending=False)
+
+        if args.simulator_max_budget:
+            logging.info(f"Removing instances that exceed {args.simulator_max_budget}")
+            sim_df = sim_df[sim_df["budget"] <= args.simulator_max_budget]
+
+        sim_results_path = Path(args.simulator_output_dir) / "simulation_results.csv"
+        sim_df.to_csv(sim_results_path)
+        logging.info(f"Saving files to {sim_results_path}")
+    else:
+        logging.warning(
+            "No value passed in --simulator_reference, will not run simulator."
+        )
+
+    output_path = Path(args.output_path)
+    logging.info(f"Saving model coefficients to {output_path}")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    feat_impt_df.to_json(output_path, lines=True, orient="records")
 
 
 def train_linear_regressor(X_train, X_test, y_train, y_test):
