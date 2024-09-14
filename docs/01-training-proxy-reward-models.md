@@ -21,7 +21,7 @@ The alternative is to run `beaker/get_count_features.yml`.
 This command will produce three types of artifacts in the output directory:
 
 - The `experiments.txt` file that we will use for sending TPU jobs.
-- The `feats/*.jsonl` files that we will use later on to fit a regressor. Each file is a training data point X. We don't have the target values yet (i.e., the actual reward model performance), we will get it later.
+- The `feats/*.jsonl` files that we will use later on to fit a regressor. Each file is a training data point X. We don't have the target values yet (i.e., the actual reward model performance), we will get it later. **These files are important, remember that we'll need them later on!**
 - The `counts/*.jsonl` files that we need to upload in Google Cloud Storage. This will be read by the EasyLM package and we'll use it to train several reward models.
 
 ## Train reward models on a TPU
