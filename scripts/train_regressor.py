@@ -93,8 +93,9 @@ def main():
     ).sort_values(by="coef", ascending=False)
     print("Top-5 and bottom-5 features")
     sorted_feat_impt = feat_impt_df.sort_values(by="coef", ascending=False)
-    print(sorted_feat_impt.head(5).to_markdown(tablefmt="github"))
-    print(sorted_feat_impt.tail(5).to_markdown(tablefmt="github"))
+    table_kwargs = {"tablefmt": "github", "index": False}
+    print(sorted_feat_impt.head(5).to_markdown(**table_kwargs))
+    print(sorted_feat_impt.tail(5).to_markdown(**table_kwargs))
 
     if args.simulator_reference:
         logging.info("*** Simulation proper ***")
