@@ -30,7 +30,7 @@ def get_args():
     parser.add_argument("--output_dir", type=Path, required=True, help="Path to save the experiments.txt file and the DPO dataset for training.")
     parser.add_argument("--model_path", type=Path, required=True, help="Path to the model PKL file."),
     parser.add_argument("--budgets", nargs="*", type=float, required=True, help="Budget: percentage of the dataset to be routed to humans.")
-    parser.add_argument("--n_samples", type=int default=7000, help="Number of instances per proxy dataset.")
+    parser.add_argument("--n_samples", type=int, default=7000, help="Number of instances per proxy dataset.")
     parser.add_argument("--id_col", type=str, default="id", help="Name of the id column.")
     parser.add_argument("--text_col", type=str, default="text", help="Name of the text column.")
     parser.add_argument("--response_a_col", type=str, default="completion_a", help="Name of the response A column.")
@@ -89,7 +89,9 @@ def main():
             ),
             axis=1,
         )
-        df_swapped["is_swapped"] = input_df["id"].apply(lambda x: x in instances_to_swap)
+        df_swapped["is_swapped"] = input_df["id"].apply(
+            lambda x: x in instances_to_swap
+        )
         annotations = df_swapped.to_dict(orient="records")
         converted_annotations = []
         for annotation in annotations:
@@ -111,7 +113,9 @@ def main():
         gain = gain_df[:budget]["gain"].sum()
         tag = f"GAIN_{gain:.3f}__ID__{id}__SWAPS_{budget}"
 
-        swaps_outfile = swaps_dir / f"human_datamodel_counts_{args.n_samples}_{tag}.jsonl"
+        swaps_outfile = (
+            swaps_dir / f"human_datamodel_counts_{args.n_samples}_{tag}.jsonl"
+        )
         with swaps_outfile.open("w") as f:
             for annotation in converted_annotations:
                 f.write(json.dumps(annotation) + "\n")
@@ -125,6 +129,10 @@ def main():
             instances = get_instances(swapped_df, feature_str)
             budget_instance_map[feature_str] = len(instances)
 
+        # Get predicted score
+        pred = model.predict(pd.DataFrame([budget_instance_map]))
+        logging.info(f"Predicted performance: {pred}")
+
         counts_outfile = counts_dir / f"regressor_feats_{tag}.json"
         with counts_outfile.open("w") as file:
             json.dump(budget_instance_map, file, indent=4)
@@ -133,9 +141,10 @@ def main():
 
         # Save the tag file to create the experiments.txt later
         tags.append(f"{swaps_outfile.stem}::{counts_outfile.stem}")
-        breakpoint()
 
-    # Might also need to get the predicted score from the model
+    experiments_file = output_dir / "experiments.txt"
+    with experiments_file.open("w") as f:
+        f.write("\n".join(tags))
 
 
 def convert_to_binary(df: pd.DataFrame, features: list[str]) -> pd.DataFrame:
