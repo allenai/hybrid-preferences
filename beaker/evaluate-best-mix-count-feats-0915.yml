@@ -1,0 +1,412 @@
+version: v2
+budget: ai2/oe-adapt
+description: "Convert model to pytorch and launch a rewardbench eval job"
+tasks:
+  - name: helpsteer2-25
+    image:
+      beaker: ljm/easylm-convert
+    command: ["python", "convert_to_hf.py"]
+    arguments:
+      - --gcs_bucket
+      - ljm-dev
+      - --prefix
+      - helpsteer2-main-counts
+      - --batch_size
+      - 1
+      - --is_reward_model
+      - --gcs_dir_path
+      - human-preferences/rm_checkpoints/helpsteer2/tulu2_13b_rm_human_datamodel_counts_7000_ID__7ad2e71bb88044379e884514569ecf53__SWAPS_2540--4fdaf083f46341e89a4b498c8e3b275f/streaming_params_437
+    result:
+      path: /output
+    resources:
+      gpuCount: 1
+    context:
+      priority: normal
+      preemptible: true
+    constraints:
+      cluster:
+        - ai2/allennlp-cirrascale
+        - ai2/jupiter-cirrascale-2
+    envVars:
+      - name: OPENAI_API_KEY
+        secret: OPENAI_API_KEY
+      - name: GOOGLE_SERVICE_ACCOUNT
+        secret: GOOGLE_SERVICE_ACCOUNT
+      - name: BEAKER_TOKEN
+        secret: BEAKER_TOKEN
+      - name: TOKENIZERS_PARALLELISM
+        value: "false"
+  - name: helpsteer2-50
+    image:
+      beaker: ljm/easylm-convert
+    command: ["python", "convert_to_hf.py"]
+    arguments:
+      - --gcs_bucket
+      - ljm-dev
+      - --prefix
+      - helpsteer2-main-counts
+      - --batch_size
+      - 1
+      - --is_reward_model
+      - --gcs_dir_path
+      - human-preferences/rm_checkpoints/helpsteer2/tulu2_13b_rm_human_datamodel_counts_7000_ID__2231bca95c5d456ab03957959a749e28__SWAPS_5080--d78c7eebd3534f4a8b57fa374de4df65/streaming_params_437
+    result:
+      path: /output
+    resources:
+      gpuCount: 1
+    context:
+      priority: normal
+      preemptible: true
+    constraints:
+      cluster:
+        - ai2/allennlp-cirrascale
+        - ai2/jupiter-cirrascale-2
+    envVars:
+      - name: OPENAI_API_KEY
+        secret: OPENAI_API_KEY
+      - name: GOOGLE_SERVICE_ACCOUNT
+        secret: GOOGLE_SERVICE_ACCOUNT
+      - name: BEAKER_TOKEN
+        secret: BEAKER_TOKEN
+      - name: TOKENIZERS_PARALLELISM
+        value: "false"
+  - name: helpsteer2-75
+    image:
+      beaker: ljm/easylm-convert
+    command: ["python", "convert_to_hf.py"]
+    arguments:
+      - --gcs_bucket
+      - ljm-dev
+      - --prefix
+      - helpsteer2-main-counts
+      - --batch_size
+      - 1
+      - --is_reward_model
+      - --gcs_dir_path
+      - human-preferences/rm_checkpoints/helpsteer2/tulu2_13b_rm_human_datamodel_counts_7000_ID__e33ae52176c54c8486f408ddb14ea5e8__SWAPS_7620--726b87c72da3419eafcad2f34f1bb2c2
+    result:
+      path: /output
+    resources:
+      gpuCount: 1
+    context:
+      priority: normal
+      preemptible: true
+    constraints:
+      cluster:
+        - ai2/allennlp-cirrascale
+        - ai2/jupiter-cirrascale-2
+    envVars:
+      - name: OPENAI_API_KEY
+        secret: OPENAI_API_KEY
+      - name: GOOGLE_SERVICE_ACCOUNT
+        secret: GOOGLE_SERVICE_ACCOUNT
+      - name: BEAKER_TOKEN
+        secret: BEAKER_TOKEN
+      - name: TOKENIZERS_PARALLELISM
+        value: "false"
+  - name: multipref-25
+    image:
+      beaker: ljm/easylm-convert
+    command: ["python", "convert_to_hf.py"]
+    arguments:
+      - --gcs_bucket
+      - ljm-dev
+      - --prefix
+      - multipref-main-counts
+      - --batch_size
+      - 1
+      - --is_reward_model
+      - --gcs_dir_path
+      - human-preferences/rm_checkpoints/multipref/tulu2_13b_rm_human_datamodel_counts_7000_ID__f42de62916cd4228856b72c17b2cd750__SWAPS_2615--77645f20ff40495cb4d8a7c09997658f
+    result:
+      path: /output
+    resources:
+      gpuCount: 1
+    context:
+      priority: normal
+      preemptible: true
+    constraints:
+      cluster:
+        - ai2/allennlp-cirrascale
+        - ai2/jupiter-cirrascale-2
+    envVars:
+      - name: OPENAI_API_KEY
+        secret: OPENAI_API_KEY
+      - name: GOOGLE_SERVICE_ACCOUNT
+        secret: GOOGLE_SERVICE_ACCOUNT
+      - name: BEAKER_TOKEN
+        secret: BEAKER_TOKEN
+      - name: TOKENIZERS_PARALLELISM
+        value: "false"
+  - name: multipref-50
+    image:
+      beaker: ljm/easylm-convert
+    command: ["python", "convert_to_hf.py"]
+    arguments:
+      - --gcs_bucket
+      - ljm-dev
+      - --prefix
+      - multipref-main-counts
+      - --batch_size
+      - 1
+      - --is_reward_model
+      - --gcs_dir_path
+      - human-preferences/rm_checkpoints/multipref/tulu2_13b_rm_human_datamodel_counts_7000_ID__db7ef5a2e9254250bb463945d0ab1694__SWAPS_5230--d81bbb38dc764839b5fc96c4d99bb3ae
+    result:
+      path: /output
+    resources:
+      gpuCount: 1
+    context:
+      priority: normal
+      preemptible: true
+    constraints:
+      cluster:
+        - ai2/allennlp-cirrascale
+        - ai2/jupiter-cirrascale-2
+    envVars:
+      - name: OPENAI_API_KEY
+        secret: OPENAI_API_KEY
+      - name: GOOGLE_SERVICE_ACCOUNT
+        secret: GOOGLE_SERVICE_ACCOUNT
+      - name: BEAKER_TOKEN
+        secret: BEAKER_TOKEN
+      - name: TOKENIZERS_PARALLELISM
+        value: "false"
+  - name: multipref-75
+    image:
+      beaker: ljm/easylm-convert
+    command: ["python", "convert_to_hf.py"]
+    arguments:
+      - --gcs_bucket
+      - ljm-dev
+      - --prefix
+      - multipref-main-counts
+      - --batch_size
+      - 1
+      - --is_reward_model
+      - --gcs_dir_path
+      - human-preferences/rm_checkpoints/multipref/tulu2_13b_rm_human_datamodel_counts_7000_ID__1b9849aa485a47cfa073e46b3c3971ff__SWAPS_7845--4f715c14effe4059b9bd3b399d734247
+    result:
+      path: /output
+    resources:
+      gpuCount: 1
+    context:
+      priority: normal
+      preemptible: true
+    constraints:
+      cluster:
+        - ai2/allennlp-cirrascale
+        - ai2/jupiter-cirrascale-2
+    envVars:
+      - name: OPENAI_API_KEY
+        secret: OPENAI_API_KEY
+      - name: GOOGLE_SERVICE_ACCOUNT
+        secret: GOOGLE_SERVICE_ACCOUNT
+      - name: BEAKER_TOKEN
+        secret: BEAKER_TOKEN
+      - name: TOKENIZERS_PARALLELISM
+        value: "false"
+  - name: alpacafarm-25
+    image:
+      beaker: ljm/easylm-convert
+    command: ["python", "convert_to_hf.py"]
+    arguments:
+      - --gcs_bucket
+      - ljm-dev
+      - --prefix
+      - alpacafarm-main-counts
+      - --batch_size
+      - 1
+      - --is_reward_model
+      - --gcs_dir_path
+      - human-preferences/rm_checkpoints/alpacafarm/tulu2_13b_rm_human_datamodel_counts_7000_ID__88dac12b8da042e4be98d05317b04226__SWAPS_2421--c567cccea5ae4f2384dbf4c711f0aaf3
+    result:
+      path: /output
+    resources:
+      gpuCount: 1
+    context:
+      priority: normal
+      preemptible: true
+    constraints:
+      cluster:
+        - ai2/allennlp-cirrascale
+        - ai2/jupiter-cirrascale-2
+    envVars:
+      - name: OPENAI_API_KEY
+        secret: OPENAI_API_KEY
+      - name: GOOGLE_SERVICE_ACCOUNT
+        secret: GOOGLE_SERVICE_ACCOUNT
+      - name: BEAKER_TOKEN
+        secret: BEAKER_TOKEN
+      - name: TOKENIZERS_PARALLELISM
+        value: "false"
+  - name: alpacafarm-50
+    image:
+      beaker: ljm/easylm-convert
+    command: ["python", "convert_to_hf.py"]
+    arguments:
+      - --gcs_bucket
+      - ljm-dev
+      - --prefix
+      - alpacafarm-main-counts
+      - --batch_size
+      - 1
+      - --is_reward_model
+      - --gcs_dir_path
+      - human-preferences/rm_checkpoints/alpacafarm/tulu2_13b_rm_human_datamodel_counts_7000_ID__fd4733b20a544182a58162cab139b69d__SWAPS_4843--a535c34ef199499d86680ba1c5079156
+    result:
+      path: /output
+    resources:
+      gpuCount: 1
+    context:
+      priority: normal
+      preemptible: true
+    constraints:
+      cluster:
+        - ai2/allennlp-cirrascale
+        - ai2/jupiter-cirrascale-2
+    envVars:
+      - name: OPENAI_API_KEY
+        secret: OPENAI_API_KEY
+      - name: GOOGLE_SERVICE_ACCOUNT
+        secret: GOOGLE_SERVICE_ACCOUNT
+      - name: BEAKER_TOKEN
+        secret: BEAKER_TOKEN
+      - name: TOKENIZERS_PARALLELISM
+        value: "false"
+  - name: alpacafarm-75
+    image:
+      beaker: ljm/easylm-convert
+    command: ["python", "convert_to_hf.py"]
+    arguments:
+      - --gcs_bucket
+      - ljm-dev
+      - --prefix
+      - alpacafarm-main-counts
+      - --batch_size
+      - 1
+      - --is_reward_model
+      - --gcs_dir_path
+      - human-preferences/rm_checkpoints/alpacafarm/tulu2_13b_rm_human_datamodel_counts_7000_ID__aa649eb75695466b8f73f26c512d61ed__SWAPS_7264--44c8913a1eea4d93a6167f106b7bf050
+    result:
+      path: /output
+    resources:
+      gpuCount: 1
+    context:
+      priority: normal
+      preemptible: true
+    constraints:
+      cluster:
+        - ai2/allennlp-cirrascale
+        - ai2/jupiter-cirrascale-2
+    envVars:
+      - name: OPENAI_API_KEY
+        secret: OPENAI_API_KEY
+      - name: GOOGLE_SERVICE_ACCOUNT
+        secret: GOOGLE_SERVICE_ACCOUNT
+      - name: BEAKER_TOKEN
+        secret: BEAKER_TOKEN
+      - name: TOKENIZERS_PARALLELISM
+        value: "false"
+  - name: chatarena-25
+    image:
+      beaker: ljm/easylm-convert
+    command: ["python", "convert_to_hf.py"]
+    arguments:
+      - --gcs_bucket
+      - ljm-dev
+      - --prefix
+      - chatarena-main-counts
+      - --batch_size
+      - 1
+      - --is_reward_model
+      - --gcs_dir_path
+      - human-preferences/rm_checkpoints/chatarena/tulu2_13b_rm_human_datamodel_counts_7000_ID__1aaf393b96164bb7adcffb5b8011c71d__SWAPS_5116--82e3dd91114447338e131f3fa3015948
+    result:
+      path: /output
+    resources:
+      gpuCount: 1
+    context:
+      priority: normal
+      preemptible: true
+    constraints:
+      cluster:
+        - ai2/allennlp-cirrascale
+        - ai2/jupiter-cirrascale-2
+    envVars:
+      - name: OPENAI_API_KEY
+        secret: OPENAI_API_KEY
+      - name: GOOGLE_SERVICE_ACCOUNT
+        secret: GOOGLE_SERVICE_ACCOUNT
+      - name: BEAKER_TOKEN
+        secret: BEAKER_TOKEN
+      - name: TOKENIZERS_PARALLELISM
+        value: "false"
+  - name: chatarena-50
+    image:
+      beaker: ljm/easylm-convert
+    command: ["python", "convert_to_hf.py"]
+    arguments:
+      - --gcs_bucket
+      - ljm-dev
+      - --prefix
+      - chatarena-main-counts
+      - --batch_size
+      - 1
+      - --is_reward_model
+      - --gcs_dir_path
+      - human-preferences/rm_checkpoints/chatarena/tulu2_13b_rm_human_datamodel_counts_7000_ID__b2527c87cb11430a97b6ea26f871a7a3__SWAPS_10232--4bd3e4bc05154fd0a8c2caf908c299d1
+    result:
+      path: /output
+    resources:
+      gpuCount: 1
+    context:
+      priority: normal
+      preemptible: true
+    constraints:
+      cluster:
+        - ai2/allennlp-cirrascale
+        - ai2/jupiter-cirrascale-2
+    envVars:
+      - name: OPENAI_API_KEY
+        secret: OPENAI_API_KEY
+      - name: GOOGLE_SERVICE_ACCOUNT
+        secret: GOOGLE_SERVICE_ACCOUNT
+      - name: BEAKER_TOKEN
+        secret: BEAKER_TOKEN
+      - name: TOKENIZERS_PARALLELISM
+        value: "false"
+  - name: chatarena-75
+    image:
+      beaker: ljm/easylm-convert
+    command: ["python", "convert_to_hf.py"]
+    arguments:
+      - --gcs_bucket
+      - ljm-dev
+      - --prefix
+      - chatarena-main-counts
+      - --batch_size
+      - 1
+      - --is_reward_model
+      - --gcs_dir_path
+      - human-preferences/rm_checkpoints/chatarena/tulu2_13b_rm_human_datamodel_counts_7000_ID__bf65c2309ec1407da85a067464957956__SWAPS_15348--94f26ef354444255b547c007fe5e0879
+    result:
+      path: /output
+    resources:
+      gpuCount: 1
+    context:
+      priority: normal
+      preemptible: true
+    constraints:
+      cluster:
+        - ai2/allennlp-cirrascale
+        - ai2/jupiter-cirrascale-2
+    envVars:
+      - name: OPENAI_API_KEY
+        secret: OPENAI_API_KEY
+      - name: GOOGLE_SERVICE_ACCOUNT
+        secret: GOOGLE_SERVICE_ACCOUNT
+      - name: BEAKER_TOKEN
+        secret: BEAKER_TOKEN
+      - name: TOKENIZERS_PARALLELISM
+        value: "false"
