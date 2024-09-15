@@ -60,7 +60,7 @@ def main():
         level=getattr(logging, args.log_level),
     )
 
-    input_df = pd.read_csv(args.input_path)
+    input_df = pd.read_csv(args.input_path).dropna()
     all_feats = get_all_features()
     modeling_df = input_df[[col for col in input_df.columns if col in all_feats]]
 
