@@ -2,6 +2,8 @@ import argparse
 import matplotlib.pyplot as plt
 from pathlib import Path
 import sys
+import json
+import numpy as np
 import logging
 from inspect import signature
 
@@ -24,6 +26,7 @@ def get_args():
     shared_args = argparse.ArgumentParser(add_help=False)
     shared_args.add_argument("--input_path", type=Path, required=True, help="Path to the results file.")
     shared_args.add_argument("--output_path", type=Path, required=True, help="Path to save the PDF plot.")
+    shared_args.add_argument("--figsize", type=int, nargs=2, default=[10, 8], help="Path to save the PDF plot.")
 
     # Add new subcommand everytime you want to plot something new
     # In this way, we can centralize all plot customization into one script.
@@ -49,9 +52,55 @@ def main():
         logging.error(f"Unknown plotting command: {args.command}")
 
 
-def plot_rewardbench_line(input_path: Path, output_path: Path):
+def plot_rewardbench_line(
+    input_path: Path, output_path: Path, figsize: tuple[int, int]
+):
+    with input_path.open("r") as f:
+        data = json.load(f)
 
-    breakpoint()
+    def plot(ax, dataset: str):
+        levels = ["human_25", "human_50", "human_75"]
+        random_avgs = [data[dataset][l]["random"]["score"] for l in levels]
+        random_stds = [data[dataset][l]["random"]["std"] for l in levels]
+        topk_avgs = [data[dataset][l]["top_k_gain_ours"]["score"] for l in levels]
+        topk_stds = [data[dataset][l]["top_k_gain_ours"]["std"] for l in levels]
+
+        x = np.arange(len(levels))
+        ax.errorbar(
+            x,
+            random_avgs,
+            yerr=random_stds,
+            label="Random",
+            marker="o",
+            linestyle="-",
+            capsize=5,
+        )
+        # Plot Top-k Gain (Ours) scores
+        ax.errorbar(
+            x,
+            topk_avgs,
+            yerr=topk_stds,
+            label="Top-k Gain (Ours)",
+            marker="s",
+            linestyle="--",
+            capsize=5,
+        )
+
+        ax.set_xticks(x)
+        ax.set_xticklabels(levels)
+        ax.set_xlabel("Pct. Direct Human Preference")
+        ax.set_ylabel("RewardBench Score")
+        ax.set_title(dataset)
+        # ax.set_ylim([0.5, 1])
+        ax.legend()
+
+    fig, axs = plt.subplots(2, 2, figsize=figsize)
+    datasets = list(data.keys())
+    for ax, dataset in zip(np.ravel(axs), datasets):
+        plot(ax, dataset)
+
+    plt.tight_layout()
+    fig.savefig(output_path)
 
 
 if __name__ == "__main__":
