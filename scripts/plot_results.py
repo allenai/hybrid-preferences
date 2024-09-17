@@ -42,7 +42,7 @@ def get_args():
     shared_args = argparse.ArgumentParser(add_help=False)
     shared_args.add_argument("--input_path", type=Path, required=True, help="Path to the results file.")
     shared_args.add_argument("--output_path", type=Path, required=True, help="Path to save the PDF plot.")
-    shared_args.add_argument("--figsize", type=int, nargs=2, default=[12, 12], help="Path to save the PDF plot.")
+    shared_args.add_argument("--figsize", type=int, nargs=2, default=[10, 10], help="Path to save the PDF plot.")
 
     # Add new subcommand everytime you want to plot something new
     # In this way, we can centralize all plot customization into one script.
@@ -77,21 +77,21 @@ def plot_rewardbench_line(
     def plot(ax, dataset: str):
         levels = ["human_25", "human_50", "human_75"]
 
-        random_avgs = [data[dataset][l]["random"]["score"] for l in levels]
-        random_stds = [data[dataset][l]["random"]["std"] for l in levels]
-        topk_avgs = [data[dataset][l]["top_k_gain_ours"]["score"] for l in levels]
-        topk_stds = [data[dataset][l]["top_k_gain_ours"]["std"] for l in levels]
+        random_avgs = [data[dataset][l]["random"]["score"] * 100 for l in levels]
+        random_stds = [data[dataset][l]["random"]["std"] * 100 for l in levels]
+        topk_avgs = [data[dataset][l]["top_k_gain_ours"]["score"] * 100 for l in levels]
+        topk_stds = [data[dataset][l]["top_k_gain_ours"]["std"] * 100 for l in levels]
 
         # Add human_0 and human_100
-        random_avgs.append(data[dataset]["human_100"]["score"])
-        random_stds.append(data[dataset]["human_100"]["std"])
-        topk_avgs.append(data[dataset]["human_100"]["score"])
-        topk_stds.append(data[dataset]["human_100"]["std"])
+        random_avgs.append(data[dataset]["human_100"]["score"] * 100)
+        random_stds.append(data[dataset]["human_100"]["std"] * 100)
+        topk_avgs.append(data[dataset]["human_100"]["score"] * 100)
+        topk_stds.append(data[dataset]["human_100"]["std"] * 100)
 
-        random_avgs.insert(0, data[dataset]["human_0"]["score"])
-        random_stds.insert(0, data[dataset]["human_0"]["std"])
-        topk_avgs.insert(0, data[dataset]["human_0"]["score"])
-        topk_stds.insert(0, data[dataset]["human_0"]["std"])
+        random_avgs.insert(0, data[dataset]["human_0"]["score"] * 100)
+        random_stds.insert(0, data[dataset]["human_0"]["std"] * 100)
+        topk_avgs.insert(0, data[dataset]["human_0"]["score"] * 100)
+        topk_stds.insert(0, data[dataset]["human_0"]["std"] * 100)
 
         x_levels = ["0%", "25%", "50%", "75%", "100%"]
 
@@ -118,9 +118,11 @@ def plot_rewardbench_line(
 
         ax.set_xticks(x)
         ax.set_xticklabels(x_levels)
-        ax.set_xlabel("Pct. Direct Human Preference")
+        ax.set_xlabel("% Direct Human Preference")
         ax.set_ylabel("RewardBench Score")
         ax.set_title(dataset)
+        ax.spines[["right", "top"]].set_visible(False)
+        ax.yaxis.get_major_locator().set_params(integer=True)
         # ax.set_ylim([0.5, 1])
         return ax
 
