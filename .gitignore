@@ -162,4 +162,4 @@ cython_debug/
 #.idea/
 data/
 .DS_Store
-plots/
+plots/*
