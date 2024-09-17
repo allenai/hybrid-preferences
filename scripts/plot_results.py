@@ -16,6 +16,22 @@ logging.basicConfig(
     level=logging.INFO,
 )
 
+FONT_SIZES = {"small": 14, "medium": 18, "large": 24}
+
+PLOT_PARAMS = {
+    "font.family": "Times New Roman",
+    "font.size": FONT_SIZES.get("medium"),
+    "axes.titlesize": FONT_SIZES.get("large"),
+    "axes.labelsize": FONT_SIZES.get("large"),
+    "xtick.labelsize": FONT_SIZES.get("large"),
+    "ytick.labelsize": FONT_SIZES.get("large"),
+    "legend.fontsize": FONT_SIZES.get("medium"),
+    "figure.titlesize": FONT_SIZES.get("medium"),
+}
+
+
+plt.rcParams.update(PLOT_PARAMS)
+
 
 def get_args():
     # fmt: off
@@ -26,7 +42,7 @@ def get_args():
     shared_args = argparse.ArgumentParser(add_help=False)
     shared_args.add_argument("--input_path", type=Path, required=True, help="Path to the results file.")
     shared_args.add_argument("--output_path", type=Path, required=True, help="Path to save the PDF plot.")
-    shared_args.add_argument("--figsize", type=int, nargs=2, default=[10, 8], help="Path to save the PDF plot.")
+    shared_args.add_argument("--figsize", type=int, nargs=2, default=[12, 12], help="Path to save the PDF plot.")
 
     # Add new subcommand everytime you want to plot something new
     # In this way, we can centralize all plot customization into one script.
@@ -60,12 +76,26 @@ def plot_rewardbench_line(
 
     def plot(ax, dataset: str):
         levels = ["human_25", "human_50", "human_75"]
+
         random_avgs = [data[dataset][l]["random"]["score"] for l in levels]
         random_stds = [data[dataset][l]["random"]["std"] for l in levels]
         topk_avgs = [data[dataset][l]["top_k_gain_ours"]["score"] for l in levels]
         topk_stds = [data[dataset][l]["top_k_gain_ours"]["std"] for l in levels]
 
-        x = np.arange(len(levels))
+        # Add human_0 and human_100
+        random_avgs.append(data[dataset]["human_100"]["score"])
+        random_stds.append(data[dataset]["human_100"]["std"])
+        topk_avgs.append(data[dataset]["human_100"]["score"])
+        topk_stds.append(data[dataset]["human_100"]["std"])
+
+        random_avgs.insert(0, data[dataset]["human_0"]["score"])
+        random_stds.insert(0, data[dataset]["human_0"]["std"])
+        topk_avgs.insert(0, data[dataset]["human_0"]["score"])
+        topk_stds.insert(0, data[dataset]["human_0"]["std"])
+
+        x_levels = ["0%", "25%", "50%", "75%", "100%"]
+
+        x = np.arange(len(x_levels))
         ax.errorbar(
             x,
             random_avgs,
@@ -87,7 +117,7 @@ def plot_rewardbench_line(
         )
 
         ax.set_xticks(x)
-        ax.set_xticklabels(levels)
+        ax.set_xticklabels(x_levels)
         ax.set_xlabel("Pct. Direct Human Preference")
         ax.set_ylabel("RewardBench Score")
         ax.set_title(dataset)
