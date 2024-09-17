@@ -122,12 +122,13 @@ def plot_rewardbench_line(
         ax.set_ylabel("RewardBench Score")
         ax.set_title(dataset)
         # ax.set_ylim([0.5, 1])
-        ax.legend()
+        return ax
 
     fig, axs = plt.subplots(2, 2, figsize=figsize)
     datasets = list(data.keys())
     for ax, dataset in zip(np.ravel(axs), datasets):
         plot(ax, dataset)
+    ax.legend(frameon=False)
 
     plt.tight_layout()
     fig.savefig(output_path)
