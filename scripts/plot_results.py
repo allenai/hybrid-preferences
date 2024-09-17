@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import sys
 import logging
+from inspect import signature
 
 RESULTS_DIR = Path("results")
 
@@ -36,14 +37,20 @@ def main():
     args = get_args()
     cmd_map = {"rewardbench_line": plot_rewardbench_line}
 
+    def _filter_args(func, kwargs):
+        func_params = signature(func).parameters
+        return {k: v for k, v in kwargs.items() if k in func_params}
+
     if args.command in cmd_map:
         plot_fn = cmd_map[args.command]
-        plot_fn(args)
+        kwargs = _filter_args(plot_fn, vars(args))
+        plot_fn(**kwargs)
     else:
         logging.error(f"Unknown plotting command: {args.command}")
 
 
-def plot_rewardbench_line(args):
+def plot_rewardbench_line(input_path: Path, output_path: Path):
+
     breakpoint()
 
 
