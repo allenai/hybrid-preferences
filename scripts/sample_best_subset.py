@@ -115,6 +115,7 @@ def train_based_sampling(
             sim_df["budget"] = budget
             sim_df = sim_df.sort_values(by="predicted", ascending=False)
             top_sim_df = sim_df.head(store_topk)
+            print(top_sim_df.to_markdown(tablefmt="github"))
 
             # Move files from top_sim_df to actual output directory
             top_uuids = top_sim_df["uuid"].to_list()
@@ -126,7 +127,7 @@ def train_based_sampling(
                 mv(src_path=swaps_file, dest_dir=swaps_dir)
                 tags.append(f"{swaps_file.stem}::{count_file.stem}")
 
-            top_sim_df.to_csv(output_dir / "sim_results_budget_{budget}.csv")
+            top_sim_df.to_csv(output_dir / f"sim_results_budget_{budget}.csv")
 
     experiments_file = output_dir / "experiments.txt"
     with experiments_file.open("w") as f:
