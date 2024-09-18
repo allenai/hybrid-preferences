@@ -89,9 +89,10 @@ def train_based_sampling(
     counts_dir, swaps_dir = prepare_output_dirs(output_dir)
     tags = []
     for budget in budgets:
-        logging.info(f"Simulating instances for budget: {budget}")
         if 0 <= budget <= 1:
             budget = int(len(input_df) * budget)
+
+        logging.info(f"Simulating instances for budget: {budget}")
 
         def mv(src_path: Path, dest_dir: Path):
             src = Path(src_path)
