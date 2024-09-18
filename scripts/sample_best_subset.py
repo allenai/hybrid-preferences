@@ -54,12 +54,18 @@ def main():
         }
     )
     model = joblib.load(args.model_path)
+    feat_ext = (
+        joblib.load(args.model_path.parent / "poly.pkl")
+        if "quadratic" in str(args.model_path)
+        else None
+    )
 
     if args.sampling_method == "topk":
         logging.info("*** Using 'topk' approach ***")
         topk_sampling(
             input_df,
             model,
+            feat_ext=feat_ext,
             budgets=args.budgets,
             n_samples=args.n_samples,
             output_dir=Path(args.output_dir),
@@ -70,6 +76,7 @@ def main():
         simulated_sampling(
             input_df,
             model,
+            feat_ext=feat_ext,
             budgets=args.budgets,
             n_samples=args.n_samples,
             output_dir=Path(args.output_dir),
@@ -85,6 +92,7 @@ def simulated_sampling(
     output_dir: Path,
     n_instances_per_budget: int = 50,
     store_topk: int = 3,
+    feat_ext=None,
 ):
     counts_dir, swaps_dir = prepare_output_dirs(output_dir)
     tags = []
@@ -110,7 +118,9 @@ def simulated_sampling(
                 )
             ).transpose()
 
-            sim_df["predicted"] = model.predict(sim_df)
+            input_feats = feat_ext.transform(sim_df) if feat_ext else sim_df
+            preds = model.predict(input_feats)
+            sim_df["predicted"] = preds
             sim_df["uuid"] = sim_df.index.str.extract(r"ID__(\w+)__")[0].to_list()
             sim_df["budget"] = budget
             sim_df = sim_df.sort_values(by="predicted", ascending=False)
@@ -141,6 +151,7 @@ def topk_sampling(
     budgets: list[float],
     n_samples: int,
     output_dir: Path,
+    feat_ext=None,
 ):
     counts_dir, swaps_dir = prepare_output_dirs(output_dir)
     # Compute gains

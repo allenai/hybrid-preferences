@@ -159,6 +159,11 @@ def main():
     logging.info(f"Saving model to {model_output_path}")
     joblib.dump(model, model_output_path)
 
+    if args.model == "quadratic":
+        poly_output_path = output_dir / "poly.pkl"
+        poly = results.get("poly")
+        joblib.dump(poly, poly_output_path)
+
 
 def train_linear_regressor(X_train, X_test, y_train, y_test):
     model = LinearRegression()
@@ -171,15 +176,18 @@ def train_linear_regressor(X_train, X_test, y_train, y_test):
 
 def train_quadratic_regressor(X_train, X_test, y_train, y_test):
     poly = PolynomialFeatures(degree=2)
+
+    # Transform the features
+    X_train_poly = poly.fit_transform(X_train)
+    X_test_poly = poly.transform(X_test)
+
     model = LinearRegression()
+    model.fit(X_train_poly, y_train)
 
-    pipeline = make_pipeline(poly, model)
-    pipeline.fit(X_train, y_train)
-
-    y_pred = pipeline.predict(X_test)
+    y_pred = model.predict(X_test_poly)
     mse = mean_squared_error(y_test, y_pred)
     rmse = root_mean_squared_error(y_test, y_pred)
-    return model, {"mse": mse, "rmse": rmse}
+    return model, {"mse": mse, "rmse": rmse, "poly": poly}
 
 
 def train_lightgbm_regressor(X_train, X_test, y_train, y_test):
