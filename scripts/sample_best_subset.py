@@ -30,7 +30,7 @@ def get_args():
     parser.add_argument("--input_path", type=Path, required=True, help="Path to the features.jsonl file for a given dataset."),
     parser.add_argument("--output_dir", type=Path, required=True, help="Path to save the experiments.txt file and the DPO dataset for training.")
     parser.add_argument("--model_path", type=Path, required=True, help="Path to the model PKL file."),
-    parser.add_argument("--sampling_method", default="topk", choices=["topk", "train_based"], help="Type of sampling technique to use at inference time.")
+    parser.add_argument("--sampling_method", default="topk", choices=["topk", "simulated"], help="Type of sampling technique to use at inference time.")
     parser.add_argument("--budgets", nargs="*", type=float, required=True, help="Budget: percentage of the dataset to be routed to humans.")
     parser.add_argument("--n_samples", type=int, default=7000, help="Number of instances per proxy dataset.")
     parser.add_argument("--id_col", type=str, default="id", help="Name of the id column.")
@@ -56,7 +56,7 @@ def main():
     model = joblib.load(args.model_path)
 
     if args.sampling_method == "topk":
-        logging.info("*** Using topk approach ***")
+        logging.info("*** Using 'topk' approach ***")
         topk_sampling(
             input_df,
             model,
@@ -65,9 +65,9 @@ def main():
             output_dir=Path(args.output_dir),
         )
 
-    if args.sampling_method == "train_based":
-        logging.info("*** Using train_based approach ***")
-        train_based_sampling(
+    if args.sampling_method == "simulated":
+        logging.info("*** Using 'simulated' approach ***")
+        simulated_sampling(
             input_df,
             model,
             budgets=args.budgets,
@@ -76,15 +76,15 @@ def main():
         )
 
 
-def train_based_sampling(
+def simulated_sampling(
     input_df,
     model,
     *,
     budgets: list[float],
     n_samples: int,
     output_dir: Path,
-    n_instances_per_budget: int = 100,
-    store_topk: int = 10,
+    n_instances_per_budget: int = 50,
+    store_topk: int = 3,
 ):
     counts_dir, swaps_dir = prepare_output_dirs(output_dir)
     tags = []
@@ -115,7 +115,7 @@ def train_based_sampling(
             sim_df["budget"] = budget
             sim_df = sim_df.sort_values(by="predicted", ascending=False)
             top_sim_df = sim_df.head(store_topk)
-            print(top_sim_df.to_markdown(tablefmt="github"))
+            print(top_sim_df[["uuid", "predicted"]].to_markdown(tablefmt="github"))
 
             # Move files from top_sim_df to actual output directory
             top_uuids = top_sim_df["uuid"].to_list()
