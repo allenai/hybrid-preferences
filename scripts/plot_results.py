@@ -176,6 +176,8 @@ def plot_tag_heatmap(input_path: Path, output_path: Path, figsize: tuple[int, in
         .rename(columns={col: f"t{idx}" for idx, col in enumerate(df.columns)})
     )
 
+    df = (df - df.mean()) / df.std()
+
     fig, ax = plt.subplots(figsize=figsize)
     sns.heatmap(df, ax=ax, annot=False)
     ax.set_xlabel("Tag")
