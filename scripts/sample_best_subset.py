@@ -29,6 +29,7 @@ def get_args():
     parser.add_argument("--input_path", type=Path, required=True, help="Path to the features.jsonl file for a given dataset."),
     parser.add_argument("--output_dir", type=Path, required=True, help="Path to save the experiments.txt file and the DPO dataset for training.")
     parser.add_argument("--model_path", type=Path, required=True, help="Path to the model PKL file."),
+    parser.add_argument("--sampling_method", default="topk", choices=["topk", "train_based"], help="Type of sampling technique to use at inference time.")
     parser.add_argument("--budgets", nargs="*", type=float, required=True, help="Budget: percentage of the dataset to be routed to humans.")
     parser.add_argument("--n_samples", type=int, default=7000, help="Number of instances per proxy dataset.")
     parser.add_argument("--id_col", type=str, default="id", help="Name of the id column.")
@@ -53,13 +54,26 @@ def main():
     )
     model = joblib.load(args.model_path)
 
-    # Setup output directories
-    output_dir = Path(args.output_dir)
-    counts_dir = output_dir / "counts"
-    counts_dir.mkdir(parents=True, exist_ok=True)
-    swaps_dir = output_dir / "swaps"
-    swaps_dir.mkdir(parents=True, exist_ok=True)
+    if args.sampling_approach == "topk":
+        logging.info("*** Using topk approach ***")
+        topk_sampling(
+            input_df,
+            model,
+            budgets=args.budgets,
+            samples=args.n_samples,
+            output_dir=Path(args.output_dir),
+        )
 
+
+def topk_sampling(
+    input_df,
+    model,
+    *,
+    budgets: list[float],
+    n_samples: int,
+    output_dir: Path,
+):
+    counts_dir, swaps_dir = prepare_output_dirs(output_dir)
     # Compute gains
     weights_df = pd.DataFrame({"feat": model.feature_names_in_, "coef": model.coef_})
     binary_df = convert_to_binary(input_df, features=weights_df["feat"].to_list())
@@ -69,8 +83,6 @@ def main():
     gain_df = gain_df.sort_values(by="gain", ascending=False).reset_index(drop=True)
 
     # Given a budget, get the top-k and compute the cumulative gain
-
-    budgets = args.budgets
     uuids = [uuid.uuid4().hex for _ in range(len(budgets))]
     tags = []
     budget_instances: dict[str, dict[str, int]] = {}
@@ -107,15 +119,13 @@ def main():
             if converted_instance is not None:
                 converted_annotations.append(converted_instance)
 
-        if args.n_samples < len(converted_annotations):
-            converted_annotations = random.sample(converted_annotations, args.n_samples)
+        if n_samples < len(converted_annotations):
+            converted_annotations = random.sample(converted_annotations, n_samples)
 
         gain = gain_df[:budget]["gain"].sum()
         tag = f"ID__{id}__SWAPS_{budget}"
 
-        swaps_outfile = (
-            swaps_dir / f"human_datamodel_counts_{args.n_samples}_{tag}.jsonl"
-        )
+        swaps_outfile = swaps_dir / f"human_datamodel_counts_{n_samples}_{tag}.jsonl"
         with swaps_outfile.open("w") as f:
             for annotation in converted_annotations:
                 f.write(json.dumps(annotation) + "\n")
@@ -172,6 +182,14 @@ def convert_to_binary(df: pd.DataFrame, features: list[str]) -> pd.DataFrame:
         binary_cols[feature_str] = binary_col.astype(int).to_list()
 
     return pd.DataFrame(binary_cols)
+
+
+def prepare_output_dirs(output_dir: Path) -> tuple[Path, Path]:
+    counts_dir = output_dir / "counts"
+    counts_dir.mkdir(parents=True, exist_ok=True)
+    swaps_dir = output_dir / "swaps"
+    swaps_dir.mkdir(parents=True, exist_ok=True)
+    return counts_dir, swaps_dir
 
 
 if __name__ == "__main__":
