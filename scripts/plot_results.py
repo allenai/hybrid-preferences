@@ -7,6 +7,11 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import seaborn as sns
+
+from src.feature_extractor import get_all_features
+
 
 RESULTS_DIR = Path("results")
 
@@ -28,6 +33,7 @@ PLOT_PARAMS = {
     "ytick.labelsize": FONT_SIZES.get("large"),
     "legend.fontsize": FONT_SIZES.get("medium"),
     "figure.titlesize": FONT_SIZES.get("medium"),
+    # "text.usetex": True,
 }
 
 COLORS = {
@@ -54,7 +60,8 @@ def get_args():
 
     # Add new subcommand everytime you want to plot something new
     # In this way, we can centralize all plot customization into one script.
-    parser_main_results = subparsers.add_parser("rewardbench_line", help="Plot main results line chart for RewardBench", parents=[shared_args])
+    parser_main_results = subparsers.add_parser("rewardbench_line", help="Plot main results line chart for RewardBench.", parents=[shared_args])
+    parser_tag_heatmap = subparsers.add_parser("tag_heatmap", help="Plot heatmap of tag counts for a given dataset.", parents=[shared_args])
 
     # fmt: on
     return parser.parse_args()
@@ -62,7 +69,10 @@ def get_args():
 
 def main():
     args = get_args()
-    cmd_map = {"rewardbench_line": plot_rewardbench_line}
+    cmd_map = {
+        "rewardbench_line": plot_rewardbench_line,
+        "tag_heatmap": plot_tag_heatmap,
+    }
 
     def _filter_args(func, kwargs):
         func_params = signature(func).parameters
@@ -151,6 +161,25 @@ def plot_rewardbench_line(
         ncol=2,
         bbox_to_anchor=(0.5, -0.10),
     )
+
+    plt.tight_layout()
+    fig.savefig(output_path, bbox_inches="tight")
+
+
+def plot_tag_heatmap(input_path: Path, output_path: Path, figsize: tuple[int, int]):
+    feats = get_all_features()
+    df = pd.read_csv(input_path)[feats]
+    # Rename columns:
+    df = (
+        df.dropna()
+        .head(200)
+        .rename(columns={col: f"t{idx}" for idx, col in enumerate(df.columns)})
+    )
+
+    fig, ax = plt.subplots(figsize=figsize)
+    sns.heatmap(df, ax=ax, annot=False)
+    ax.set_xlabel("Tag")
+    ax.set_ylabel("Proxy Dataset")
 
     plt.tight_layout()
     fig.savefig(output_path, bbox_inches="tight")
