@@ -5,13 +5,14 @@ import random
 import sys
 import uuid
 from pathlib import Path
+import tempfile
 
 import joblib
 import pandas as pd
 from tqdm import tqdm
 
 from scripts.apply_data_model import convert_to_dpo_format
-from scripts.get_count_feats import get_instances
+from scripts.get_count_feats import get_instances, generate_instances
 from src.feature_extractor import FeatureExtractor
 
 logging.basicConfig(
@@ -54,15 +55,81 @@ def main():
     )
     model = joblib.load(args.model_path)
 
-    if args.sampling_approach == "topk":
+    if args.sampling_method == "topk":
         logging.info("*** Using topk approach ***")
         topk_sampling(
             input_df,
             model,
             budgets=args.budgets,
-            samples=args.n_samples,
+            n_samples=args.n_samples,
             output_dir=Path(args.output_dir),
         )
+
+    if args.sampling_method == "train_based":
+        logging.info("*** Using train_based approach ***")
+        train_based_sampling(
+            input_df,
+            model,
+            budgets=args.budgets,
+            n_samples=args.n_samples,
+            output_dir=Path(args.output_dir),
+        )
+
+
+def train_based_sampling(
+    input_df,
+    model,
+    *,
+    budgets: list[float],
+    n_samples: int,
+    output_dir: Path,
+    n_instances_per_budget: int = 100,
+    store_topk: int = 10,
+):
+    counts_dir, swaps_dir = prepare_output_dirs(output_dir)
+    tags = []
+    for budget in budgets:
+        logging.info(f"Simulating instances for budget: {budget}")
+        if 0 <= budget <= 1:
+            budget = int(len(input_df) * budget)
+
+        def mv(src_path: Path, dest_dir: Path):
+            src = Path(src_path)
+            dest = Path(dest_dir) / src.name
+            src.rename(dest)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            sim_df = pd.DataFrame(
+                generate_instances(
+                    input_df,
+                    n_samples=n_samples,
+                    budgets=[budget] * n_instances_per_budget,
+                    output_dir=tmpdir,
+                )
+            ).transpose()
+
+            sim_df["predicted"] = model.predict(sim_df)
+            sim_df["uuid"] = sim_df.index.str.extract(r"ID__(\w+)__")[0].to_list()
+            sim_df["budget"] = budget
+            sim_df = sim_df.sort_values(by="predicted", ascending=False)
+            top_sim_df = sim_df.head(store_topk)
+
+            # Move files from top_sim_df to actual output directory
+            top_uuids = top_sim_df["uuid"].to_list()
+            for uuid in top_uuids:
+                count_file = list(tmpdir.rglob(f"counts/*{uuid}*"))[0]
+                swaps_file = list(tmpdir.rglob(f"swaps/*{uuid}*"))[0]
+
+                mv(src_path=count_file, dest_dir=counts_dir)
+                mv(src_path=swaps_file, dest_dir=swaps_dir)
+                tags.append(f"{swaps_file.stem}::{count_file.stem}")
+
+            top_sim_df.to_csv(output_dir / "sim_results_budget_{budget}.csv")
+
+    experiments_file = output_dir / "experiments.txt"
+    with experiments_file.open("w") as f:
+        f.write("\n".join(tags))
 
 
 def topk_sampling(
