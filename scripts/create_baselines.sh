@@ -45,4 +45,17 @@ for random_seed in 42 10010 21; do
         --completion_a_col response_a \
         --completion_b_col response_b \
         --random_seed $random_seed
+
+    mkdir -p data/baselines/mphs2
+    python3 -m scripts.prepare_baselines \
+        --output_dir data/baselines/mphs2 \
+        --prefix mphs2 \
+        --id_col id \
+        --input_path data/mphs2_all_features/features.jsonl \
+        --prompt_col text \
+        --completion_a_col response_a \
+        --completion_b_col response_b \
+        --random_seed $random_seed \
+        --num_instances 17000
+
 done
