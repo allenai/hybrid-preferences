@@ -29,6 +29,13 @@ PLOT_PARAMS = {
     "figure.titlesize": FONT_SIZES.get("medium"),
 }
 
+COLORS = {
+    "pink": "#f0529c",
+    "dark_teal": "#0a3235",
+    "purple": "#b11be8",
+    "green": "#0fcb8c",
+}
+
 
 plt.rcParams.update(PLOT_PARAMS)
 
@@ -102,8 +109,9 @@ def plot_rewardbench_line(
             yerr=random_stds,
             label="Random",
             marker="o",
-            linestyle="-",
+            linestyle="--",
             capsize=5,
+            color=COLORS.get("pink"),
         )
         # Plot Top-k Gain (Ours) scores
         ax.errorbar(
@@ -112,8 +120,10 @@ def plot_rewardbench_line(
             yerr=topk_stds,
             label="Top-k Gain (Ours)",
             marker="s",
-            linestyle="--",
+            linestyle="-",
+            linewidth=2,
             capsize=5,
+            color=COLORS.get("purple"),
         )
 
         ax.set_xticks(x)
@@ -126,14 +136,23 @@ def plot_rewardbench_line(
         # ax.set_ylim([0.5, 1])
         return ax
 
-    fig, axs = plt.subplots(2, 2, figsize=figsize)
+    fig, axs = plt.subplots(1, 4, figsize=figsize)
     datasets = list(data.keys())
     for ax, dataset in zip(np.ravel(axs), datasets):
         plot(ax, dataset)
-    ax.legend(frameon=False)
+    # ax.legend(frameon=False)
+    handles, labels = ax.get_legend_handles_labels()
+    fig.legend(
+        handles,
+        labels,
+        loc="lower center",
+        frameon=False,
+        ncol=2,
+        bbox_to_anchor=(0.5, -0.10),
+    )
 
     plt.tight_layout()
-    fig.savefig(output_path)
+    fig.savefig(output_path, bbox_inches="tight")
 
 
 if __name__ == "__main__":
