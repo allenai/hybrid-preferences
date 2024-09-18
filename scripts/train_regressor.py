@@ -9,6 +9,8 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, root_mean_squared_error
 from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import PolynomialFeatures
 
 from scripts.get_count_feats import generate_instances
 from src.feature_extractor import get_all_features
@@ -34,7 +36,7 @@ The value passed to `--output_path` is the `--input_path` for this command.
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter, description=description)
     parser.add_argument("--input_path", type=Path, required=True, help="Path to the full training dataset (the dev dataset will be extracted from here).")
     parser.add_argument("--output_dir", type=Path, required=True, help="Directory to save the features as a JSONL file and the model as a PKL file.")
-    parser.add_argument("--model", choices=["lightgbm", "linear"], default="linear", help="Model to use for training the regressor.")
+    parser.add_argument("--model", choices=["lightgbm", "linear", "quadratic"], default="linear", help="Model to use for training the regressor.")
     parser.add_argument("--log_level", default="DEBUG", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], help="Set the logging level.")
     parser.add_argument("--simulator_reference", default=None, help="Path to the 'all-features.jsonl' file to simulate data points.")
     parser.add_argument("--simulator_n_instances", type=int, default=100, help="Number of instances for the simulator.")
@@ -75,7 +77,14 @@ def main():
     models: dict[str, callable] = {
         "lightgbm": train_lightgbm_regressor,
         "linear": train_linear_regressor,
+        "quadratic": train_quadratic_regressor,
     }
+
+    if args.model not in models:
+        msg = f"Unknown model: {args.model}"
+        logging.error(msg)
+        raise ValueError(msg)
+
     train_fn = models.get(args.model)
     model, results = train_fn(X_train, X_test, y_train, y_test)
     logging.info(f"Regression results for {args.model} ({model}): {results}")
@@ -88,13 +97,16 @@ def main():
         _, scores = train_fn(X_train[:num_train], X_test, y_train[:num_train], y_test)
         logging.debug(f"Performance at {pct:.2%} of train samples: {scores}")
 
-    logging.info("*** Feature importance ***")
-    feat_impt_df = pd.DataFrame({"feat": model.feature_names_in_, "coef": model.coef_})
-    print("Top-5 and bottom-5 features")
-    sorted_feat_impt = feat_impt_df.sort_values(by="coef", ascending=False)
-    table_kwargs = {"tablefmt": "github", "index": False}
-    print(sorted_feat_impt.head(5).to_markdown(**table_kwargs))
-    print(sorted_feat_impt.tail(5).to_markdown(**table_kwargs))
+    if args.model == "linear":
+        logging.info("*** Feature importance ***")
+        feat_impt_df = pd.DataFrame(
+            {"feat": model.feature_names_in_, "coef": model.coef_}
+        )
+        print("Top-5 and bottom-5 features")
+        sorted_feat_impt = feat_impt_df.sort_values(by="coef", ascending=False)
+        table_kwargs = {"tablefmt": "github", "index": False}
+        print(sorted_feat_impt.head(5).to_markdown(**table_kwargs))
+        print(sorted_feat_impt.tail(5).to_markdown(**table_kwargs))
 
     if args.simulator_reference:
         logging.info("*** Simulation proper ***")
@@ -140,11 +152,17 @@ def main():
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     coeff_output_path = output_dir / "coef.jsonl"
-    logging.info(f"Saving model coefficients to {coeff_output_path}")
-    feat_impt_df.to_json(coeff_output_path, lines=True, orient="records")
+    if args.model == "linear":
+        logging.info(f"Saving model coefficients to {coeff_output_path}")
+        feat_impt_df.to_json(coeff_output_path, lines=True, orient="records")
     model_output_path = output_dir / "model.pkl"
     logging.info(f"Saving model to {model_output_path}")
     joblib.dump(model, model_output_path)
+
+    if args.model == "quadratic":
+        poly_output_path = output_dir / "poly.pkl"
+        poly = results.get("poly")
+        joblib.dump(poly, poly_output_path)
 
 
 def train_linear_regressor(X_train, X_test, y_train, y_test):
@@ -154,6 +172,22 @@ def train_linear_regressor(X_train, X_test, y_train, y_test):
     mse = mean_squared_error(y_test, y_pred)
     rmse = root_mean_squared_error(y_test, y_pred)
     return model, {"mse": mse, "rmse": rmse}
+
+
+def train_quadratic_regressor(X_train, X_test, y_train, y_test):
+    poly = PolynomialFeatures(degree=2)
+
+    # Transform the features
+    X_train_poly = poly.fit_transform(X_train)
+    X_test_poly = poly.transform(X_test)
+
+    model = LinearRegression()
+    model.fit(X_train_poly, y_train)
+
+    y_pred = model.predict(X_test_poly)
+    mse = mean_squared_error(y_test, y_pred)
+    rmse = root_mean_squared_error(y_test, y_pred)
+    return model, {"mse": mse, "rmse": rmse, "poly": poly}
 
 
 def train_lightgbm_regressor(X_train, X_test, y_train, y_test):
