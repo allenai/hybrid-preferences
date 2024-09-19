@@ -1,4 +1,5 @@
 import argparse
+import random
 import json
 import logging
 import sys
@@ -58,7 +59,8 @@ def get_args():
     shared_args = argparse.ArgumentParser(add_help=False)
     shared_args.add_argument("--input_path", type=Path, required=True, help="Path to the results file.")
     shared_args.add_argument("--output_path", type=Path, required=True, help="Path to save the PDF plot.")
-    shared_args.add_argument("--figsize", type=int, nargs=2, default=[10, 10], help="Path to save the PDF plot.")
+    shared_args.add_argument("--figsize", type=int, nargs=2, default=[10, 10], help="Matplotlib figure size.")
+    shared_args.add_argument("--random_seed", default=None, help="Set the random seed.")
 
     # Add new subcommand everytime you want to plot something new
     # In this way, we can centralize all plot customization into one script.
@@ -71,6 +73,10 @@ def get_args():
 
 def main():
     args = get_args()
+    if args.random_seed:
+        logging.info(f"Setting the random seed to {args.random_seed}")
+        random.seed(args.random_seed)
+
     cmd_map = {
         "rewardbench_line": plot_rewardbench_line,
         "tag_heatmap": plot_tag_heatmap,
@@ -170,7 +176,7 @@ def plot_rewardbench_line(
 
 def plot_tag_heatmap(input_path: Path, output_path: Path, figsize: tuple[int, int]):
     feats = get_all_features()
-    df = pd.read_csv(input_path)[feats]
+    df = pd.read_csv(input_path)[feats + ["Overall"]]
 
     columns_to_feature = {
         "bertscore::min_val=0.67|max_val=1.0": "0.67$\leq$BERTScore$\leq$1.00",
@@ -181,7 +187,9 @@ def plot_tag_heatmap(input_path: Path, output_path: Path, figsize: tuple[int, in
         "analyzer_scalar::feature_name=expertise_level|value=general public": "Expertise level: general public",
         "analyzer_scalar::feature_name=expertise_level|value=expert domain knowledge": "Expertise level: expert domain knowledge",
     }
-    df = df[columns_to_feature.keys()].rename(columns=columns_to_feature)
+    df = df[list(columns_to_feature.keys()) + ["Overall"]].rename(
+        columns=columns_to_feature
+    )
 
     # Rename columns:
     df = (
@@ -190,20 +198,28 @@ def plot_tag_heatmap(input_path: Path, output_path: Path, figsize: tuple[int, in
     )
     # Normalize
     # df = (df - df.mean()) / df.std()
-    n = 32
+    n = 16
     df = df.sample(n)
 
-    custom_cmap = colors.LinearSegmentedColormap.from_list(
-        "custom_blue", ["#FFFFFF", COLORS.get("dark_teal")]
+    fig, (ax1, ax2) = plt.subplots(
+        nrows=2,
+        figsize=figsize,
+        gridspec_kw={"height_ratios": [4, 1]},
+        # sharex=True,
     )
-
-    fig, ax = plt.subplots(figsize=figsize)
-    sns.heatmap(df.transpose(), ax=ax, annot=False, cmap=custom_cmap)
-    ax.set_xlabel(r"Proxy Dataset, $\hat{D}$")
-    ax.set_xticklabels([f"$\hat{{d}}_{{{i}}}$" for i in range(n)], rotation=0)
-    ax.xaxis.set_label_position("top")
-    ax.xaxis.tick_top()
-    ax.tick_params(
+    sns.heatmap(
+        df.drop(columns=["Overall"]).transpose(),
+        ax=ax1,
+        annot=False,
+        cmap=colors.LinearSegmentedColormap.from_list(
+            "custom_blue", ["#FFFFFF", COLORS.get("dark_teal")]
+        ),
+    )
+    ax1.set_xlabel(r"Proxy Dataset, $\hat{D}$")
+    ax1.set_xticklabels([f"$\hat{{d}}_{{{i}}}$" for i in range(n)], rotation=0)
+    ax1.xaxis.set_label_position("top")
+    ax1.xaxis.tick_top()
+    ax1.tick_params(
         axis="x",
         which="both",
         bottom=False,
@@ -212,7 +228,25 @@ def plot_tag_heatmap(input_path: Path, output_path: Path, figsize: tuple[int, in
         labelbottom=False,
         labeltop=True,
     )
-    # ax.set_ylabel("Tag set")
+
+    sns.heatmap(
+        df[["Overall"]].transpose(),
+        ax=ax2,
+        cmap=colors.LinearSegmentedColormap.from_list(
+            "custom_blue", ["#FFFFFF", COLORS.get("pink")]
+        ),
+        cbar=True,
+        annot=True,
+        fmt=".2f",
+    )
+    ax2.set_xticks([])
+    ax2.set_yticks([])
+    ax2.set_xlabel("")
+    ax2.set_ylabel("")
+    # Trick to make it look aligned without showing the colorbar
+    colorbar = ax2.collections[0].colorbar
+    colorbar.ax.set_visible(False)
+    colorbar.outline.set_visible(False)
 
     plt.tight_layout()
     fig.savefig(output_path, bbox_inches="tight")
