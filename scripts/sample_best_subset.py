@@ -12,7 +12,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from scripts.apply_data_model import convert_to_dpo_format
-from scripts.get_count_feats import get_instances, generate_instances
+from scripts.get_count_feats import get_instances, generate_instances, get_all_features
 from src.feature_extractor import FeatureExtractor
 
 logging.basicConfig(
@@ -245,8 +245,31 @@ def compute_gain_linear(input_df: pd.DataFrame, model) -> pd.DataFrame:
     return gain_df
 
 
-def compute_gain_quadratic(input_df: pd.DataFrame, model, feat_ext) -> pd.DataFrame:
-    pass
+def compute_gain_quadratic(
+    input_df: pd.DataFrame,
+    model,
+    feat_ext,
+    batch_size: int = 1,
+) -> pd.DataFrame:
+    all_features = get_all_features(n_bins=3)
+
+    def _count_feats(df: pd.DataFrame) -> dict[str, list[str]]:
+        feat_instance_map: dict[str, list[str]] = {}
+        for feature_str in all_features:
+            instances = get_instances(df, feature_str=feature_str)
+            feat_instance_map[feature_str] = instances if len(instances) > 0 else []
+        return feat_instance_map
+
+    def _batches(lst: list[str], size: int) -> list[list[str]]:
+        num_batches = (len(lst) + size - 1) // batch_size
+        batches = [lst[i * size : (i + 1) * size] for i in range(num_batches)]
+        return batches
+
+    ids = input_df["id"].to_list()
+    init_df = pd.DataFrame(0, index=range(1), columns=all_features)
+    breakpoint()
+    for batch in _batches(ids, size=batch_size):
+        pass
 
 
 def convert_to_binary(df: pd.DataFrame, features: list[str]) -> pd.DataFrame:
