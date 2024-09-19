@@ -180,8 +180,14 @@ def train_linear_regressor(X_train, X_test, y_train, y_test, log_linear: bool = 
     return model, {"mse": mse, "rmse": rmse}
 
 
-def train_quadratic_regressor(X_train, X_test, y_train, y_test):
+def train_quadratic_regressor(
+    X_train, X_test, y_train, y_test, log_linear: bool = False
+):
     poly = PolynomialFeatures(degree=2)
+
+    if log_linear:
+        X_train = np.log1p(X_train)
+        X_test = np.log1p(X_test)
 
     # Transform the features
     X_train_poly = poly.fit_transform(X_train)
