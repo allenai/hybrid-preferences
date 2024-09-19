@@ -218,7 +218,9 @@ def topk_sampling(
             budget_instance_map[feature_str] = len(instances)
 
         # Get predicted score
-        pred = model.predict(pd.DataFrame([budget_instance_map]))
+        _swap_feats = pd.DataFrame([budget_instance_map])
+        feats = _swap_feats if not feat_ext else feat_ext.transform(_swap_feats)
+        pred = model.predict(feats)
         logging.info(f"Predicted performance: {pred}")
 
         counts_outfile = counts_dir / f"regressor_feats_{tag}.json"
