@@ -17,6 +17,8 @@ python3 -m scripts.train_regressor \
 ```
 
 This script will output the model, `model.pkl` and the feature coefficients or in this case the weights of the linear model, `coef.jsonl`.
+If you're using `quadratic`, it will also output the feature extractor, `poly.pkl`.
+The LightGBM implementation works, but we didn't do any sampling for that model.
 
 ## Sampling subsets
 
