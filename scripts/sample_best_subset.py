@@ -212,7 +212,7 @@ def topk_sampling(
         budget_instance_map = {}
         swapped_ids = [eg["id"] for eg in converted_annotations if eg["is_swapped"]]
         swapped_df = input_df[input_df["id"].isin(swapped_ids)].reset_index(drop=True)
-        all_features = weights_df["feat"].to_list()
+        all_features = get_all_features()
         for feature_str in all_features:
             instances = get_instances(swapped_df, feature_str)
             budget_instance_map[feature_str] = len(instances)
@@ -265,11 +265,15 @@ def compute_gain_quadratic(
         batches = [lst[i * size : (i + 1) * size] for i in range(num_batches)]
         return batches
 
-    ids = input_df["id"].to_list()
     init_df = pd.DataFrame(0, index=range(1), columns=all_features)
-    breakpoint()
-    for batch in _batches(ids, size=batch_size):
-        pass
+    binary_df = convert_to_binary(input_df, features=get_all_features())
+    gains = model.predict(feat_ext.transform(binary_df)) - model.predict(
+        feat_ext.transform(init_df)
+    )
+    gain_df = input_df.copy(deep=True)
+    gain_df["gain"] = gains
+    gain_df = gain_df.sort_values(by="gain", ascending=False)
+    return gain_df
 
 
 def convert_to_binary(df: pd.DataFrame, features: list[str]) -> pd.DataFrame:
