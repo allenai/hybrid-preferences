@@ -122,16 +122,6 @@ def plot_rewardbench_line(
         x_levels = ["$0\%$", "$25\%$", "$50\%$", "$75\%$", "$100\%$"]
 
         x = np.arange(len(x_levels))
-        ax.errorbar(
-            x,
-            random_avgs,
-            yerr=random_stds,
-            label="Random",
-            marker="o",
-            linestyle="--",
-            capsize=5,
-            color=COLORS.get("pink"),
-        )
         # Plot Top-k Gain (Ours) scores
         ax.errorbar(
             x,
@@ -142,7 +132,19 @@ def plot_rewardbench_line(
             linestyle="-",
             linewidth=2,
             capsize=5,
-            color=COLORS.get("purple"),
+            color=COLORS.get("dark_teal"),
+        )
+        # Plot scores from random sampling
+        ax.errorbar(
+            x,
+            random_avgs,
+            yerr=random_stds,
+            label="Random",
+            marker="o",
+            linestyle="--",
+            capsize=5,
+            color=COLORS.get("pink"),
+            alpha=0.5,
         )
 
         ax.set_xticks(x)
