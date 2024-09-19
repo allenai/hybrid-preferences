@@ -199,8 +199,19 @@ def plot_tag_heatmap(input_path: Path, output_path: Path, figsize: tuple[int, in
 
     fig, ax = plt.subplots(figsize=figsize)
     sns.heatmap(df.transpose(), ax=ax, annot=False, cmap=custom_cmap)
-    ax.set_xlabel("Proxy Dataset ID")
-    ax.set_xticklabels([f"$d_{{{i}}}$" for i in range(n)], rotation=45)
+    ax.set_xlabel(r"Proxy Dataset, $\hat{D}$")
+    ax.set_xticklabels([f"$\hat{{d}}_{{{i}}}$" for i in range(n)], rotation=0)
+    ax.xaxis.set_label_position("top")
+    ax.xaxis.tick_top()
+    ax.tick_params(
+        axis="x",
+        which="both",
+        bottom=False,
+        top=False,
+        length=0,
+        labelbottom=False,
+        labeltop=True,
+    )
     # ax.set_ylabel("Tag set")
 
     plt.tight_layout()
