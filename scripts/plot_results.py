@@ -174,7 +174,11 @@ def plot_rewardbench_line(
     fig.savefig(output_path, bbox_inches="tight")
 
 
-def plot_tag_heatmap(input_path: Path, output_path: Path, figsize: tuple[int, int]):
+def plot_tag_heatmap(
+    input_path: Path,
+    output_path: Path,
+    figsize: tuple[int, int],
+):
     feats = get_all_features()
     df = pd.read_csv(input_path)[feats + ["Overall"]]
 
@@ -199,7 +203,7 @@ def plot_tag_heatmap(input_path: Path, output_path: Path, figsize: tuple[int, in
     # Normalize
     # df = (df - df.mean()) / df.std()
     n = 16
-    df = df.sample(n)
+    df = df.sample(n, random_state=42)
 
     fig, (ax1, ax2) = plt.subplots(
         nrows=2,
@@ -215,7 +219,7 @@ def plot_tag_heatmap(input_path: Path, output_path: Path, figsize: tuple[int, in
             "custom_blue", ["#FFFFFF", COLORS.get("dark_teal")]
         ),
     )
-    ax1.set_xlabel(r"Proxy Dataset, $\hat{D}$")
+    ax1.set_xlabel(r"Proxy Dataset, $\hat{D}$", labelpad=20)
     ax1.set_xticklabels([f"$\hat{{d}}_{{{i}}}$" for i in range(n)], rotation=0)
     ax1.xaxis.set_label_position("top")
     ax1.xaxis.tick_top()
@@ -228,6 +232,11 @@ def plot_tag_heatmap(input_path: Path, output_path: Path, figsize: tuple[int, in
         labelbottom=False,
         labeltop=True,
     )
+    colorbar = ax1.collections[0].colorbar
+    colorbar.set_label("Counts", labelpad=10)
+    colorbar.ax.yaxis.set_label_position("left")
+    colorbar.ax.yaxis.set_label_coords(-0.5, 1.05)
+    colorbar.ax.yaxis.label.set_rotation(0)
 
     sns.heatmap(
         df[["Overall"]].transpose(),
@@ -240,7 +249,8 @@ def plot_tag_heatmap(input_path: Path, output_path: Path, figsize: tuple[int, in
         fmt=".2f",
     )
     ax2.set_xticks([])
-    ax2.set_yticks([])
+    ax2.set_yticklabels([r"Perf$(\hat{R})$"], rotation=0, ha="right")
+    # ax2.set_yticks(["Perf(R)"])
     ax2.set_xlabel("")
     ax2.set_ylabel("")
     # Trick to make it look aligned without showing the colorbar
