@@ -17,6 +17,8 @@ python3 -m scripts.train_regressor \
 ```
 
 This script will output the model, `model.pkl` and the feature coefficients or in this case the weights of the linear model, `coef.jsonl`.
+If you're using `quadratic`, it will also output the feature extractor, `poly.pkl`.
+The LightGBM implementation works, but we didn't do any sampling for that model.
 
 ## Sampling subsets
 
@@ -35,11 +37,17 @@ python3 -m scripts.sample_best_subset \
     --input_path path/to/features.jsonl \
     --output_dir path/to/output/directory/ \
     --model_path path/to/model.pkl \
-    --budget 0.25 0.50 0.75
+    --budget 0.25 0.50 0.75 \
+    --sampling_method topk
 ```
 
 Here, a budget of `0.25` means "we want 25% of the whole dataset to be annotated by humans."
 You can also pass a whole number, but it's much easier to think in terms of proportions.
+
+These are the options you can pass to `--sampling_method`:
+
+- `topk`: compute the gain for each instance, sort them, and get the top-k best instances for swapping.
+- `simulated`: simulate 50 (default) different label combinations, predict their performance, and return the top 3 (default) subsets.
 
 The output directory in `--output_dir` will contain the features and actual swapped subsets as we had when we're generating [proxy reward models in Step 1](https://github.com/allenai/human-pref-datamodel/blob/main/docs/01-training-proxy-reward-models.md#create-proxy-dpo-training-datasets).
 Similar to that step, you can should upload the swapped subsets to Google Cloud Storage and [run them in TPUs](https://github.com/allenai/human-pref-datamodel/blob/main/docs/01-training-proxy-reward-models.md#train-reward-models-on-a-tpu).

@@ -12,7 +12,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from scripts.apply_data_model import convert_to_dpo_format
-from scripts.get_count_feats import get_instances, generate_instances
+from scripts.get_count_feats import get_instances, generate_instances, get_all_features
 from src.feature_extractor import FeatureExtractor
 
 logging.basicConfig(
@@ -155,12 +155,10 @@ def topk_sampling(
 ):
     counts_dir, swaps_dir = prepare_output_dirs(output_dir)
     # Compute gains
-    weights_df = pd.DataFrame({"feat": model.feature_names_in_, "coef": model.coef_})
-    binary_df = convert_to_binary(input_df, features=weights_df["feat"].to_list())
-    results = weights_df.set_index("feat")["coef"] * binary_df
-    gain_df = input_df.copy(deep=True)
-    gain_df["gain"] = results.sum(axis=1)
-    gain_df = gain_df.sort_values(by="gain", ascending=False).reset_index(drop=True)
+    if feat_ext:
+        gain_df = compute_gain_quadratic(input_df, model, feat_ext)
+    else:
+        gain_df = compute_gain_linear(input_df, model)
 
     # Given a budget, get the top-k and compute the cumulative gain
     uuids = [uuid.uuid4().hex for _ in range(len(budgets))]
@@ -214,13 +212,15 @@ def topk_sampling(
         budget_instance_map = {}
         swapped_ids = [eg["id"] for eg in converted_annotations if eg["is_swapped"]]
         swapped_df = input_df[input_df["id"].isin(swapped_ids)].reset_index(drop=True)
-        all_features = weights_df["feat"].to_list()
+        all_features = get_all_features()
         for feature_str in all_features:
             instances = get_instances(swapped_df, feature_str)
             budget_instance_map[feature_str] = len(instances)
 
         # Get predicted score
-        pred = model.predict(pd.DataFrame([budget_instance_map]))
+        _swap_feats = pd.DataFrame([budget_instance_map])
+        feats = _swap_feats if not feat_ext else feat_ext.transform(_swap_feats)
+        pred = model.predict(feats)
         logging.info(f"Predicted performance: {pred}")
 
         counts_outfile = counts_dir / f"regressor_feats_{tag}.json"
@@ -235,6 +235,47 @@ def topk_sampling(
     experiments_file = output_dir / "experiments.txt"
     with experiments_file.open("w") as f:
         f.write("\n".join(tags))
+
+
+def compute_gain_linear(input_df: pd.DataFrame, model) -> pd.DataFrame:
+    weights_df = pd.DataFrame({"feat": model.feature_names_in_, "coef": model.coef_})
+    binary_df = convert_to_binary(input_df, features=weights_df["feat"].to_list())
+    results = weights_df.set_index("feat")["coef"] * binary_df
+    gain_df = input_df.copy(deep=True)
+    gain_df["gain"] = results.sum(axis=1)
+    gain_df = gain_df.sort_values(by="gain", ascending=False).reset_index(drop=True)
+    return gain_df
+
+
+def compute_gain_quadratic(
+    input_df: pd.DataFrame,
+    model,
+    feat_ext,
+    batch_size: int = 1,
+) -> pd.DataFrame:
+    all_features = get_all_features(n_bins=3)
+
+    def _count_feats(df: pd.DataFrame) -> dict[str, list[str]]:
+        feat_instance_map: dict[str, list[str]] = {}
+        for feature_str in all_features:
+            instances = get_instances(df, feature_str=feature_str)
+            feat_instance_map[feature_str] = instances if len(instances) > 0 else []
+        return feat_instance_map
+
+    def _batches(lst: list[str], size: int) -> list[list[str]]:
+        num_batches = (len(lst) + size - 1) // batch_size
+        batches = [lst[i * size : (i + 1) * size] for i in range(num_batches)]
+        return batches
+
+    init_df = pd.DataFrame(0, index=range(1), columns=all_features)
+    binary_df = convert_to_binary(input_df, features=get_all_features())
+    gains = model.predict(feat_ext.transform(binary_df)) - model.predict(
+        feat_ext.transform(init_df)
+    )
+    gain_df = input_df.copy(deep=True)
+    gain_df["gain"] = gains
+    gain_df = gain_df.sort_values(by="gain", ascending=False)
+    return gain_df
 
 
 def convert_to_binary(df: pd.DataFrame, features: list[str]) -> pd.DataFrame:
