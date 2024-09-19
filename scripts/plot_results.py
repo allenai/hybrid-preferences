@@ -6,6 +6,7 @@ from inspect import signature
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from matplotlib import colors
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -25,7 +26,8 @@ logging.basicConfig(
 FONT_SIZES = {"small": 14, "medium": 18, "large": 24}
 
 PLOT_PARAMS = {
-    "font.family": "Times New Roman",
+    "font.family": "serif",
+    "font.serif": ["Times"],
     "font.size": FONT_SIZES.get("medium"),
     "axes.titlesize": FONT_SIZES.get("large"),
     "axes.labelsize": FONT_SIZES.get("large"),
@@ -33,7 +35,7 @@ PLOT_PARAMS = {
     "ytick.labelsize": FONT_SIZES.get("large"),
     "legend.fontsize": FONT_SIZES.get("medium"),
     "figure.titlesize": FONT_SIZES.get("medium"),
-    # "text.usetex": True,
+    "text.usetex": True,
 }
 
 COLORS = {
@@ -111,7 +113,7 @@ def plot_rewardbench_line(
         topk_avgs.insert(0, data[dataset]["human_0"]["score"] * 100)
         topk_stds.insert(0, data[dataset]["human_0"]["std"] * 100)
 
-        x_levels = ["0%", "25%", "50%", "75%", "100%"]
+        x_levels = ["$0\%$", "$25\%$", "$50\%$", "$75\%$", "$100\%$"]
 
         x = np.arange(len(x_levels))
         ax.errorbar(
@@ -139,7 +141,7 @@ def plot_rewardbench_line(
 
         ax.set_xticks(x)
         ax.set_xticklabels(x_levels)
-        ax.set_xlabel("% Direct Human Preference")
+        ax.set_xlabel("\% Direct Human Preference")
         ax.set_ylabel("RewardBench Score")
         ax.set_title(dataset)
         ax.spines[["right", "top"]].set_visible(False)
@@ -169,19 +171,37 @@ def plot_rewardbench_line(
 def plot_tag_heatmap(input_path: Path, output_path: Path, figsize: tuple[int, int]):
     feats = get_all_features()
     df = pd.read_csv(input_path)[feats]
+
+    columns_to_feature = {
+        "bertscore::min_val=0.67|max_val=1.0": "0.67$\leq$BERTScore$\leq$1.00",
+        "token_len_diff::min_val=0.33|max_val=0.67": "0.33$\leq$Diff. token length$\leq$0.67",
+        "analyzer_closed_set::feature_name=subject_of_expertise|constraints=Computer sciences": "Subject of expertise: Computer sciences",
+        "analyzer_scalar::feature_name=safety_concern|value=safe": "Safety concern: safe",
+        "analyzer_scalar::feature_name=complexity_of_intents|value=simple": "Complexity of intent: simple",
+        "analyzer_scalar::feature_name=expertise_level|value=general public": "Expertise level: general public",
+        "analyzer_scalar::feature_name=expertise_level|value=expert domain knowledge": "Expertise level: expert domain knowledge",
+    }
+    df = df[columns_to_feature.keys()].rename(columns=columns_to_feature)
+
     # Rename columns:
     df = (
-        df.dropna()
-        .head(200)
-        .rename(columns={col: f"t{idx}" for idx, col in enumerate(df.columns)})
+        df.dropna().head(200)
+        # .rename(columns={col: f"t{idx}" for idx, col in enumerate(df.columns)})
+    )
+    # Normalize
+    # df = (df - df.mean()) / df.std()
+    n = 32
+    df = df.sample(n)
+
+    custom_cmap = colors.LinearSegmentedColormap.from_list(
+        "custom_blue", ["#FFFFFF", COLORS.get("dark_teal")]
     )
 
-    df = (df - df.mean()) / df.std()
-
     fig, ax = plt.subplots(figsize=figsize)
-    sns.heatmap(df, ax=ax, annot=False)
-    ax.set_xlabel("Tag")
-    ax.set_ylabel("Proxy Dataset")
+    sns.heatmap(df.transpose(), ax=ax, annot=False, cmap=custom_cmap)
+    ax.set_xlabel("Proxy Dataset ID")
+    ax.set_xticklabels([f"$d_{{{i}}}$" for i in range(n)], rotation=45)
+    # ax.set_ylabel("Tag set")
 
     plt.tight_layout()
     fig.savefig(output_path, bbox_inches="tight")
