@@ -6,6 +6,7 @@ from pathlib import Path
 import joblib
 import lightgbm as lgb
 import pandas as pd
+import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, root_mean_squared_error
 from sklearn.model_selection import train_test_split
@@ -95,7 +96,7 @@ def main():
     for pct in pct_of_train:
         num_train = int(len(X_train) * pct)
         _, scores = train_fn(X_train[:num_train], X_test, y_train[:num_train], y_test)
-        logging.debug(f"Performance at {pct:.2%} of train samples: {scores}")
+        logging.info(f"Performance at {pct:.2%} of train samples: {scores}")
 
     if args.model == "linear":
         logging.info("*** Feature importance ***")
@@ -165,8 +166,13 @@ def main():
         joblib.dump(poly, poly_output_path)
 
 
-def train_linear_regressor(X_train, X_test, y_train, y_test):
+def train_linear_regressor(X_train, X_test, y_train, y_test, log_linear: bool = False):
     model = LinearRegression()
+    if log_linear:
+        # Log-linear
+        X_train = np.log1p(X_train)
+        X_test = np.log1p(X_test)
+
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
     mse = mean_squared_error(y_test, y_pred)
