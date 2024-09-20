@@ -1,19 +1,18 @@
 import argparse
-import random
 import json
 import logging
+import random
 import sys
 from inspect import signature
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-from matplotlib import colors
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib import colors
 
 from src.feature_extractor import get_all_features
-
 
 RESULTS_DIR = Path("results")
 
