@@ -181,7 +181,7 @@ def fetch_evals_rewardbench(
             feats.append(df_feat)
         df_feats = pd.concat(feats).reset_index().rename(columns={"index": "uuid"})
         df_scores = df_category_scores.merge(df_subset_scores, on="uuid", how="left")
-        overall_df = df_scores.merge(df_feats, on="uuid", how="left")
+        overall_df = df_scores.merge(df_feats, on="uuid", how="left").dropna()
 
     elif experiments_file:
         logging.info("Will attempt merge via feature hash")
