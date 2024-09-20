@@ -7,11 +7,11 @@ The RewardBench codebase tightly integrates the benchmark with the code, and it'
 """
 
 import argparse
-import logging
+import hashlib
 import json
+import logging
 import os
 import sys
-import hashlib
 from pathlib import Path
 from typing import Any
 
@@ -19,8 +19,8 @@ import torch
 import transformers
 from accelerate import Accelerator
 from accelerate.logging import get_logger
-from datasets import load_dataset, Dataset
-from fastchat.conversation import get_conv_template, Conversation
+from datasets import Dataset, load_dataset
+from fastchat.conversation import Conversation, get_conv_template
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from src.rm_inference import RewardBenchPipeline
