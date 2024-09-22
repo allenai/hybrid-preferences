@@ -33,6 +33,8 @@ def get_args():
     parser.add_argument("--output_file", help="Path to save the experiment YAML file to run.")
     parser.add_argument("--gcs_bucket", type=str, help="GCS bucket where the models are stored (NO need for gs:// prefix).")
     parser.add_argument("--gcs_dir_path", type=str, help="The directory path (or prefix) of models (e.g., human-preferences/rm_checkpoints/tulu2_13b_rm_human_datamodel_).")
+    parser.add_argument("--prefix", type=str, help="Prefix to append to the eval runs.")
+    parser.add_argument("--is_reward_model", action="store_true", default="If set, will train a reward model.")
     parser.add_argument("--beaker_workspace", default="ai2/ljm-oe-adapt", help="Beaker workspace to upload datasets.")
     parser.add_argument("--cleanup", action="store_true", default=False, help="If set, will delete uncommitted datasets (make sure no other jobs are running!)")
     # fmt: on
@@ -96,6 +98,9 @@ def main():
         task = deepcopy(template_task)
         task.name = f"convert-and-run-evals-{idx}"
         task.arguments.extend(["--gcs_dir_path"] + [src_file])
+        task.arguments.extend(["--prefix"] + [args.prefix])
+        if args.is_reward_model:
+            task.arguments.extend(["--is_reward_model"])
         new_tasks.append(task)
 
     exp_spec.tasks = new_tasks

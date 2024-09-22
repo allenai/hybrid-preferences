@@ -9,11 +9,8 @@ tasks:
     arguments:
       - --gcs_bucket
       - ljm-dev
-      - --prefix
-      - multipref-counts
       - --batch_size
       - 1
-      - --is_reward_model
     result:
       path: /output
     resources:
