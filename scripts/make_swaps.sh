@@ -35,3 +35,19 @@ python3 -m scripts.sample_best_subset \
     --budget 0.25 0.50 0.75 \
     --response_a_col response_a --response_b_col response_b \
     --sampling_method $sampling
+
+python3 -m scripts.sample_best_subset \
+    --input_path data/multiprefEXP_all_features/features.jsonl \
+    --output_dir data/multiprefEXP_best_mixes_${sampling}_${model}/ \
+    --model_path data/${feat_source}_${model}_model/model.pkl \
+    --budget 0.25 0.50 0.75 \
+    --response_a_col response_a --response_b_col response_b \
+    --sampling_method $sampling
+
+python3 -m scripts.sample_best_subset \
+    --input_path data/multiprefNOR_all_features/features.jsonl \
+    --output_dir data/multiprefNOR_best_mixes_${sampling}_${model}/ \
+    --model_path data/${feat_source}_${model}_model/model.pkl \
+    --budget 0.25 0.50 0.75 \
+    --response_a_col response_a --response_b_col response_b \
+    --sampling_method $sampling

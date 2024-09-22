@@ -58,4 +58,27 @@ for random_seed in 42 10010 21; do
         --random_seed $random_seed \
         --num_instances 17000
 
+    mkdir -p data/baselines/multiprefNOR
+    python3 -m scripts.prepare_baselines \
+        --output_dir data/baselines/multiprefNOR \
+        --prefix multiprefNOR \
+        --id_col id \
+        --input_path data/multiprefNOR_all_features/features.jsonl \
+        --prompt_col text \
+        --completion_a_col response_a \
+        --completion_b_col response_b \
+        --random_seed $random_seed \
+        --num_instances 7000
+
+    mkdir -p data/baselines/multiprefEXP
+    python3 -m scripts.prepare_baselines \
+        --output_dir data/baselines/multiprefEXP \
+        --prefix multiprefEXP \
+        --id_col id \
+        --input_path data/multiprefEXP_all_features/features.jsonl \
+        --prompt_col text \
+        --completion_a_col response_a \
+        --completion_b_col response_b \
+        --random_seed $random_seed \
+        --num_instances 7000
 done
