@@ -104,29 +104,28 @@ def plot_rewardbench_line(
 
         random_avgs = [data[dataset][l]["random"]["score"] * 100 for l in levels]
         random_stds = [data[dataset][l]["random"]["std"] * 100 for l in levels]
-        topk_avgs = [data[dataset][l]["top_k_gain_ours"]["score"] * 100 for l in levels]
-        topk_stds = [data[dataset][l]["top_k_gain_ours"]["std"] * 100 for l in levels]
+        dm_avgs = [data[dataset][l]["datamodel_ours"]["score"] * 100 for l in levels]
+        dm_stds = [data[dataset][l]["datamodel_ours"]["std"] * 100 for l in levels]
 
         # Add human_0 and human_100
         random_avgs.append(data[dataset]["human_100"]["score"] * 100)
         random_stds.append(data[dataset]["human_100"]["std"] * 100)
-        topk_avgs.append(data[dataset]["human_100"]["score"] * 100)
-        topk_stds.append(data[dataset]["human_100"]["std"] * 100)
+        dm_avgs.append(data[dataset]["human_100"]["score"] * 100)
+        dm_stds.append(data[dataset]["human_100"]["std"] * 100)
 
         random_avgs.insert(0, data[dataset]["human_0"]["score"] * 100)
         random_stds.insert(0, data[dataset]["human_0"]["std"] * 100)
-        topk_avgs.insert(0, data[dataset]["human_0"]["score"] * 100)
-        topk_stds.insert(0, data[dataset]["human_0"]["std"] * 100)
+        dm_avgs.insert(0, data[dataset]["human_0"]["score"] * 100)
+        dm_stds.insert(0, data[dataset]["human_0"]["std"] * 100)
 
         x_levels = ["$0\%$", "$25\%$", "$50\%$", "$75\%$", "$100\%$"]
 
         x = np.arange(len(x_levels))
-        # Plot Top-k Gain (Ours) scores
         ax.errorbar(
             x,
-            topk_avgs,
-            yerr=topk_stds,
-            label="Top-k Gain (Ours)",
+            dm_avgs,
+            yerr=dm_stds,
+            label="Datamodel Router (Ours)",
             marker="s",
             linestyle="-",
             linewidth=2,
