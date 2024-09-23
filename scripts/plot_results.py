@@ -220,7 +220,7 @@ def plot_tag_heatmap(
             "custom_blue", ["#FFFFFF", COLORS.get("dark_teal")]
         ),
     )
-    ax1.set_xlabel(r"Proxy Dataset, $\hat{D}$", labelpad=20)
+    ax1.set_xlabel(r"Candidate Dataset, $\hat{D}$", labelpad=20)
     ax1.set_xticklabels([f"$\hat{{d}}_{{{i}}}$" for i in range(n)], rotation=0)
     ax1.xaxis.set_label_position("top")
     ax1.xaxis.tick_top()
