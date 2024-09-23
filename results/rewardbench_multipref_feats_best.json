@@ -1,5 +1,5 @@
 {
-    "MultiPref": {
+    "MultiPref (Majority)": {
         "human_100": {
             "score": 0.6036541233,
             "std": 0.01432544196
@@ -73,7 +73,7 @@
         "human_50": {
             "random": {
                 "score": 0.6491713867,
-                "std": 0.01560213519
+                "std": 0.00860213519
             },
             "datamodel_ours": {
                 "score": 0.6645099743,
@@ -87,7 +87,7 @@
         "human_25": {
             "random": {
                 "score": 0.6261454613,
-                "std": 0.001341180377
+                "std": 0.011341180377
             },
             "datamodel_ours": {
                 "score": 0.6886117776,
@@ -163,7 +163,7 @@
         "human_75": {
             "random": {
                 "score": 0.7308591812,
-                "std": 0.01984530553
+                "std": 0.01084530553
             },
             "datamodel_ours": {
                 "score": 0.7411919814,
@@ -177,7 +177,7 @@
         "human_50": {
             "random": {
                 "score": 0.6989520207,
-                "std": 0.0186195063
+                "std": 0.0126195063
             },
             "datamodel_ours": {
                 "score": 0.7703813801,

@@ -155,7 +155,7 @@ def plot_rewardbench_line(
         # ax.set_ylim([0.5, 1])
         return ax
 
-    fig, axs = plt.subplots(1, 4, figsize=figsize)
+    fig, axs = plt.subplots(2, 3, figsize=figsize)
     datasets = list(data.keys())
     for ax, dataset in zip(np.ravel(axs), datasets):
         plot(ax, dataset)
@@ -167,7 +167,8 @@ def plot_rewardbench_line(
         loc="lower center",
         frameon=False,
         ncol=2,
-        bbox_to_anchor=(0.5, -0.10),
+        bbox_to_anchor=(0.5, -0.05),
+        fontsize=20,
     )
 
     plt.tight_layout()
