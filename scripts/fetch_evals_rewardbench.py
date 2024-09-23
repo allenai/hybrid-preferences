@@ -153,6 +153,10 @@ def fetch_evals_rewardbench(
 
     if feature_counts_dir:
         logging.info("Will read features from a features directory")
+        df_category_scores = df_category_scores[
+            df_category_scores.index.str.contains("ID")
+        ]
+        df_subset_scores = df_subset_scores[df_subset_scores.index.str.contains("ID")]
         df_category_scores["uuid"] = df_category_scores.index.to_series().apply(
             lambda x: re.search(r"ID__([a-f0-9]+)__", x).group(1)
         )
