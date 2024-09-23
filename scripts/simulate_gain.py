@@ -104,7 +104,7 @@ def get_ids(df: pd.DataFrame, feature_str: str) -> dict[int, list[str]]:
         ids = df[feature_name].apply(lambda x: constraints in x)["id"]
     elif "analyzer_scalar" in feature_str:
         feature_name, value = params["feature_name"], params["value"]
-        ids = df[df[feature_name] == value]
+        ids = df[df[feature_name] == value]["id"]
     elif "analyzer_open_set" in feature_str:
         feature_name = params["feature_name"]
         ids = df[feature_name].apply(lambda x: x is not None and len(x) > 0)["id"]
