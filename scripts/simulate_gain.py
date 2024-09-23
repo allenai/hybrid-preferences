@@ -43,6 +43,7 @@ def main():
 
     all_perf_scores = []
     all_perf_gains = []
+    all_perf_pct_gains = []
     for trial in range(args.n_trials):
         logging.info(f"*** Running trial {trial+1} ***")
         swap_ids = get_ids(input_df, feature_str=args.feature_name)
@@ -71,16 +72,24 @@ def main():
         # Get scores for this trials
         all_perf_scores.append(model.predict(sim_df))
         all_perf_gains.append(model.predict(sim_df) - baseline_perf)
+        all_perf_pct_gains.append(
+            [pct_gain(baseline_perf, pred) for pred in model.predict(sim_df)]
+        )
 
     score_report_df = pd.DataFrame(
         {
             "pct": [25, 50, 75, 100],
             "score": np.vstack(all_perf_scores).mean(axis=0),
             "gain": np.vstack(all_perf_gains).mean(axis=0),
+            "pct_gain": np.vstack(all_perf_pct_gains).mean(axis=0),
         }
     )
-    print(f"\nGain for {args.feature_name}")
+    print(f"\nGain for {args.feature_name} (baseline={baseline_perf})")
     print(score_report_df.to_markdown(tablefmt="github"))
+
+
+def pct_gain(old, new):
+    return ((new - old) / old) * 100
 
 
 def get_ids(df: pd.DataFrame, feature_str: str) -> dict[int, list[str]]:
