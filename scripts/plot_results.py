@@ -65,6 +65,7 @@ def get_args():
     # In this way, we can centralize all plot customization into one script.
     parser_main_results = subparsers.add_parser("rewardbench_line", help="Plot main results line chart for RewardBench.", parents=[shared_args])
     parser_tag_heatmap = subparsers.add_parser("tag_heatmap", help="Plot heatmap of tag counts for a given dataset.", parents=[shared_args])
+    parser_gain_distrib = subparsers.add_parser("gain_distrib", help="Plot the gain distribution for a dataset.", parents=[shared_args])
 
     # fmt: on
     return parser.parse_args()
@@ -79,6 +80,7 @@ def main():
     cmd_map = {
         "rewardbench_line": plot_rewardbench_line,
         "tag_heatmap": plot_tag_heatmap,
+        "gain_distrib": plot_gain_distrib,
     }
 
     def _filter_args(func, kwargs):
@@ -261,6 +263,14 @@ def plot_tag_heatmap(
 
     plt.tight_layout()
     fig.savefig(output_path, bbox_inches="tight")
+
+
+def plot_gain_distrib(
+    input_path: Path,
+    output_path: Path,
+    figsize: tuple[int, int],
+):
+    pass
 
 
 if __name__ == "__main__":
