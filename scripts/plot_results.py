@@ -6,13 +6,16 @@ import sys
 from inspect import signature
 from pathlib import Path
 
+import joblib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import matplotlib.ticker as mtick
 from matplotlib import colors
 
 from src.feature_extractor import get_all_features
+from scripts.sample_best_subset import compute_gain_linear, compute_gain_quadratic
 
 RESULTS_DIR = Path("results")
 
@@ -56,7 +59,6 @@ def get_args():
 
     # Define shared arguments
     shared_args = argparse.ArgumentParser(add_help=False)
-    shared_args.add_argument("--input_path", type=Path, required=True, help="Path to the results file.")
     shared_args.add_argument("--output_path", type=Path, required=True, help="Path to save the PDF plot.")
     shared_args.add_argument("--figsize", type=int, nargs=2, default=[10, 10], help="Matplotlib figure size.")
     shared_args.add_argument("--random_seed", default=None, help="Set the random seed.")
@@ -64,7 +66,14 @@ def get_args():
     # Add new subcommand everytime you want to plot something new
     # In this way, we can centralize all plot customization into one script.
     parser_main_results = subparsers.add_parser("rewardbench_line", help="Plot main results line chart for RewardBench.", parents=[shared_args])
+    parser_main_results.add_argument("--input_path", type=Path, required=False, help="Path to the results file.")
+
     parser_tag_heatmap = subparsers.add_parser("tag_heatmap", help="Plot heatmap of tag counts for a given dataset.", parents=[shared_args])
+    parser_tag_heatmap.add_argument("--input_path", type=Path, required=False, help="Path to the results file.")
+
+    parser_gain_distrib = subparsers.add_parser("gain_distrib", help="Plot the gain distribution for a dataset.", parents=[shared_args])
+    parser_gain_distrib.add_argument("--dataset_path", action="append", help="Path to the dataset (dataset_name::path/to/features.jsonl).")
+    parser_gain_distrib.add_argument("--model_path", type=Path, required=True, help="Path to the model.")
 
     # fmt: on
     return parser.parse_args()
@@ -79,6 +88,7 @@ def main():
     cmd_map = {
         "rewardbench_line": plot_rewardbench_line,
         "tag_heatmap": plot_tag_heatmap,
+        "gain_distrib": plot_gain_distrib,
     }
 
     def _filter_args(func, kwargs):
@@ -258,6 +268,49 @@ def plot_tag_heatmap(
     colorbar = ax2.collections[0].colorbar
     colorbar.ax.set_visible(False)
     colorbar.outline.set_visible(False)
+
+    plt.tight_layout()
+    fig.savefig(output_path, bbox_inches="tight")
+
+
+def plot_gain_distrib(
+    dataset_path: list[str],
+    output_path: Path,
+    figsize: tuple[int, int],
+    model_path: Path,
+):
+    model = joblib.load(model_path)
+    feat_ext = (
+        joblib.load(model_path.parent / "poly.pkl")
+        if "quadratic" in str(model_path)
+        else None
+    )
+    is_quadratic = True if feat_ext else False
+
+    fig, axs = plt.subplots(1, 4, figsize=(16, 4))
+    for ax, dataset in zip(np.ravel(axs), dataset_path):
+        dataset_name, dataset_fp = dataset.split("::")
+        df = pd.read_json(dataset_fp, lines=True)
+        if is_quadratic:
+            df = compute_gain_quadratic(df, model, feat_ext)
+        else:
+            df = compute_gain_linear(df, model)
+
+        sns.histplot(
+            df["gain"],
+            ax=ax,
+            kde=True,
+            stat="count",
+            fill=True,
+            bins=20,
+            color="#105257",
+        )
+        ax.set_title(dataset_name)
+        if not is_quadratic:
+            ax.set_xlim([-0.01, 0.01])
+        ax.set_xlabel("Gain")
+        ax.spines["right"].set_visible(False)
+        ax.spines["top"].set_visible(False)
 
     plt.tight_layout()
     fig.savefig(output_path, bbox_inches="tight")
