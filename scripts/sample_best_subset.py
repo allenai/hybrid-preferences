@@ -4,8 +4,9 @@ import logging
 import random
 import sys
 import uuid
-from pathlib import Path
 import tempfile
+from pathlib import Path
+from typing import Optional
 
 import joblib
 import pandas as pd
@@ -30,7 +31,7 @@ def get_args():
     parser.add_argument("--input_path", type=Path, required=True, help="Path to the features.jsonl file for a given dataset."),
     parser.add_argument("--output_dir", type=Path, required=True, help="Path to save the experiments.txt file and the DPO dataset for training.")
     parser.add_argument("--model_path", type=Path, required=True, help="Path to the model PKL file."),
-    parser.add_argument("--sampling_method", default="topk", choices=["topk", "simulated"], help="Type of sampling technique to use at inference time.")
+    parser.add_argument("--sampling_method", default="topk", choices=["topk", "simulated", "optimal_pos", "optimal_grad"], help="Type of sampling technique to use at inference time.")
     parser.add_argument("--budgets", nargs="*", type=float, required=True, help="Budget: percentage of the dataset to be routed to humans.")
     parser.add_argument("--n_samples", type=int, default=7000, help="Number of instances per proxy dataset.")
     parser.add_argument("--id_col", type=str, default="id", help="Name of the id column.")
@@ -68,6 +69,7 @@ def main():
             feat_ext=feat_ext,
             budgets=args.budgets,
             n_samples=args.n_samples,
+            optimal=None,
             output_dir=Path(args.output_dir),
         )
 
@@ -79,6 +81,30 @@ def main():
             feat_ext=feat_ext,
             budgets=args.budgets,
             n_samples=args.n_samples,
+            output_dir=Path(args.output_dir),
+        )
+
+    if args.sampling_method == "optimal_pos":
+        logging.info("*** Using 'optimal_pos' approach ***")
+        topk_sampling(
+            input_df,
+            model,
+            feat_ext=feat_ext,
+            budgets=args.budgets,
+            n_samples=args.n_samples,
+            optimal="optimal_pos",
+            output_dir=Path(args.output_dir),
+        )
+
+    if args.sampling_method == "optimal_grad":
+        logging.info("*** Using 'optimal_grad' approach ***")
+        topk_sampling(
+            input_df,
+            model,
+            feat_ext=feat_ext,
+            budgets=args.budgets,
+            n_samples=args.n_samples,
+            optimal="optimal_grad",
             output_dir=Path(args.output_dir),
         )
 
@@ -151,6 +177,7 @@ def topk_sampling(
     budgets: list[float],
     n_samples: int,
     output_dir: Path,
+    optimal: Optional[str] = None,
     feat_ext=None,
 ):
     counts_dir, swaps_dir = prepare_output_dirs(output_dir)
@@ -167,8 +194,15 @@ def topk_sampling(
     for id, budget in zip(uuids, budgets):
         if 0 <= budget <= 1:
             budget = int(len(input_df) * budget)
-        logging.info(f"Creating DPO swaps for budget: {budget}")
-        instances_to_swap = gain_df[:budget]["id"].to_list()
+
+        if not optimal:
+            logging.info(f"Creating DPO swaps for budget: {budget}")
+
+        instances_to_swap = (
+            gain_df[:budget]["id"].to_list()
+            if not optimal
+            else get_optimal_subset(gain_df, method=optimal)
+        )
 
         df_swapped = input_df.copy(deep=True)
         df_swapped["pref"] = df_swapped.apply(
@@ -231,6 +265,10 @@ def topk_sampling(
 
         # Save the tag file to create the experiments.txt later
         tags.append(f"{swaps_outfile.stem}::{counts_outfile.stem}")
+
+        if optimal:
+            logging.info("Optimal value passed, will only return the best subset.")
+            break
 
     experiments_file = output_dir / "experiments.txt"
     with experiments_file.open("w") as f:
@@ -303,6 +341,30 @@ def convert_to_binary(df: pd.DataFrame, features: list[str]) -> pd.DataFrame:
         binary_cols[feature_str] = binary_col.astype(int).to_list()
 
     return pd.DataFrame(binary_cols)
+
+
+def get_optimal_subset(
+    df: pd.DataFrame,
+    method: str,
+    gain_col: str = "gain",
+    optimal_grad_epsilon=1e-4,
+) -> list[str]:
+    if method == "optimal_pos":
+        # Get instancs with positive gain only
+        ids = df[df[gain_col] > 0]["id"].to_list()
+    elif method == "optimal_grad":
+        # Get instances that contribute a lot to the cumulative gain
+        cumulative_gain = 0
+        ids = []
+        for _, row in df.iterrows():
+            if row["gain"] + cumulative_gain > cumulative_gain + optimal_grad_epsilon:
+                ids.append(row["id"])
+                cumulative_gain += row["gain"]
+    else:
+        raise ValueError(f"Unknown optimal computation method: {method}")
+
+    logging.info(f"Optimal subset contains {len(ids)} instances")
+    return ids
 
 
 def prepare_output_dirs(output_dir: Path) -> tuple[Path, Path]:
