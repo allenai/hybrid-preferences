@@ -1,5 +1,10 @@
 {
     "MultiPref (Majority)": {
+        "optimal": {
+            "score": null,
+            "std": null,
+            "swaps": null
+        },
         "human_100": {
             "score": 0.6036541233,
             "std": 0.01432544196
@@ -52,6 +57,11 @@
         }
     },
     "MultiPref (Experts)": {
+        "optimal": {
+            "score": null,
+            "std": null,
+            "swaps": null
+        },
         "human_100": {
             "score": 0.5744816988,
             "std": 0.01403116987
@@ -104,6 +114,11 @@
         }
     },
     "MultiPref (Normal)": {
+        "optimal": {
+            "score": null,
+            "std": null,
+            "swaps": null
+        },
         "human_100": {
             "score": 0.571290725,
             "std": 0.009884708583
@@ -156,6 +171,11 @@
         }
     },
     "HelpSteer2": {
+        "optimal": {
+            "score": null,
+            "std": null,
+            "swaps": null
+        },
         "human_100": {
             "score": 0.7244862062,
             "std": 0.00828079111
@@ -208,6 +228,11 @@
         }
     },
     "ChatArena": {
+        "optimal": {
+            "score": null,
+            "std": null,
+            "swaps": null
+        },
         "human_100": {
             "score": 0.5900274236,
             "std": 0.007598570491
@@ -260,6 +285,11 @@
         }
     },
     "AlpacaFarm": {
+        "optimal": {
+            "score": null,
+            "std": null,
+            "swaps": null
+        },
         "human_100": {
             "score": 0.5506994896,
             "std": 0.01279058507
