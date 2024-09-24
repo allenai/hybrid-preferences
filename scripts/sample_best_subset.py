@@ -184,8 +184,10 @@ def topk_sampling(
     # Compute gains
     if feat_ext:
         gain_df = compute_gain_quadratic(input_df, model, feat_ext)
+        is_quadratic = True
     else:
         gain_df = compute_gain_linear(input_df, model)
+        is_quadratic = False
 
     # Given a budget, get the top-k and compute the cumulative gain
     uuids = [uuid.uuid4().hex for _ in range(len(budgets))]
@@ -201,7 +203,11 @@ def topk_sampling(
         instances_to_swap = (
             gain_df[:budget]["id"].to_list()
             if not optimal
-            else get_optimal_subset(gain_df, method=optimal)
+            else get_optimal_subset(
+                gain_df,
+                method=optimal,
+                optimal_grad_epsilon=1e-4 if not is_quadratic else 1e-5,
+            )
         )
 
         df_swapped = input_df.copy(deep=True)
