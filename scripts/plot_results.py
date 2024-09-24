@@ -306,7 +306,8 @@ def plot_gain_distrib(
             color="#105257",
         )
         ax.set_title(dataset_name)
-        ax.set_xlim([-0.01, 0.01])
+        if not is_quadratic:
+            ax.set_xlim([-0.01, 0.01])
         ax.set_xlabel("Gain")
         ax.spines["right"].set_visible(False)
         ax.spines["top"].set_visible(False)
