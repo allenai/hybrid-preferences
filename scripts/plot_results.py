@@ -44,6 +44,7 @@ PLOT_PARAMS = {
 COLORS = {
     "pink": "#f0529c",
     "dark_teal": "#0a3235",
+    "teal": "#105257",
     "purple": "#b11be8",
     "green": "#0fcb8c",
 }
@@ -140,7 +141,7 @@ def plot_rewardbench_line(
             linestyle="-",
             linewidth=2,
             capsize=5,
-            color=COLORS.get("dark_teal"),
+            color=COLORS.get("teal"),
         )
         # Plot scores from random sampling
         ax.errorbar(
@@ -153,6 +154,23 @@ def plot_rewardbench_line(
             capsize=5,
             color=COLORS.get("pink"),
             alpha=0.5,
+        )
+
+        # Plot optimal scores
+        x_opt = data["dataset"]["optimal"].get(
+            "swaps", 0
+        )  # you need to precompute this: swaps / total_counts then interpolate
+        y_opt = data[dataset]["optimal"].get("score", 0) * 100
+
+        # Plot optimal scores
+        ax.plot(
+            x_opt,
+            y_opt,
+            "*",
+            markersize=20,
+            color=COLORS.get("green"),
+            # markeredgecolor=COLORS.get("dark_teal"),
+            label="Optimal subset",
         )
 
         ax.set_xticks(x)
@@ -176,7 +194,7 @@ def plot_rewardbench_line(
         labels,
         loc="lower center",
         frameon=False,
-        ncol=2,
+        ncol=3,
         bbox_to_anchor=(0.5, -0.05),
         fontsize=20,
     )
