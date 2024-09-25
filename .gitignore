@@ -163,3 +163,4 @@ cython_debug/
 data/
 .DS_Store
 plots/*
+results/*
