@@ -214,12 +214,12 @@ def plot_tag_heatmap(
 
     columns_to_feature = {
         "bertscore::min_val=0.67|max_val=1.0": "0.67$\leq$BERTScore$\leq$1.00",
-        "token_len_diff::min_val=0.33|max_val=0.67": "0.33$\leq$Diff. token length$\leq$0.67",
+        "len_longer::min_val=0.33|max_val=0.67": "0.33$\leq$Length longer response$\leq$0.67",
         "analyzer_closed_set::feature_name=subject_of_expertise|constraints=Computer sciences": "Subject of expertise: Computer sciences",
-        "analyzer_scalar::feature_name=safety_concern|value=safe": "Safety concern: safe",
-        "analyzer_scalar::feature_name=complexity_of_intents|value=simple": "Complexity of intent: simple",
-        "analyzer_scalar::feature_name=expertise_level|value=general public": "Expertise level: general public",
+        # "analyzer_scalar::feature_name=safety_concern|value=safe": "Safety concern: safe",
+        "analyzer_scalar::feature_name=complexity_of_intents|value=moderate": "Complexity of intents: moderate",
         "analyzer_scalar::feature_name=expertise_level|value=expert domain knowledge": "Expertise level: expert domain knowledge",
+        # "analyzer_scalar::feature_name=open_endedness|value=high": "Open-endedness: high",
     }
     df = df[list(columns_to_feature.keys()) + ["Overall"]].rename(
         columns=columns_to_feature
@@ -241,12 +241,15 @@ def plot_tag_heatmap(
         gridspec_kw={"height_ratios": [4, 1]},
         # sharex=True,
     )
+    fmt = lambda x: f"{x/1000:.1f}k" if x >= 1000 else f"{int(x)}"
+    input_data = df.drop(columns=["Overall"]).transpose()
     sns.heatmap(
-        df.drop(columns=["Overall"]).transpose(),
+        input_data,
         ax=ax1,
-        annot=False,
+        annot=input_data.applymap(fmt),
+        fmt="",
         cmap=colors.LinearSegmentedColormap.from_list(
-            "custom_blue", ["#FFFFFF", COLORS.get("dark_teal")]
+            "custom_blue", ["#FFFFFF", COLORS.get("teal")]
         ),
     )
     ax1.set_xlabel(r"Candidate Dataset, $\hat{D}$", labelpad=20)
@@ -268,6 +271,8 @@ def plot_tag_heatmap(
     colorbar.ax.yaxis.set_label_coords(-0.5, 1.05)
     colorbar.ax.yaxis.label.set_rotation(0)
 
+    df["Overall"] = df["Overall"] * 100
+
     sns.heatmap(
         df[["Overall"]].transpose(),
         ax=ax2,
@@ -276,7 +281,7 @@ def plot_tag_heatmap(
         ),
         cbar=True,
         annot=True,
-        fmt=".2f",
+        fmt=".1f",
     )
     ax2.set_xticks([])
     ax2.set_yticklabels([r"Perf$(\hat{R})$"], rotation=0, ha="right")
