@@ -58,9 +58,9 @@
     },
     "MultiPref (Experts)": {
         "optimal": {
-            "score": null,
+            "score": 0.6963224323,
             "std": null,
-            "swaps": null
+            "swaps": 1.42
         },
         "human_100": {
             "score": 0.5744816988,
@@ -115,9 +115,9 @@
     },
     "MultiPref (Normal)": {
         "optimal": {
-            "score": null,
+            "score": 0.7043496383,
             "std": null,
-            "swaps": null
+            "swaps": 1.82
         },
         "human_100": {
             "score": 0.571290725,
