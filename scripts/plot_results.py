@@ -157,21 +157,22 @@ def plot_rewardbench_line(
         )
 
         # Plot optimal scores
-        x_opt = data["dataset"]["optimal"].get(
-            "swaps", 0
-        )  # you need to precompute this: swaps / total_counts then interpolate
-        y_opt = data[dataset]["optimal"].get("score", 0) * 100
+        # you need to precompute this: swaps / total_counts then interpolate
+        x_opt = data[dataset]["optimal"].get("swaps")
+        y_opt = data[dataset]["optimal"].get("score")
 
-        # Plot optimal scores
-        ax.plot(
-            x_opt,
-            y_opt,
-            "*",
-            markersize=20,
-            color=COLORS.get("green"),
-            # markeredgecolor=COLORS.get("dark_teal"),
-            label="Optimal subset",
-        )
+        if x_opt and y_opt:
+            y_opt = y_opt * 100
+            # Plot optimal scores
+            ax.plot(
+                x_opt,
+                y_opt,
+                "*",
+                markersize=20,
+                color=COLORS.get("green"),
+                # markeredgecolor=COLORS.get("dark_teal"),
+                label="Optimal subset",
+            )
 
         ax.set_xticks(x)
         ax.set_xticklabels(x_levels)

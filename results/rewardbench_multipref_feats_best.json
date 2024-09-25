@@ -1,9 +1,9 @@
 {
     "MultiPref (Majority)": {
         "optimal": {
-            "score": null,
+            "score": 0.706378476,
             "std": null,
-            "swaps": null
+            "swaps": 1.49
         },
         "human_100": {
             "score": 0.6036541233,
@@ -172,9 +172,9 @@
     },
     "HelpSteer2": {
         "optimal": {
-            "score": null,
+            "score": 0.7970620446,
             "std": null,
-            "swaps": null
+            "swaps": 2.78
         },
         "human_100": {
             "score": 0.7244862062,
@@ -229,9 +229,9 @@
     },
     "ChatArena": {
         "optimal": {
-            "score": null,
+            "score": 0.7227572617,
             "std": null,
-            "swaps": null
+            "swaps": 0.92 
         },
         "human_100": {
             "score": 0.5900274236,
@@ -286,9 +286,9 @@
     },
     "AlpacaFarm": {
         "optimal": {
-            "score": null,
+            "score": 0.6681374886,
             "std": null,
-            "swaps": null
+            "swaps": 2.69 
         },
         "human_100": {
             "score": 0.5506994896,
