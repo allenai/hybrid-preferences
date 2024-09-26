@@ -5,6 +5,7 @@ import random
 import sys
 from inspect import signature
 from pathlib import Path
+from typing import Optional
 
 import joblib
 import matplotlib.pyplot as plt
@@ -76,6 +77,10 @@ def get_args():
     parser_gain_distrib.add_argument("--dataset_path", action="append", help="Path to the dataset (dataset_name::path/to/features.jsonl).")
     parser_gain_distrib.add_argument("--model_path", type=Path, required=True, help="Path to the model.")
 
+    parser_tag_heatmap = subparsers.add_parser("feat_distrib", help="Plot a distribution of numerical (lexical features).", parents=[shared_args])
+    parser_gain_distrib.add_argument("--dataset_path", action="append", help="Path to the dataset (dataset_name::path/to/features.jsonl).")
+    parser_gain_distrib.add_argument("--feature", type=str, help="Feature (or field name) to plot.")
+
     # fmt: on
     return parser.parse_args()
 
@@ -90,6 +95,7 @@ def main():
         "rewardbench_line": plot_rewardbench_line,
         "tag_heatmap": plot_tag_heatmap,
         "gain_distrib": plot_gain_distrib,
+        "feat_distrib": plot_feat_distrib,
     }
 
     def _filter_args(func, kwargs):
@@ -300,8 +306,8 @@ def plot_tag_heatmap(
 def plot_gain_distrib(
     dataset_path: list[str],
     output_path: Path,
-    figsize: tuple[int, int],
     model_path: Path,
+    figsize: tuple[int, int] = (16, 4),
 ):
     model = joblib.load(model_path)
     feat_ext = (
@@ -311,7 +317,7 @@ def plot_gain_distrib(
     )
     is_quadratic = True if feat_ext else False
 
-    fig, axs = plt.subplots(1, 4, figsize=(16, 4))
+    fig, axs = plt.subplots(1, 4, figsize=figsize)
     for ax, dataset in zip(np.ravel(axs), dataset_path):
         dataset_name, dataset_fp = dataset.split("::")
         df = pd.read_json(dataset_fp, lines=True)
@@ -335,6 +341,36 @@ def plot_gain_distrib(
         ax.set_xlabel("Gain")
         ax.spines["right"].set_visible(False)
         ax.spines["top"].set_visible(False)
+
+    plt.tight_layout()
+    fig.savefig(output_path, bbox_inches="tight")
+
+
+def plot_feat_distrib(
+    dataset_path: list[str],
+    output_path: Path,
+    feature: str,
+    feature_label: Optional[str] = None,
+    figsize: tuple[int, int] = (16, 4),
+):
+    fig, axs = plt.subplots(1, 4, figsize=figsize)
+    for ax, dataset in zip(np.ravel(axs), dataset_path):
+        dataset_name, dataset_fp = dataset.split("::")
+        df = pd.read_json(dataset_fp, lines=True)
+
+        sns.histplot(
+            df[feature],
+            ax=ax,
+            kde=True,
+            stat="count",
+            fill=True,
+            bins=20,
+            color="#105257",
+        )
+        ax.set_title(dataset_name)
+        ax.spines["right"].set_visible(False)
+        ax.spines["top"].set_visible(False)
+        ax.set_xlabel(feature_label if feature_label else feature)
 
     plt.tight_layout()
     fig.savefig(output_path, bbox_inches="tight")
