@@ -373,6 +373,10 @@ def plot_feat_distrib(
         ax.spines["top"].set_visible(False)
         if df[feature].max() <= 1:
             ax.set_xlim([0, 1])
+        if feature == "len_longer":
+            # Hacky
+            feature_label = "Token length of\nlonger response"
+
         ax.set_xlabel(feature_label if feature_label else feature)
 
     plt.tight_layout()
