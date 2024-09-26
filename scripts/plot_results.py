@@ -143,7 +143,7 @@ def plot_rewardbench_line(
             x,
             dm_avgs,
             yerr=dm_stds,
-            label="Datamodel Router (Ours)",
+            label="Hybrid Preferences (Ours)",
             marker="s",
             linestyle="-",
             linewidth=2,
@@ -178,7 +178,7 @@ def plot_rewardbench_line(
                 markersize=20,
                 color=COLORS.get("green"),
                 # markeredgecolor=COLORS.get("dark_teal"),
-                label="Optimal subset",
+                label="Best found subset",
             )
 
         ax.set_xticks(x)
@@ -191,7 +191,7 @@ def plot_rewardbench_line(
         # ax.set_ylim([0.5, 1])
         return ax
 
-    fig, axs = plt.subplots(2, 3, figsize=figsize)
+    fig, axs = plt.subplots(1, 4, figsize=figsize)
     datasets = list(data.keys())
     for ax, dataset in zip(np.ravel(axs), datasets):
         plot(ax, dataset)
@@ -203,7 +203,7 @@ def plot_rewardbench_line(
         loc="lower center",
         frameon=False,
         ncol=3,
-        bbox_to_anchor=(0.5, -0.05),
+        bbox_to_anchor=(0.5, -0.1),
         fontsize=20,
     )
 
