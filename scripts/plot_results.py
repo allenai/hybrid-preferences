@@ -77,9 +77,10 @@ def get_args():
     parser_gain_distrib.add_argument("--dataset_path", action="append", help="Path to the dataset (dataset_name::path/to/features.jsonl).")
     parser_gain_distrib.add_argument("--model_path", type=Path, required=True, help="Path to the model.")
 
-    parser_tag_heatmap = subparsers.add_parser("feat_distrib", help="Plot a distribution of numerical (lexical features).", parents=[shared_args])
-    parser_gain_distrib.add_argument("--dataset_path", action="append", help="Path to the dataset (dataset_name::path/to/features.jsonl).")
-    parser_gain_distrib.add_argument("--feature", type=str, help="Feature (or field name) to plot.")
+    parser_feat_distrib = subparsers.add_parser("feat_distrib", help="Plot a distribution of numerical (lexical features).", parents=[shared_args])
+    parser_feat_distrib.add_argument("--dataset_path", action="append", help="Path to the dataset (dataset_name::path/to/features.jsonl).")
+    parser_feat_distrib.add_argument("--feature", type=str, help="Feature (or field name) to plot.")
+    parser_feat_distrib.add_argument("--feature_label", type=str, help="Feature (or field name) to use in xlabel.")
 
     # fmt: on
     return parser.parse_args()
@@ -370,6 +371,8 @@ def plot_feat_distrib(
         ax.set_title(dataset_name)
         ax.spines["right"].set_visible(False)
         ax.spines["top"].set_visible(False)
+        if df[feature].max() <= 1:
+            ax.set_xlim([0, 1])
         ax.set_xlabel(feature_label if feature_label else feature)
 
     plt.tight_layout()
