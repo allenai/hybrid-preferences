@@ -14,6 +14,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.ticker as mtick
 from matplotlib import colors
+from matplotlib.ticker import MaxNLocator
 
 from src.feature_extractor import get_all_features
 from scripts.sample_best_subset import compute_gain_linear, compute_gain_quadratic
@@ -343,6 +344,8 @@ def plot_gain_distrib(
         ax.set_xlabel("Gain")
         ax.spines["right"].set_visible(False)
         ax.spines["top"].set_visible(False)
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True, nbins=5))
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True, nbins=6))
 
         # Add black vertical line
         ax.axvline(x=0, color=COLORS.get("dark_teal"), linestyle="--", linewidth=5)
