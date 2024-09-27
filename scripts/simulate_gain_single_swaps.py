@@ -9,7 +9,7 @@ import pandas as pd
 import joblib
 
 from scripts.get_count_feats import get_instances, get_all_features
-from sklearn.preprocessing import QuantileTransformer
+from src.feature_extractor import FeatureExtractor
 
 
 logging.basicConfig(
@@ -49,7 +49,33 @@ def main():
     gain_df["gain_log"] = np.log1p(gain_df["gain"] * 1e5)
     gain_df = gain_df[["feature", "gain_log"]].rename(columns={"gain_log": "gain"})
 
-    breakpoint()
+    gain_df["feature"] = gain_df["feature"].apply(lambda x: fmt_prettyname(x))
+    gain_df = gain_df.reset_index(drop=True)
+    print(gain_df.to_latex(index=False))
+
+
+def fmt_prettyname(feature_str: str) -> str:
+    key, params = FeatureExtractor.parse_feature(feature_str)
+    if "min_val" in params or "max_val" in params:
+        min_val, max_val = params["min_val"], params["max_val"]
+        key = key.replace("_", " ").title()
+        pretty_name = f"{key} \in \{{{min_val}, {max_val}\}}"
+    elif "analyzer_closed_set" in feature_str:
+        feature_name, constraints = params["feature_name"], params["constraints"]
+        pretty_name = f"{feature_name}: {constraints}"
+        pretty_name = pretty_name.replace("_", " ").title()
+    elif "analyzer_scalar" in feature_str:
+        feature_name, value = params["feature_name"], params["value"]
+        pretty_name = f"{feature_name}: {value}"
+        pretty_name = pretty_name.replace("_", " ").title()
+    elif "analyzer_open_set" in feature_str:
+        feature_name = params["feature_name"]
+        pretty_name = f"{feature_name}"
+        pretty_name = pretty_name.replace("_", " ").title()
+    else:
+        pretty_name = feature_str
+
+    return pretty_name
 
 
 if __name__ == "__main__":
