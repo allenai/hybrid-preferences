@@ -318,7 +318,7 @@ def plot_gain_distrib(
     )
     is_quadratic = True if feat_ext else False
 
-    fig, axs = plt.subplots(1, 4, figsize=figsize)
+    fig, axs = plt.subplots(1, len(dataset_path), figsize=figsize)
     for ax, dataset in zip(np.ravel(axs), dataset_path):
         dataset_name, dataset_fp = dataset.split("::")
         df = pd.read_json(dataset_fp, lines=True)
@@ -328,20 +328,27 @@ def plot_gain_distrib(
             df = compute_gain_linear(df, model)
 
         sns.histplot(
-            df["gain"],
+            np.log1p(df["gain"] * 1e5),
             ax=ax,
             kde=True,
             stat="count",
             fill=True,
-            bins=20,
+            bins=50,
             color="#105257",
         )
         ax.set_title(dataset_name)
         if not is_quadratic:
             ax.set_xlim([-0.01, 0.01])
+        ax.set_xlim([-2, 2])
         ax.set_xlabel("Gain")
         ax.spines["right"].set_visible(False)
         ax.spines["top"].set_visible(False)
+
+        # Add black vertical line
+        ax.axvline(x=0, color=COLORS.get("dark_teal"), linestyle="--", linewidth=5)
+        for patch in ax.patches:
+            if patch.get_x() < 0:
+                patch.set_facecolor(COLORS.get("pink"))
 
     plt.tight_layout()
     fig.savefig(output_path, bbox_inches="tight")
