@@ -170,6 +170,7 @@ def plot_rewardbench_line(
         # you need to precompute this: swaps / total_counts then interpolate
         x_opt = data[dataset]["optimal"].get("swaps")
         y_opt = data[dataset]["optimal"].get("score")
+        opt_pct = data[dataset]["optimal"].get("swaps_pct")
 
         if x_opt and y_opt:
             y_opt = y_opt * 100
@@ -186,10 +187,26 @@ def plot_rewardbench_line(
             ax.text(
                 x_opt + 0.75,
                 y_opt + 0.75,
-                f"{x_opt*100:.1f}% human annot.",
+                f"{opt_pct:.1f}\%",
                 fontsize=20,
                 color=COLORS.get("green"),
                 ha="center",
+            )
+            # Get the current y-axis limits
+            ymin, ymax = ax.get_ylim()
+            ax.vlines(
+                x_opt,
+                ymin=ymin,
+                ymax=y_opt,
+                color=COLORS.get("green"),
+                linestyle="--",
+            )
+            ax.hlines(
+                y_opt,
+                xmin=0,
+                xmax=x_opt,
+                color=COLORS.get("green"),
+                linestyle="--",
             )
 
         ax.set_xticks(x)
