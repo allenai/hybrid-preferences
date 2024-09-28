@@ -54,6 +54,16 @@ def main():
             sort=args.sort,
             print_latex=args.print_latex,
         )
+    elif args.sim_type == "actual":
+        sim_actual(
+            input_path=args.input_path,
+            output_dir=args.output_dir,
+            features=features,
+            model=model,
+            feat_ext=feat_ext,
+            n_trials=args.n_trials,
+            print_latex=args.print_latex,
+        )
 
 
 def sim_dim_only(
@@ -104,6 +114,8 @@ def sim_dim_only(
             print(df.to_latex(index=False))
         df.to_csv(output_dir / f"simulated_{random_swaps}.csv", index=False)
 
+
+def sim_actual():
     pass
 
 
