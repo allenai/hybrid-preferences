@@ -73,7 +73,8 @@ def main():
         df["gain"] = avg_gain
 
         df["feature"] = df["feature"].apply(lambda x: fmt_prettyname(x))
-        df = df.sort_values(by="gain", ascending=False)
+        if args.sort:
+            df = df.sort_values(by="gain", ascending=False)
         df = df.reset_index(drop=True)
         if args.print_latex:
             print(df.to_latex(index=False))
