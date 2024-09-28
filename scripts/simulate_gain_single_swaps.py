@@ -24,6 +24,7 @@ def get_args():
     # fmt: off
     description = "Simulate a dataset using a quadratic regressor and get the gain."
     parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("--output_path", type=Path, required=True, help="Path to save the output in a CSV file."),
     parser.add_argument("--model_path", type=Path, required=True, help="Path to the model PKL file."),
     # fmt: on
     return parser.parse_args()
@@ -52,6 +53,7 @@ def main():
     gain_df["feature"] = gain_df["feature"].apply(lambda x: fmt_prettyname(x))
     gain_df = gain_df.reset_index(drop=True)
     print(gain_df.to_latex(index=False))
+    gain_df.to_csv(args.output_path, index=False)
 
 
 def fmt_prettyname(feature_str: str) -> str:
