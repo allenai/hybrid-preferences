@@ -59,6 +59,9 @@ def main():
         df["feature"] = [f"BASELINE_{random_swaps}"] + get_all_features()
 
         gain_df = df[["feature", "gain"]].sort_values(by="gain", ascending=False)
+        if random_swaps == 0:
+            gain_df["gain"] = gain_df["gain"].apply(lambda x: np.log1p(x * 10**5))
+
         gain_df["feature"] = gain_df["feature"].apply(lambda x: fmt_prettyname(x))
         gain_df = gain_df.reset_index(drop=True)
         if args.print_latex:
