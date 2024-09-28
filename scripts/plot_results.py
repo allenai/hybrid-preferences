@@ -231,75 +231,81 @@ def plot_tag_heatmap(
         "analyzer_scalar::feature_name=expertise_level|value=general public": "Expertise level: general public",
         "analyzer_scalar::feature_name=expertise_level|value=expert domain knowledge": "Expertise level: expert domain knowledge",
     }
-    df = df[list(columns_to_feature.keys()) + ["Overall"]].rename(
-        columns=columns_to_feature
-    )
 
-    # Rename columns:
-    n = 16
-    df = df.dropna().sample(n, random_state=42)
+    def group_list(lst, n):
+        return [lst[i : i + n] for i in range(0, len(lst), n)]
 
-    fig, (ax1, ax2) = plt.subplots(
-        nrows=2,
-        figsize=figsize,
-        gridspec_kw={"height_ratios": [4, 1]},
-        # sharex=True,
-    )
-    fmt = lambda x: f"{x/1000:.1f}k" if x >= 1000 else f"{int(x)}"
-    input_data = df.drop(columns=["Overall"]).transpose()
-    sns.heatmap(
-        input_data,
-        ax=ax1,
-        annot=input_data.map(fmt),
-        fmt="",
-        cmap=colors.LinearSegmentedColormap.from_list(
-            "custom_blue", ["#FFFFFF", COLORS.get("teal")]
-        ),
-        annot_kws={"size": 20},
-    )
-    ax1.set_xlabel(r"Candidate Dataset, $\hat{D}$", labelpad=20)
-    ax1.set_xticklabels([f"$\hat{{d}}_{{{i}}}$" for i in range(n)], rotation=0)
-    ax1.xaxis.set_label_position("top")
-    ax1.xaxis.tick_top()
-    ax1.tick_params(
-        axis="x",
-        which="both",
-        bottom=False,
-        top=False,
-        length=0,
-        labelbottom=False,
-        labeltop=True,
-    )
-    colorbar = ax1.collections[0].colorbar
-    colorbar.set_label("Counts", labelpad=10)
-    colorbar.ax.yaxis.set_label_position("left")
-    colorbar.ax.yaxis.set_label_coords(-0.5, 1.05)
-    colorbar.ax.yaxis.label.set_rotation(0)
+    for idx, group in enumerate(group_list(list(columns_to_feature.keys()), 2)):
+        n = 16
+        df = df.dropna().sample(n, random_state=42)
+        feature_df = df[group + ["Overall"]].rename(columns=columns_to_feature)
 
-    df["Overall"] = df["Overall"] * 100
+        fig, (ax1, ax2) = plt.subplots(
+            nrows=2,
+            figsize=figsize,
+            gridspec_kw={"height_ratios": [4, 1]},
+            # sharex=True,
+        )
+        fmt = lambda x: f"{x/1000:.1f}k" if x >= 1000 else f"{int(x)}"
+        input_data = feature_df.drop(columns=["Overall"]).transpose()
+        sns.heatmap(
+            input_data,
+            ax=ax1,
+            annot=input_data.map(fmt),
+            fmt="",
+            cmap=colors.LinearSegmentedColormap.from_list(
+                "custom_blue", ["#FFFFFF", COLORS.get("teal")]
+            ),
+            annot_kws={"size": 20},
+        )
 
-    sns.heatmap(
-        df[["Overall"]].transpose(),
-        ax=ax2,
-        cmap=colors.LinearSegmentedColormap.from_list(
-            "custom_blue", ["#FFFFFF", COLORS.get("pink")]
-        ),
-        cbar=True,
-        annot=True,
-        fmt=".1f",
-    )
-    ax2.set_xticks([])
-    ax2.set_yticklabels([r"Perf$(\hat{R})$"], rotation=0, ha="right")
-    # ax2.set_yticks(["Perf(R)"])
-    ax2.set_xlabel("")
-    ax2.set_ylabel("")
-    # Trick to make it look aligned without showing the colorbar
-    colorbar = ax2.collections[0].colorbar
-    colorbar.ax.set_visible(False)
-    colorbar.outline.set_visible(False)
+        ax1.set_xlabel(r"Candidate Dataset, $\hat{D}$", labelpad=20)
+        ax1.set_xticklabels([f"$\hat{{d}}_{{{i}}}$" for i in range(n)], rotation=0)
+        ax1.xaxis.set_label_position("top")
+        ax1.xaxis.tick_top()
+        ax1.tick_params(
+            axis="x",
+            which="both",
+            bottom=False,
+            top=False,
+            length=0,
+            labelbottom=False,
+            labeltop=True,
+        )
+        colorbar = ax1.collections[0].colorbar
+        colorbar.set_label("Counts", labelpad=10)
+        colorbar.ax.yaxis.set_label_position("left")
+        colorbar.ax.yaxis.set_label_coords(-0.5, 1.05)
+        colorbar.ax.yaxis.label.set_rotation(0)
 
-    plt.tight_layout()
-    fig.savefig(output_path, bbox_inches="tight")
+        score_df = df.copy(deep=True)
+        score_df["Overall"] = df["Overall"] * 100
+
+        sns.heatmap(
+            score_df[["Overall"]].transpose(),
+            ax=ax2,
+            cmap=colors.LinearSegmentedColormap.from_list(
+                "custom_blue", ["#FFFFFF", COLORS.get("pink")]
+            ),
+            cbar=True,
+            annot=True,
+            fmt=".1f",
+        )
+        ax2.set_xticks([])
+        ax2.set_yticklabels([r"Perf$(\hat{R})$"], rotation=0, ha="right")
+        # ax2.set_yticks(["Perf(R)"])
+        ax2.set_xlabel("")
+        ax2.set_ylabel("")
+        # Trick to make it look aligned without showing the colorbar
+        colorbar = ax2.collections[0].colorbar
+        colorbar.ax.set_visible(False)
+        colorbar.outline.set_visible(False)
+
+        plt.tight_layout()
+        fig.savefig(output_path, bbox_inches="tight")
+        fig.savefig(
+            output_path.parent / f"{output_path.stem}_{idx}.svg", bbox_inches="tight"
+        )
 
 
 def plot_gain_distrib(
