@@ -222,11 +222,14 @@ def plot_tag_heatmap(
     df = pd.read_csv(input_path)[feats + ["Overall"]]
 
     columns_to_feature = {
-        "bertscore::min_val=0.67|max_val=1.0": "0.67$\leq$BERTScore$\leq$1.00",
-        "len_longer::min_val=0.33|max_val=0.67": "0.33$\leq$Length longer response$\leq$0.67",
+        "rouge::min_val=0.33|max_val=0.67": "0.33$\leq$ROUGE-L$\leq$0.67",
+        "rouge::min_val=0.67|max_val=1.0": "0.67$\leq$ROUGE-L$\leq$1.00",
+        "token_len_diff::min_val=0.33|max_val=0.67": "0.33$\leq$Length diff. of responses$\leq$0.67",
+        "token_len_diff::min_val=0.67|max_val=1.0": "0.67$\leq$Length diff of responses $\leq$1.00",
         "analyzer_closed_set::feature_name=subject_of_expertise|constraints=Computer sciences": "Subject of expertise: Computer sciences",
+        "analyzer_closed_set::feature_name=subject_of_expertise|constraints=Chemistry": "Subject of expertise: Chemistry",
         # "analyzer_scalar::feature_name=safety_concern|value=safe": "Safety concern: safe",
-        "analyzer_scalar::feature_name=complexity_of_intents|value=moderate": "Complexity of intents: moderate",
+        "analyzer_scalar::feature_name=expertise_level|value=general public": "Expertise level: general public",
         "analyzer_scalar::feature_name=expertise_level|value=expert domain knowledge": "Expertise level: expert domain knowledge",
         # "analyzer_scalar::feature_name=open_endedness|value=high": "Open-endedness: high",
     }
@@ -255,11 +258,12 @@ def plot_tag_heatmap(
     sns.heatmap(
         input_data,
         ax=ax1,
-        annot=input_data.applymap(fmt),
+        annot=input_data.map(fmt),
         fmt="",
         cmap=colors.LinearSegmentedColormap.from_list(
             "custom_blue", ["#FFFFFF", COLORS.get("teal")]
         ),
+        annot_kws={"size": 20},
     )
     ax1.set_xlabel(r"Candidate Dataset, $\hat{D}$", labelpad=20)
     ax1.set_xticklabels([f"$\hat{{d}}_{{{i}}}$" for i in range(n)], rotation=0)
