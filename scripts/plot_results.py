@@ -235,11 +235,10 @@ def plot_tag_heatmap(
     def group_list(lst, n):
         return [lst[i : i + n] for i in range(0, len(lst), n)]
 
+    n = 16
+    df = df.dropna().sample(n, random_state=42)
     for idx, group in enumerate(group_list(list(columns_to_feature.keys()), 2)):
-        n = 16
-        df = df.dropna().sample(n, random_state=42)
         feature_df = df[group + ["Overall"]].rename(columns=columns_to_feature)
-
         fig, (ax1, ax2) = plt.subplots(
             nrows=2,
             figsize=figsize,

@@ -42,7 +42,7 @@ def main():
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    for random_swaps in [0, 0.25, 0.5, 0.75, 1.0]:
+    for random_swaps in [0, 0.01, 0.25, 0.5, 0.75, 1.0]:
         logging.info(f"Simulating {random_swaps*100}% swaps!")
         n = len(features)
         n_trials = 1 if random_swaps == 0 else args.n_trials
