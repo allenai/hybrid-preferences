@@ -186,7 +186,7 @@ def plot_rewardbench_line(
             ax.text(
                 x_opt + 0.75,
                 y_opt + 0.75,
-                f"{y_opt:.2f}",
+                f"{x_opt*100:.1f}% human annot.",
                 fontsize=20,
                 color=COLORS.get("green"),
                 ha="center",
