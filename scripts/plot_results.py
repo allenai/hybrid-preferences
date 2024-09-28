@@ -181,17 +181,26 @@ def plot_rewardbench_line(
                 markersize=20,
                 color=COLORS.get("green"),
                 # markeredgecolor=COLORS.get("dark_teal"),
-                label="Best found subset",
+                label="Empirical optimal",
+            )
+            ax.text(
+                x_opt + 0.75,
+                y_opt + 0.75,
+                f"{y_opt:.2f}",
+                fontsize=20,
+                color=COLORS.get("green"),
+                ha="center",
             )
 
         ax.set_xticks(x)
         ax.set_xticklabels(x_levels)
         ax.set_xlabel("\% Direct Human Preference")
         ax.set_ylabel("RewardBench Score")
-        ax.set_title(dataset)
+        ax.set_title(dataset, y=-0.50)
         ax.spines[["right", "top"]].set_visible(False)
         ax.yaxis.get_major_locator().set_params(integer=True)
-        # ax.set_ylim([0.5, 1])
+        current_ylim = ax.get_ylim()
+        ax.set_ylim([current_ylim[0], current_ylim[1] + 2])
         return ax
 
     fig, axs = plt.subplots(1, 4, figsize=figsize)
@@ -203,11 +212,11 @@ def plot_rewardbench_line(
     fig.legend(
         handles,
         labels,
-        loc="lower center",
-        frameon=False,
+        loc="upper center",
+        frameon=True,
         ncol=3,
-        bbox_to_anchor=(0.5, -0.1),
-        fontsize=20,
+        bbox_to_anchor=(0.5, 1.20),
+        fontsize=25,
     )
 
     plt.tight_layout()
