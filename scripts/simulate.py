@@ -115,8 +115,64 @@ def sim_dim_only(
         df.to_csv(output_dir / f"simulated_{random_swaps}.csv", index=False)
 
 
-def sim_actual():
-    pass
+def sim_actual(
+    input_path: Path,
+    output_dir: Path,
+    features: list[str],
+    model,
+    feat_ext,
+    flip_size: int = 100,
+    n_trials: int = 3,
+    sort: bool = True,
+    print_latex: bool = False,
+):
+    input_df = pd.read_json(input_path, lines=True)
+    baseline = model.predict(feat_ext.transform([np.zeros(len(features))]))[0]
+
+    all_gains = []
+    for trial in range(n_trials):
+        logging.info(f"*** Running trial {trial} ***")
+        vectors = []
+        for feature_str in features:
+            # Add +100
+            instances_to_swap = get_ids(input_df, feature_str, flip_size=flip_size)
+            df_swapped = input_df.copy(deep=True)
+            df_swapped["pref"] = df_swapped.apply(
+                lambda row: (
+                    row["pref_human"]
+                    if row["id"] in instances_to_swap
+                    else row["pref_gpt4"]
+                ),
+                axis=1,
+            )
+            df_swapped["is_swapped"] = input_df["id"].apply(
+                lambda x: x in instances_to_swap
+            )
+
+            n_actual_swaps = df_swapped["is_swapped"].sum()
+            if n_actual_swaps < flip_size:
+                logging.info(
+                    f"Feature {feature_str} has < 100 ids. Swapped {n_actual_swaps}."
+                )
+            vector = get_feat_counts(df_swapped[df_swapped["is_swapped"]])
+            vectors.append(vector)
+
+        preds = model.predict(feat_ext.transform(pd.DataFrame(vectors)))
+        gains = preds - baseline
+        all_gains.append(gains)
+
+    gain_df = pd.DataFrame(
+        {"feature": features, "gain": np.array(all_gains).mean(axis=0)}
+    )
+
+    gain_df["feature"] = gain_df["feature"].apply(lambda x: fmt_prettyname(x))
+    if sort:
+        gain_df = gain_df.sort_values(by="gain", ascending=False)
+    if print_latex:
+        print(gain_df.to_latex())
+
+    output_path = output_dir / f"gain_{flip_size}.csv"
+    gain_df.to_csv(output_path, index=False)
 
 
 def fmt_prettyname(feature_str: str) -> str:
@@ -178,6 +234,30 @@ def get_feat_counts(df: pd.DataFrame) -> dict[str, int]:
         budget_instance_map[feature_str] = len(instances)
 
     return budget_instance_map
+
+
+def get_ids(df: pd.DataFrame, feature_str: str, flip_size: int) -> dict[int, list[str]]:
+    key, params = FeatureExtractor.parse_feature(feature_str)
+    if "min_val" in params or "max_val" in params:
+        min_val, max_val = params["min_val"], params["max_val"]
+        if key in ("prompt_len", "token_len_diff", "len_shorter", "len_longer"):
+            df[key] = df[key].rank(pct=True)
+        ids = df[(df[key] > min_val) & (df[key] < max_val)]["id"]
+    elif "analyzer_closed_set" in feature_str:
+        feature_name, constraints = params["feature_name"], params["constraints"]
+        ids = df[df[feature_name].apply(lambda x: constraints in x)]["id"]
+    elif "analyzer_scalar" in feature_str:
+        feature_name, value = params["feature_name"], params["value"]
+        ids = df[df[feature_name] == value]["id"]
+    elif "analyzer_open_set" in feature_str:
+        feature_name = params["feature_name"]
+        ids = df[df[feature_name].apply(lambda x: x is not None and len(x) > 0)]["id"]
+    else:
+        raise ValueError(f"Unknown feature: {feature_str}")
+
+    ids = ids.to_list()
+    sample_ids = random.sample(ids, min(flip_size, len(ids)))
+    return sample_ids
 
 
 if __name__ == "__main__":

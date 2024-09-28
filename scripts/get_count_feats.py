@@ -178,7 +178,10 @@ def get_instances(df: "pd.DataFrame", feature_str: str) -> list[str]:
     else:
         raise ValueError(f"Unknown feature: {feature_str}")
 
-    return filtered_df["id"].to_list()
+    if len(filtered_df) == 0:
+        return []
+    else:
+        return filtered_df["id"].to_list()
 
 
 def run_knapsack(capacity: int, items: dict[str, list[str]]) -> list[str]:
