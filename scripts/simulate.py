@@ -107,11 +107,31 @@ def load_model(model_path: Path):
     return model, feat_ext
 
 
-def get_baseline(input_path, num_swaps):
+def get_baseline(input_path, pct_swaps):
     df = pd.read_json(input_path, lines=True)
-    breakpoint()
+    num_swaps = int(len(df) * pct_swaps)
+    instances_to_swap = df["id"].sample(num_swaps).to_list()
 
-    pass
+    df_swapped = df.copy(deep=True)
+    df_swapped["pref"] = df_swapped.apply(
+        lambda row: (
+            row["pref_human"] if row["id"] in instances_to_swap else row["pref_gpt4"]
+        ),
+        axis=1,
+    )
+    df_swapped["is_swapped"] = df["id"].apply(lambda x: x in instances_to_swap)
+    feat_counts = get_feat_counts(df_swapped[df_swapped["is_swapped"]])
+    return np.array(list(feat_counts.values()))
+
+
+def get_feat_counts(df: pd.DataFrame) -> dict[str, int]:
+    all_features = get_all_features()
+    budget_instance_map = {}
+    for feature_str in all_features:
+        instances = get_instances(df, feature_str)
+        budget_instance_map[feature_str] = len(instances)
+
+    return budget_instance_map
 
 
 if __name__ == "__main__":
