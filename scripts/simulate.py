@@ -29,6 +29,7 @@ def get_args():
     parser.add_argument("--model_path", type=Path, required=True, help="Path to the model PKL file."),
     parser.add_argument("--print_latex", action="store_true", default=False, help="Print LaTeX table.")
     parser.add_argument("--n_trials", type=int, default=3, help="Number of trials to run the simulator.")
+    parser.add_argument("--sort", action="store_true", default=False, help="If set, sort by gain.")
     parser.add_argument("--sim_type", choices=["dim_only", "actual"])
     # fmt: on
     return parser.parse_args()
