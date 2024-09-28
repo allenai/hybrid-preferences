@@ -228,24 +228,16 @@ def plot_tag_heatmap(
         "token_len_diff::min_val=0.67|max_val=1.0": "0.67$\leq$Length diff of responses $\leq$1.00",
         "analyzer_closed_set::feature_name=subject_of_expertise|constraints=Computer sciences": "Subject of expertise: Computer sciences",
         "analyzer_closed_set::feature_name=subject_of_expertise|constraints=Chemistry": "Subject of expertise: Chemistry",
-        # "analyzer_scalar::feature_name=safety_concern|value=safe": "Safety concern: safe",
         "analyzer_scalar::feature_name=expertise_level|value=general public": "Expertise level: general public",
         "analyzer_scalar::feature_name=expertise_level|value=expert domain knowledge": "Expertise level: expert domain knowledge",
-        # "analyzer_scalar::feature_name=open_endedness|value=high": "Open-endedness: high",
     }
     df = df[list(columns_to_feature.keys()) + ["Overall"]].rename(
         columns=columns_to_feature
     )
 
     # Rename columns:
-    df = (
-        df.dropna().head(200)
-        # .rename(columns={col: f"t{idx}" for idx, col in enumerate(df.columns)})
-    )
-    # Normalize
-    # df = (df - df.mean()) / df.std()
     n = 16
-    df = df.sample(n, random_state=42)
+    df = df.dropna().sample(n, random_state=42)
 
     fig, (ax1, ax2) = plt.subplots(
         nrows=2,
