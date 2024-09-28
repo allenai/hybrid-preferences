@@ -28,6 +28,7 @@ def get_args():
     parser.add_argument("--model_path", type=Path, required=True, help="Path to the model PKL file."),
     parser.add_argument("--print_latex", action="store_true", default=False, help="Print LaTeX table.")
     parser.add_argument("--n_trials", type=int, default=3, help="Number of trials to run the simulator.")
+    parser.add_argument("--flip_size", type=int, default=100, help="Number of swaps for actual simulation.")
     parser.add_argument("--sort", action="store_true", default=False, help="If set, sort by gain.")
     parser.add_argument("--sim_type", choices=["dim_only", "actual"])
     # fmt: on
@@ -65,6 +66,7 @@ def main():
             feat_ext=feat_ext,
             n_trials=args.n_trials,
             sort=args.sort,
+            flip_size=args.flip_size,
             print_latex=args.print_latex,
         )
 
@@ -163,7 +165,7 @@ def sim_actual(
             n_actual_swaps = df_swapped["is_swapped"].sum()
             if n_actual_swaps < flip_size:
                 logging.info(
-                    f"Feature {feature_str} has < 100 ids. Swapped {n_actual_swaps}."
+                    f"Feature {feature_str} has < {flip_size} ids. Swapped {n_actual_swaps}."
                 )
             vector = get_feat_counts(df_swapped[df_swapped["is_swapped"]])
             vectors.append(vector)
