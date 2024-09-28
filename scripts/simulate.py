@@ -42,6 +42,8 @@ def main():
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    calc_instance_freq(args.input_path, args.output_dir)
+
     if args.sim_type == "dim_only":
         sim_dim_only(
             input_path=args.input_path,
@@ -65,6 +67,14 @@ def main():
             sort=args.sort,
             print_latex=args.print_latex,
         )
+
+
+def calc_instance_freq(input_path: Path, output_dir: Path):
+    df = pd.read_json(input_path, lines=True)
+    feat_counts = get_feat_counts(df)
+    counts_df = pd.DataFrame([feat_counts]).transpose().reset_index()
+    counts_df["index"] = counts_df["index"].apply(lambda x: fmt_prettyname(x))
+    counts_df.to_csv(output_dir / "counts.csv", index=False)
 
 
 def sim_dim_only(
