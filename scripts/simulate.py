@@ -62,6 +62,7 @@ def main():
             model=model,
             feat_ext=feat_ext,
             n_trials=args.n_trials,
+            sort=args.sort,
             print_latex=args.print_latex,
         )
 
@@ -123,7 +124,7 @@ def sim_actual(
     feat_ext,
     flip_size: int = 100,
     n_trials: int = 3,
-    sort: bool = True,
+    sort: bool = False,
     print_latex: bool = False,
 ):
     input_df = pd.read_json(input_path, lines=True)
