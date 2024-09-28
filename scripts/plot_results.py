@@ -146,7 +146,7 @@ def plot_rewardbench_line(
             x,
             dm_avgs,
             yerr=dm_stds,
-            label="Hybrid Preferences (Ours)",
+            label="Best Hybrid (Ours), Given Budget",
             marker="s",
             linestyle="-",
             linewidth=2,
@@ -158,7 +158,7 @@ def plot_rewardbench_line(
             x,
             random_avgs,
             yerr=random_stds,
-            label="Random",
+            label="Random Hybrid, Given Budget",
             marker="o",
             linestyle="--",
             capsize=5,
@@ -181,7 +181,7 @@ def plot_rewardbench_line(
                 markersize=20,
                 color=COLORS.get("green"),
                 # markeredgecolor=COLORS.get("dark_teal"),
-                label="Empirical optimal",
+                label="Best Hybrid (Ours), Unlimited Budget",
             )
             ax.text(
                 x_opt + 0.75,
@@ -210,10 +210,10 @@ def plot_rewardbench_line(
     # ax.legend(frameon=False)
     handles, labels = ax.get_legend_handles_labels()
     fig.legend(
-        handles,
-        labels,
+        handles[::-1],
+        labels[::-1],
         loc="upper center",
-        frameon=True,
+        frameon=False,
         ncol=3,
         bbox_to_anchor=(0.5, 1.20),
         fontsize=25,
