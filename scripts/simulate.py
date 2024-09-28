@@ -42,10 +42,33 @@ def main():
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    if args.sim_type == "dim_only":
+        sim_dim_only(
+            input_path=args.input_path,
+            output_dir=args.output_dir,
+            features=features,
+            model=model,
+            feat_ext=feat_ext,
+            n_trials=args.n_trials,
+            sort=args.sort,
+            print_latex=args.print_latex,
+        )
+
+
+def sim_dim_only(
+    input_path: Path,
+    output_dir: Path,
+    features: list[str],
+    model,
+    feat_ext,
+    n_trials: int = 3,
+    sort: bool = True,
+    print_latex: bool = False,
+):
     for random_swaps in [0, 0.01, 0.25, 0.5, 0.75, 1.0]:
         logging.info(f"Simulating {random_swaps*100}% swaps!")
         n = len(features)
-        n_trials = 1 if random_swaps == 0 else args.n_trials
+        n_trials = 1 if random_swaps == 0 else n_trials
 
         df = pd.DataFrame(
             {"feature": [f"BASELINE_{random_swaps}"] + get_all_features()}
@@ -56,7 +79,7 @@ def main():
             baseline_vector = (
                 np.zeros(n)
                 if random_swaps == 0
-                else get_baseline(args.input_path, random_swaps)
+                else get_baseline(input_path, random_swaps)
             )
             gdf = pd.DataFrame(
                 np.vstack([baseline_vector, baseline_vector + np.eye(n, dtype=int)]),
@@ -72,12 +95,14 @@ def main():
         df["gain"] = avg_gain
 
         df["feature"] = df["feature"].apply(lambda x: fmt_prettyname(x))
-        if args.sort:
+        if sort:
             df = df.sort_values(by="gain", ascending=False)
         df = df.reset_index(drop=True)
-        if args.print_latex:
+        if print_latex:
             print(df.to_latex(index=False))
         df.to_csv(output_dir / f"simulated_{random_swaps}.csv", index=False)
+
+    pass
 
 
 def fmt_prettyname(feature_str: str) -> str:
