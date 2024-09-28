@@ -24,33 +24,18 @@ def get_args():
     # fmt: off
     description = "Simulate a dataset using a trained regressor and get the gain."
     parser = argparse.ArgumentParser(description=description, formatter_class=argparse.RawDescriptionHelpFormatter)
-    subparsers = parser.add_subparsers(dest="command")
-
-    # Define shared arguments
-    shared_args = argparse.ArgumentParser(add_help=False)
-    shared_args.add_argument("--output_path", type=Path, required=True, help="Path to save the output in a CSV file."),
-    shared_args.add_argument("--model_path", type=Path, required=True, help="Path to the model PKL file."),
-    shared_args.parser.add_argument("--output_path", type=Path, required=True, help="Path to save the output in a CSV file."),
-
-    parser_dim_only = subparsers.add_parser("dim_only", help="Simulate by increasing dimensions", parents=[shared_args])
-
-
     parser.add_argument("--input_path", type=Path, required=True, help="Path to the features.jsonl file for a given dataset.")
     parser.add_argument("--output_path", type=Path, required=True, help="Path to save the output in a CSV file."),
     parser.add_argument("--model_path", type=Path, required=True, help="Path to the model PKL file."),
     parser.add_argument("--n_trials", type=int, default=3, help="Number of trials to run the simulator.")
+    parser.add_argument("--sim_type", choices=["dim_only", "actual"])
     # fmt: on
     return parser.parse_args()
 
 
 def main():
     args = get_args()
-    model = joblib.load(args.model_path)
-    feat_ext = (
-        joblib.load(args.model_path.parent / "poly.pkl")
-        if "quadratic" in str(args.model_path)
-        else None
-    )
+    model, feat_ext = load_model(args.model_path)
     features = get_all_features()
     n = len(features)
     df = pd.DataFrame(np.vstack([np.zeros(n), np.eye(n, dtype=int)]), columns=features)
@@ -91,6 +76,16 @@ def fmt_prettyname(feature_str: str) -> str:
         pretty_name = feature_str
 
     return pretty_name
+
+
+def load_model(model_path: Path):
+    model = joblib.load(model_path)
+    feat_ext = (
+        joblib.load(model_path.parent / "poly.pkl")
+        if "quadratic" in str(model_path)
+        else None
+    )
+    return model, feat_ext
 
 
 if __name__ == "__main__":
