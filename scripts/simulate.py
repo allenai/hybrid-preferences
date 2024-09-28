@@ -1,16 +1,15 @@
-import sys
-import logging
 import argparse
+import logging
 import random
+import sys
 from pathlib import Path
 
+import joblib
 import numpy as np
 import pandas as pd
-import joblib
 
-from scripts.get_count_feats import get_instances, get_all_features
+from scripts.get_count_feats import get_all_features, get_instances
 from src.feature_extractor import FeatureExtractor
-
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",

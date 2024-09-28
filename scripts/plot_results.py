@@ -9,15 +9,16 @@ from typing import Optional
 
 import joblib
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import matplotlib.ticker as mtick
 from matplotlib import colors
 from matplotlib.ticker import MaxNLocator
 
+from scripts.sample_best_subset import compute_gain_linear
+from scripts.sample_best_subset import compute_gain_quadratic
 from src.feature_extractor import get_all_features
-from scripts.sample_best_subset import compute_gain_linear, compute_gain_quadratic
 
 RESULTS_DIR = Path("results")
 

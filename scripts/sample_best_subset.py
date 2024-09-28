@@ -3,8 +3,8 @@ import json
 import logging
 import random
 import sys
-import uuid
 import tempfile
+import uuid
 from pathlib import Path
 from typing import Optional
 
@@ -13,7 +13,8 @@ import pandas as pd
 from tqdm import tqdm
 
 from scripts.apply_data_model import convert_to_dpo_format
-from scripts.get_count_feats import get_instances, generate_instances, get_all_features
+from scripts.get_count_feats import generate_instances, get_all_features
+from scripts.get_count_feats import get_instances
 from src.feature_extractor import FeatureExtractor
 
 logging.basicConfig(
