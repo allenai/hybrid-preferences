@@ -28,6 +28,7 @@ def get_args():
     parser.add_argument("--output_dir", type=Path, required=True, help="Directory to save the output in a CSV file."),
     parser.add_argument("--model_path", type=Path, required=True, help="Path to the model PKL file."),
     parser.add_argument("--print_latex", action="store_true", default=False, help="Print LaTeX table.")
+    parser.add_argument("--n_trials", type=int, default=3, help="Number of trials to run the simulator.")
     parser.add_argument("--sim_type", choices=["dim_only", "actual"])
     # fmt: on
     return parser.parse_args()
@@ -42,31 +43,40 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     for random_swaps in [0, 0.25, 0.5, 0.75, 1.0]:
+        logging.info(f"Simulating {random_swaps*100}% swaps!")
         n = len(features)
-
-        baseline_vector = (
-            np.zeros(n)
-            if random_swaps == 0
-            else get_baseline(args.input_path, random_swaps)
-        )
+        n_trials = 1 if random_swaps == 0 else args.n_trials
 
         df = pd.DataFrame(
-            np.vstack([baseline_vector, baseline_vector + np.eye(n, dtype=int)]),
-            columns=features,
+            {"feature": [f"BASELINE_{random_swaps}"] + get_all_features()}
         )
-        df["pred"] = model.predict(feat_ext.transform(df))
-        df["gain"] = df["pred"] - df.loc[0, "pred"]
-        df["feature"] = [f"BASELINE_{random_swaps}"] + get_all_features()
+        gains = []
+        for trial in range(n_trials):
+            logging.info(f"Running trial: {trial}")
+            baseline_vector = (
+                np.zeros(n)
+                if random_swaps == 0
+                else get_baseline(args.input_path, random_swaps)
+            )
+            gdf = pd.DataFrame(
+                np.vstack([baseline_vector, baseline_vector + np.eye(n, dtype=int)]),
+                columns=features,
+            )
 
-        gain_df = df[["feature", "gain"]].sort_values(by="gain", ascending=False)
-        if random_swaps == 0:
-            gain_df["gain"] = gain_df["gain"].apply(lambda x: np.log1p(x * 10**5))
+            preds = np.array(model.predict(feat_ext.transform(gdf)))
+            baseline_score = preds[0]
+            gain = preds - baseline_score
+            gains.append(gain)
 
-        gain_df["feature"] = gain_df["feature"].apply(lambda x: fmt_prettyname(x))
-        gain_df = gain_df.reset_index(drop=True)
+        avg_gain = np.array(gains).mean(axis=0)
+        df["gain"] = avg_gain
+
+        df["feature"] = df["feature"].apply(lambda x: fmt_prettyname(x))
+        df = df.sort_values(by="gain", ascending=False)
+        df = df.reset_index(drop=True)
         if args.print_latex:
-            print(gain_df.to_latex(index=False))
-        gain_df.to_csv(output_dir / f"simulated_{random_swaps}.csv", index=False)
+            print(df.to_latex(index=False))
+        df.to_csv(output_dir / f"simulated_{random_swaps}.csv", index=False)
 
 
 def fmt_prettyname(feature_str: str) -> str:
