@@ -291,10 +291,6 @@ def plot_tag_heatmap(
     score_df = df.copy(deep=True)
     score_df["Overall"] = df["Overall"] * 100
 
-    # divider = make_axes_locatable(axs[0])
-    # cax = divider.append_axes("right", size="5%", pad=0.05)
-    # plt.colorbar(axs[0].collections[0], cax=cax)
-
     sns.heatmap(
         score_df[["Overall"]].transpose(),
         ax=axs[-1],
@@ -310,10 +306,6 @@ def plot_tag_heatmap(
     axs[-1].set_yticklabels([r"Perf$(\hat{R})$"], rotation=0, ha="right")
     axs[-1].set_xlabel("")
     axs[-1].set_ylabel("")
-    # Trick to make it look aligned without showing the colorbar
-    # colorbar = axs[-1].collections[0].colorbar
-    # colorbar.ax.set_visible(False)
-    # colorbar.outline.set_visible(False)
 
     plt.tight_layout()
     plt.subplots_adjust(wspace=0.5, hspace=0.5)
