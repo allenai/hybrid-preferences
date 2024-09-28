@@ -22,10 +22,23 @@ logging.basicConfig(
 
 def get_args():
     # fmt: off
-    description = "Simulate a dataset using a quadratic regressor and get the gain."
-    parser = argparse.ArgumentParser(description=description)
+    description = "Simulate a dataset using a trained regressor and get the gain."
+    parser = argparse.ArgumentParser(description=description, formatter_class=argparse.RawDescriptionHelpFormatter)
+    subparsers = parser.add_subparsers(dest="command")
+
+    # Define shared arguments
+    shared_args = argparse.ArgumentParser(add_help=False)
+    shared_args.add_argument("--output_path", type=Path, required=True, help="Path to save the output in a CSV file."),
+    shared_args.add_argument("--model_path", type=Path, required=True, help="Path to the model PKL file."),
+    shared_args.parser.add_argument("--output_path", type=Path, required=True, help="Path to save the output in a CSV file."),
+
+    parser_dim_only = subparsers.add_parser("dim_only", help="Simulate by increasing dimensions", parents=[shared_args])
+
+
+    parser.add_argument("--input_path", type=Path, required=True, help="Path to the features.jsonl file for a given dataset.")
     parser.add_argument("--output_path", type=Path, required=True, help="Path to save the output in a CSV file."),
     parser.add_argument("--model_path", type=Path, required=True, help="Path to the model PKL file."),
+    parser.add_argument("--n_trials", type=int, default=3, help="Number of trials to run the simulator.")
     # fmt: on
     return parser.parse_args()
 
