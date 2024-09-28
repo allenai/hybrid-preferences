@@ -51,20 +51,14 @@ def main():
         )
 
         df = pd.DataFrame(
-            np.vstack([baseline_vector, np.eye(n, dtype=int)]),
+            np.vstack([baseline_vector, baseline_vector + np.eye(n, dtype=int)]),
             columns=features,
         )
         df["pred"] = model.predict(feat_ext.transform(df))
         df["gain"] = df["pred"] - df.loc[0, "pred"]
-        df["feature"] = df.iloc[:, :-2].idxmax(axis=1)
-        df["feature"].iloc[0] = f"BASELINE_{random_swaps}"
+        df["feature"] = [f"BASELINE_{random_swaps}"] + get_all_features()
 
-        gain_df = df[["feature", "pred", "gain"]].sort_values(
-            by="gain", ascending=False
-        )
-        gain_df["gain_log"] = np.log1p(gain_df["gain"] * 1e5)
-        gain_df = gain_df[["feature", "gain_log"]].rename(columns={"gain_log": "gain"})
-
+        gain_df = df[["feature", "gain"]].sort_values(by="gain", ascending=False)
         gain_df["feature"] = gain_df["feature"].apply(lambda x: fmt_prettyname(x))
         gain_df = gain_df.reset_index(drop=True)
         if args.print_latex:
