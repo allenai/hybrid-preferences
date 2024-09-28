@@ -45,6 +45,7 @@ def main():
     if args.sim_type == "dim_only":
         sim_dim_only(
             input_path=args.input_path,
+            swap_pct=[0, 0.01, 0.25, 0.5, 0.75, 1.0],
             output_dir=args.output_dir,
             features=features,
             model=model,
@@ -58,6 +59,7 @@ def main():
 def sim_dim_only(
     input_path: Path,
     output_dir: Path,
+    swap_pct: list[float],
     features: list[str],
     model,
     feat_ext,
@@ -65,7 +67,7 @@ def sim_dim_only(
     sort: bool = True,
     print_latex: bool = False,
 ):
-    for random_swaps in [0, 0.01, 0.25, 0.5, 0.75, 1.0]:
+    for random_swaps in swap_pct:
         logging.info(f"Simulating {random_swaps*100}% swaps!")
         n = len(features)
         n_trials = 1 if random_swaps == 0 else n_trials
