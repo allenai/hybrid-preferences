@@ -107,5 +107,12 @@ def load_model(model_path: Path):
     return model, feat_ext
 
 
+def get_baseline(input_path, num_swaps):
+    df = pd.read_json(input_path, lines=True)
+    breakpoint()
+
+    pass
+
+
 if __name__ == "__main__":
     main()
