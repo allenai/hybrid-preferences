@@ -242,9 +242,10 @@ def plot_tag_heatmap(
     fig, axs = plt.subplots(
         nrows=len(groups) + 1,
         figsize=figsize,
-        gridspec_kw={"height_ratios": [4, 4, 4, 4, 1]},
-        # sharex=True,
+        gridspec_kw={"height_ratios": [4, 4, 4, 4, 2]},
+        sharex=True,
     )
+    cbar_ax = fig.add_axes([1.05, 0.3, 0.03, 0.4])
     for idx, (ax, group) in enumerate(zip(axs[:-1], groups)):
         feature_df = df[group + ["Overall"]].rename(columns=columns_to_feature)
         fmt = lambda x: f"{x/1000:.1f}k" if x >= 1000 else f"{int(x)}"
@@ -260,6 +261,8 @@ def plot_tag_heatmap(
             annot_kws={"size": 20},
             vmax=5000,
             vmin=0,
+            cbar_ax=None if idx else cbar_ax,
+            cbar=True if idx == 0 else False,
         )
 
         if idx == 0:
@@ -280,7 +283,7 @@ def plot_tag_heatmap(
             colorbar = ax.collections[0].colorbar
             colorbar.set_label("Counts", labelpad=10)
             colorbar.ax.yaxis.set_label_position("left")
-            colorbar.ax.yaxis.set_label_coords(-0.5, 1.05)
+            colorbar.ax.yaxis.set_label_coords(0.5, 1.05)
             colorbar.ax.yaxis.label.set_rotation(0)
         else:
             ax.set_xticks([])
@@ -298,8 +301,9 @@ def plot_tag_heatmap(
         cmap=colors.LinearSegmentedColormap.from_list(
             "custom_blue", ["#FFFFFF", COLORS.get("pink")]
         ),
-        cbar=True,
+        cbar=False,
         annot=True,
+        annot_kws={"size": 20},
         fmt=".1f",
     )
     axs[-1].set_xticks([])
@@ -307,15 +311,14 @@ def plot_tag_heatmap(
     axs[-1].set_xlabel("")
     axs[-1].set_ylabel("")
     # Trick to make it look aligned without showing the colorbar
-    colorbar = axs[-1].collections[0].colorbar
-    colorbar.ax.set_visible(False)
-    colorbar.outline.set_visible(False)
+    # colorbar = axs[-1].collections[0].colorbar
+    # colorbar.ax.set_visible(False)
+    # colorbar.outline.set_visible(False)
 
     plt.tight_layout()
+    plt.subplots_adjust(wspace=0.5, hspace=0.5)
     fig.savefig(output_path, bbox_inches="tight")
-    #     fig.savefig(
-    #         output_path.parent / f"{output_path.stem}_{idx}.svg", bbox_inches="tight"
-    #     )
+    fig.savefig(output_path.parent / f"{output_path.stem}.svg", bbox_inches="tight")
 
 
 def plot_gain_distrib(
