@@ -85,8 +85,11 @@ def get_args():
     parser_feat_distrib.add_argument("--feature", type=str, help="Feature (or field name) to plot.")
     parser_feat_distrib.add_argument("--feature_label", type=str, help="Feature (or field name) to use in xlabel.")
 
-    parser_train_curves = subparsers.add_parser("train_curves", help="Plot a training curve for different models.", parents=[shared_args])
-    parser_train_curves.add_argument("--curve", action="append", help="Train curve and its values (Linear::0.4324,0.6543,0.7888,0.8200).")
+    parser_train_curve = subparsers.add_parser("train_curve", help="Plot a training curve for different models.", parents=[shared_args])
+    parser_train_curve.add_argument("--curve", action="append", help="Train curve and its values (Linear::0.4324,0.6543,0.7888,0.8200).")
+
+    parser_test_curve = subparsers.add_parser("test_curve", help="Plot a test curve from an input file.", parents=[shared_args])
+    parser_main_results.add_argument("--input_path", type=Path, required=False, help="Path to the results file.")
 
     # fmt: on
     return parser.parse_args()
@@ -103,7 +106,8 @@ def main():
         "tag_heatmap": plot_tag_heatmap,
         "gain_distrib": plot_gain_distrib,
         "feat_distrib": plot_feat_distrib,
-        "train_curves": plot_train_curve,
+        "train_curve": plot_train_curve,
+        "test_curve": plot_test_curve,
     }
 
     def _filter_args(func, kwargs):
@@ -467,6 +471,12 @@ def plot_train_curve(
     ax.spines["right"].set_visible(False)
     ax.spines["top"].set_visible(False)
     fig.savefig(output_path, bbox_inches="tight")
+
+def plot_test_curve(
+    input_path: Path,
+    output_path: Path,
+    figsize: tuple[int, int] = (16, 4),
+):
 
 
 if __name__ == "__main__":
