@@ -5,17 +5,21 @@ import random
 import sys
 from inspect import signature
 from pathlib import Path
+from typing import Optional
 
 import joblib
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import matplotlib.ticker as mtick
 from matplotlib import colors
+from matplotlib.ticker import MaxNLocator
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+from scripts.sample_best_subset import compute_gain_linear
+from scripts.sample_best_subset import compute_gain_quadratic
 from src.feature_extractor import get_all_features
-from scripts.sample_best_subset import compute_gain_linear, compute_gain_quadratic
 
 RESULTS_DIR = Path("results")
 
@@ -76,6 +80,11 @@ def get_args():
     parser_gain_distrib.add_argument("--dataset_path", action="append", help="Path to the dataset (dataset_name::path/to/features.jsonl).")
     parser_gain_distrib.add_argument("--model_path", type=Path, required=True, help="Path to the model.")
 
+    parser_feat_distrib = subparsers.add_parser("feat_distrib", help="Plot a distribution of numerical (lexical features).", parents=[shared_args])
+    parser_feat_distrib.add_argument("--dataset_path", action="append", help="Path to the dataset (dataset_name::path/to/features.jsonl).")
+    parser_feat_distrib.add_argument("--feature", type=str, help="Feature (or field name) to plot.")
+    parser_feat_distrib.add_argument("--feature_label", type=str, help="Feature (or field name) to use in xlabel.")
+
     # fmt: on
     return parser.parse_args()
 
@@ -90,6 +99,7 @@ def main():
         "rewardbench_line": plot_rewardbench_line,
         "tag_heatmap": plot_tag_heatmap,
         "gain_distrib": plot_gain_distrib,
+        "feat_distrib": plot_feat_distrib,
     }
 
     def _filter_args(func, kwargs):
@@ -136,7 +146,7 @@ def plot_rewardbench_line(
             x,
             dm_avgs,
             yerr=dm_stds,
-            label="Datamodel Router (Ours)",
+            label="Best Hybrid (Ours), Given Budget",
             marker="s",
             linestyle="-",
             linewidth=2,
@@ -148,7 +158,7 @@ def plot_rewardbench_line(
             x,
             random_avgs,
             yerr=random_stds,
-            label="Random",
+            label="Random Hybrid, Given Budget",
             marker="o",
             linestyle="--",
             capsize=5,
@@ -160,6 +170,7 @@ def plot_rewardbench_line(
         # you need to precompute this: swaps / total_counts then interpolate
         x_opt = data[dataset]["optimal"].get("swaps")
         y_opt = data[dataset]["optimal"].get("score")
+        opt_pct = data[dataset]["optimal"].get("swaps_pct")
 
         if x_opt and y_opt:
             y_opt = y_opt * 100
@@ -171,33 +182,58 @@ def plot_rewardbench_line(
                 markersize=20,
                 color=COLORS.get("green"),
                 # markeredgecolor=COLORS.get("dark_teal"),
-                label="Optimal subset",
+                label="Best Hybrid (Ours), Unlimited Budget",
+            )
+            ax.text(
+                x_opt + 0.75,
+                y_opt + 0.75,
+                f"{opt_pct:.1f}\%",
+                fontsize=20,
+                color=COLORS.get("green"),
+                ha="center",
+            )
+            # Get the current y-axis limits
+            ymin, ymax = ax.get_ylim()
+            ax.vlines(
+                x_opt,
+                ymin=ymin,
+                ymax=y_opt,
+                color=COLORS.get("green"),
+                linestyle="--",
+            )
+            ax.hlines(
+                y_opt,
+                xmin=0,
+                xmax=x_opt,
+                color=COLORS.get("green"),
+                linestyle="--",
             )
 
         ax.set_xticks(x)
         ax.set_xticklabels(x_levels)
         ax.set_xlabel("\% Direct Human Preference")
         ax.set_ylabel("RewardBench Score")
-        ax.set_title(dataset)
+        ax.set_title(dataset, y=-0.50)
         ax.spines[["right", "top"]].set_visible(False)
         ax.yaxis.get_major_locator().set_params(integer=True)
-        # ax.set_ylim([0.5, 1])
+        current_ylim = ax.get_ylim()
+        ax.set_ylim([current_ylim[0], current_ylim[1] + 2])
         return ax
 
-    fig, axs = plt.subplots(2, 3, figsize=figsize)
+    fig, axs = plt.subplots(1, 4, figsize=figsize)
     datasets = list(data.keys())
     for ax, dataset in zip(np.ravel(axs), datasets):
         plot(ax, dataset)
     # ax.legend(frameon=False)
     handles, labels = ax.get_legend_handles_labels()
     fig.legend(
-        handles,
-        labels,
-        loc="lower center",
+        handles[::-1],
+        labels[::-1],
+        loc="upper center",
         frameon=False,
         ncol=3,
-        bbox_to_anchor=(0.5, -0.05),
-        fontsize=20,
+        bbox_to_anchor=(0.5, 1.20),
+        fontsize=25,
     )
 
     plt.tight_layout()
@@ -213,95 +249,101 @@ def plot_tag_heatmap(
     df = pd.read_csv(input_path)[feats + ["Overall"]]
 
     columns_to_feature = {
-        "bertscore::min_val=0.67|max_val=1.0": "0.67$\leq$BERTScore$\leq$1.00",
-        "len_longer::min_val=0.33|max_val=0.67": "0.33$\leq$Length longer response$\leq$0.67",
+        "rouge::min_val=0.33|max_val=0.67": "0.33$\leq$ROUGE-L$\leq$0.67",
+        "rouge::min_val=0.67|max_val=1.0": "0.67$\leq$ROUGE-L$\leq$1.00",
+        "token_len_diff::min_val=0.33|max_val=0.67": "0.33$\leq$Length diff. of responses$\leq$0.67",
+        "token_len_diff::min_val=0.67|max_val=1.0": "0.67$\leq$Length diff of responses $\leq$1.00",
         "analyzer_closed_set::feature_name=subject_of_expertise|constraints=Computer sciences": "Subject of expertise: Computer sciences",
-        # "analyzer_scalar::feature_name=safety_concern|value=safe": "Safety concern: safe",
-        "analyzer_scalar::feature_name=complexity_of_intents|value=moderate": "Complexity of intents: moderate",
+        "analyzer_closed_set::feature_name=subject_of_expertise|constraints=Chemistry": "Subject of expertise: Chemistry",
+        "analyzer_scalar::feature_name=expertise_level|value=general public": "Expertise level: general public",
         "analyzer_scalar::feature_name=expertise_level|value=expert domain knowledge": "Expertise level: expert domain knowledge",
-        # "analyzer_scalar::feature_name=open_endedness|value=high": "Open-endedness: high",
     }
-    df = df[list(columns_to_feature.keys()) + ["Overall"]].rename(
-        columns=columns_to_feature
-    )
 
-    # Rename columns:
-    df = (
-        df.dropna().head(200)
-        # .rename(columns={col: f"t{idx}" for idx, col in enumerate(df.columns)})
-    )
-    # Normalize
-    # df = (df - df.mean()) / df.std()
+    def group_list(lst, n):
+        return [lst[i : i + n] for i in range(0, len(lst), n)]
+
     n = 16
-    df = df.sample(n, random_state=42)
-
-    fig, (ax1, ax2) = plt.subplots(
-        nrows=2,
+    groups = group_list(list(columns_to_feature.keys()), 2)
+    df = df.dropna().sample(n, random_state=42)
+    fig, axs = plt.subplots(
+        nrows=len(groups) + 1,
         figsize=figsize,
-        gridspec_kw={"height_ratios": [4, 1]},
-        # sharex=True,
+        gridspec_kw={"height_ratios": [4, 4, 4, 4, 2]},
+        sharex=True,
     )
-    fmt = lambda x: f"{x/1000:.1f}k" if x >= 1000 else f"{int(x)}"
-    input_data = df.drop(columns=["Overall"]).transpose()
-    sns.heatmap(
-        input_data,
-        ax=ax1,
-        annot=input_data.applymap(fmt),
-        fmt="",
-        cmap=colors.LinearSegmentedColormap.from_list(
-            "custom_blue", ["#FFFFFF", COLORS.get("teal")]
-        ),
-    )
-    ax1.set_xlabel(r"Candidate Dataset, $\hat{D}$", labelpad=20)
-    ax1.set_xticklabels([f"$\hat{{d}}_{{{i}}}$" for i in range(n)], rotation=0)
-    ax1.xaxis.set_label_position("top")
-    ax1.xaxis.tick_top()
-    ax1.tick_params(
-        axis="x",
-        which="both",
-        bottom=False,
-        top=False,
-        length=0,
-        labelbottom=False,
-        labeltop=True,
-    )
-    colorbar = ax1.collections[0].colorbar
-    colorbar.set_label("Counts", labelpad=10)
-    colorbar.ax.yaxis.set_label_position("left")
-    colorbar.ax.yaxis.set_label_coords(-0.5, 1.05)
-    colorbar.ax.yaxis.label.set_rotation(0)
+    cbar_ax = fig.add_axes([1.05, 0.3, 0.03, 0.4])
+    for idx, (ax, group) in enumerate(zip(axs[:-1], groups)):
+        feature_df = df[group + ["Overall"]].rename(columns=columns_to_feature)
+        fmt = lambda x: f"{x/1000:.1f}k" if x >= 1000 else f"{int(x)}"
+        input_data = feature_df.drop(columns=["Overall"]).transpose()
+        sns.heatmap(
+            input_data,
+            ax=ax,
+            annot=input_data.map(fmt),
+            fmt="",
+            cmap=colors.LinearSegmentedColormap.from_list(
+                "custom_blue", ["#FFFFFF", COLORS.get("teal")]
+            ),
+            annot_kws={"size": 20},
+            vmax=5000,
+            vmin=0,
+            cbar_ax=None if idx else cbar_ax,
+            cbar=True if idx == 0 else False,
+        )
 
-    df["Overall"] = df["Overall"] * 100
+        if idx == 0:
+            # Only add labels in the first heatmap
+            ax.set_xlabel(r"Candidate Dataset, $\hat{D}$", labelpad=20)
+            ax.set_xticklabels([f"$\hat{{d}}_{{{i}}}$" for i in range(n)], rotation=0)
+            ax.xaxis.set_label_position("top")
+            ax.xaxis.tick_top()
+            ax.tick_params(
+                axis="x",
+                which="both",
+                bottom=False,
+                top=False,
+                length=0,
+                labelbottom=False,
+                labeltop=True,
+            )
+            colorbar = ax.collections[0].colorbar
+            colorbar.set_label("Counts", labelpad=10)
+            colorbar.ax.yaxis.set_label_position("left")
+            colorbar.ax.yaxis.set_label_coords(0.5, 1.05)
+            colorbar.ax.yaxis.label.set_rotation(0)
+        else:
+            ax.set_xticks([])
+
+    score_df = df.copy(deep=True)
+    score_df["Overall"] = df["Overall"] * 100
 
     sns.heatmap(
-        df[["Overall"]].transpose(),
-        ax=ax2,
+        score_df[["Overall"]].transpose(),
+        ax=axs[-1],
         cmap=colors.LinearSegmentedColormap.from_list(
             "custom_blue", ["#FFFFFF", COLORS.get("pink")]
         ),
-        cbar=True,
+        cbar=False,
         annot=True,
+        annot_kws={"size": 20},
         fmt=".1f",
     )
-    ax2.set_xticks([])
-    ax2.set_yticklabels([r"Perf$(\hat{R})$"], rotation=0, ha="right")
-    # ax2.set_yticks(["Perf(R)"])
-    ax2.set_xlabel("")
-    ax2.set_ylabel("")
-    # Trick to make it look aligned without showing the colorbar
-    colorbar = ax2.collections[0].colorbar
-    colorbar.ax.set_visible(False)
-    colorbar.outline.set_visible(False)
+    axs[-1].set_xticks([])
+    axs[-1].set_yticklabels([r"Perf$(\hat{R})$"], rotation=0, ha="right")
+    axs[-1].set_xlabel("")
+    axs[-1].set_ylabel("")
 
     plt.tight_layout()
+    plt.subplots_adjust(wspace=0.5, hspace=0.5)
     fig.savefig(output_path, bbox_inches="tight")
+    fig.savefig(output_path.parent / f"{output_path.stem}.svg", bbox_inches="tight")
 
 
 def plot_gain_distrib(
     dataset_path: list[str],
     output_path: Path,
-    figsize: tuple[int, int],
     model_path: Path,
+    figsize: tuple[int, int] = (16, 4),
 ):
     model = joblib.load(model_path)
     feat_ext = (
@@ -311,7 +353,7 @@ def plot_gain_distrib(
     )
     is_quadratic = True if feat_ext else False
 
-    fig, axs = plt.subplots(1, 4, figsize=(16, 4))
+    fig, axs = plt.subplots(1, len(dataset_path), figsize=figsize)
     for ax, dataset in zip(np.ravel(axs), dataset_path):
         dataset_name, dataset_fp = dataset.split("::")
         df = pd.read_json(dataset_fp, lines=True)
@@ -321,7 +363,48 @@ def plot_gain_distrib(
             df = compute_gain_linear(df, model)
 
         sns.histplot(
-            df["gain"],
+            np.log1p(df["gain"] * 1e5),
+            ax=ax,
+            kde=True,
+            stat="count",
+            fill=True,
+            bins=50,
+            color="#105257",
+        )
+        ax.set_title(dataset_name)
+        if not is_quadratic:
+            ax.set_xlim([-0.01, 0.01])
+        ax.set_xlim([-2, 2])
+        ax.set_xlabel("Gain")
+        ax.spines["right"].set_visible(False)
+        ax.spines["top"].set_visible(False)
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True, nbins=5))
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True, nbins=6))
+
+        # Add black vertical line
+        ax.axvline(x=0, color=COLORS.get("dark_teal"), linestyle="--", linewidth=5)
+        for patch in ax.patches:
+            if patch.get_x() < 0:
+                patch.set_facecolor(COLORS.get("pink"))
+
+    plt.tight_layout()
+    fig.savefig(output_path, bbox_inches="tight")
+
+
+def plot_feat_distrib(
+    dataset_path: list[str],
+    output_path: Path,
+    feature: str,
+    feature_label: Optional[str] = None,
+    figsize: tuple[int, int] = (16, 4),
+):
+    fig, axs = plt.subplots(1, 4, figsize=figsize)
+    for ax, dataset in zip(np.ravel(axs), dataset_path):
+        dataset_name, dataset_fp = dataset.split("::")
+        df = pd.read_json(dataset_fp, lines=True)
+
+        sns.histplot(
+            df[feature],
             ax=ax,
             kde=True,
             stat="count",
@@ -330,11 +413,15 @@ def plot_gain_distrib(
             color="#105257",
         )
         ax.set_title(dataset_name)
-        if not is_quadratic:
-            ax.set_xlim([-0.01, 0.01])
-        ax.set_xlabel("Gain")
         ax.spines["right"].set_visible(False)
         ax.spines["top"].set_visible(False)
+        if df[feature].max() <= 1:
+            ax.set_xlim([0, 1])
+        if feature == "len_longer":
+            # Hacky
+            feature_label = "Token length of\nlonger response"
+
+        ax.set_xlabel(feature_label if feature_label else feature)
 
     plt.tight_layout()
     fig.savefig(output_path, bbox_inches="tight")

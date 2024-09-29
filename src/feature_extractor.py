@@ -52,7 +52,7 @@ def get_all_features(n_bins: int = 3) -> list[str]:
     ]
 
     all_features = lexical_features + metadata_features
-    logging.info(f"Returning {len(all_features)} features")
+    logging.debug(f"Returning {len(all_features)} features")
     return all_features
 
 
