@@ -16,6 +16,7 @@ import seaborn as sns
 from matplotlib import colors
 from matplotlib.ticker import MaxNLocator
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from sklearn.metrics import root_mean_squared_error
 
 from scripts.sample_best_subset import compute_gain_linear
 from scripts.sample_best_subset import compute_gain_quadratic
@@ -89,7 +90,7 @@ def get_args():
     parser_train_curve.add_argument("--curve", action="append", help="Train curve and its values (Linear::0.4324,0.6543,0.7888,0.8200).")
 
     parser_test_curve = subparsers.add_parser("test_curve", help="Plot a test curve from an input file.", parents=[shared_args])
-    parser_main_results.add_argument("--input_path", type=Path, required=False, help="Path to the results file.")
+    parser_test_curve.add_argument("--input_path", type=Path, required=False, help="Path to the results file.")
 
     # fmt: on
     return parser.parse_args()
@@ -472,11 +473,56 @@ def plot_train_curve(
     ax.spines["top"].set_visible(False)
     fig.savefig(output_path, bbox_inches="tight")
 
+
 def plot_test_curve(
     input_path: Path,
     output_path: Path,
-    figsize: tuple[int, int] = (16, 4),
+    figsize: tuple[int, int] = (10, 10),
 ):
+    df = (
+        pd.read_csv(input_path)
+        .sort_values(by="actual", ascending=True)
+        .reset_index(drop=True)
+    )
+    fig, ax = plt.subplots(figsize=figsize)
+
+    models = [
+        # "linear",
+        # "lightgbm",
+        "quadratic",
+        "actual",
+    ]
+    colors = [
+        COLORS.get("pink"),
+        COLORS.get("green"),
+        COLORS.get("teal"),
+        COLORS.get("purple"),
+    ]
+
+    x = np.arange(len(df))
+    print(root_mean_squared_error(df["actual"], df["quadratic"]))
+    for idx, model in enumerate(models):
+        ax.plot(
+            x,
+            df[model],
+            label=model,
+            color=colors[idx],
+            linestyle="",
+            marker="o",
+        )
+
+    ax.set_xlabel("Unseen candidate dataset")
+    ax.set_ylabel("Score")
+    ax.set_title("Model Scores Comparison")
+    ax.set_xticklabels(x)
+    ax.set_xticks(x)
+    ax.legend(frameon=False)
+
+    ax.spines["right"].set_visible(False)
+    ax.spines["top"].set_visible(False)
+
+    plt.tight_layout()
+    fig.savefig(output_path, bbox_inches="tight")
 
 
 if __name__ == "__main__":
