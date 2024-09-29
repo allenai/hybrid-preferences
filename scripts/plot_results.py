@@ -493,7 +493,7 @@ def plot_test_curve(
         actual,
         marker="o",
         s=30,
-        color=colors.get("teal"),
+        color=COLORS.get("teal"),
     )
 
     rmse = root_mean_squared_error(actual, predicted)
@@ -509,11 +509,7 @@ def plot_test_curve(
     )
     ax.set_xlabel("Predicted")
     ax.set_ylabel("Actual")
-
     ax.set_aspect("equal")
-    # ax.set_xticklabels([])
-    # ax.set_xticks(x)
-    # ax.legend(frameon=False)
 
     ax.spines["right"].set_visible(False)
     ax.spines["top"].set_visible(False)
