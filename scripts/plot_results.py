@@ -497,6 +497,15 @@ def plot_test_curve(
     )
 
     rmse = root_mean_squared_error(actual, predicted)
+    ax.text(
+        0.95,
+        0.05,
+        f"RMSE: {rmse:.3f}",
+        transform=ax.transAxes,
+        ha="right",
+        va="bottom",
+        color=COLORS.get("pink"),
+    )
 
     # # Add a diagonal line for reference (perfect prediction)
     min_val = min(predicted.min(), actual.min())
