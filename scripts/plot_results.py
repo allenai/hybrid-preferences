@@ -492,7 +492,7 @@ def plot_test_curve(
         predicted,
         actual,
         marker="o",
-        s=30,
+        s=20,
         color=COLORS.get("teal"),
     )
 
