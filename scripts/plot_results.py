@@ -85,6 +85,9 @@ def get_args():
     parser_feat_distrib.add_argument("--feature", type=str, help="Feature (or field name) to plot.")
     parser_feat_distrib.add_argument("--feature_label", type=str, help="Feature (or field name) to use in xlabel.")
 
+    parser_train_curves = subparsers.add_parser("train_curves", help="Plot a training curve for different models")
+    parser_train_curves.add_argument("--curve", action="append", help="Train curve and its 25\%-50\%-75\%-100\% values (Linear::0.4324,0.6543,0.7888,0.8200).")
+
     # fmt: on
     return parser.parse_args()
 
@@ -100,6 +103,7 @@ def main():
         "tag_heatmap": plot_tag_heatmap,
         "gain_distrib": plot_gain_distrib,
         "feat_distrib": plot_feat_distrib,
+        "train_curve": plot_train_curve,
     }
 
     def _filter_args(func, kwargs):
@@ -115,7 +119,9 @@ def main():
 
 
 def plot_rewardbench_line(
-    input_path: Path, output_path: Path, figsize: tuple[int, int]
+    input_path: Path,
+    output_path: Path,
+    figsize: tuple[int, int],
 ):
     with input_path.open("r") as f:
         data = json.load(f)
@@ -424,6 +430,38 @@ def plot_feat_distrib(
         ax.set_xlabel(feature_label if feature_label else feature)
 
     plt.tight_layout()
+    fig.savefig(output_path, bbox_inches="tight")
+
+
+def plot_train_curve(
+    output_path: Path,
+    curve: List[str],
+    figsize: tuple[int, int] = (16, 4),
+):
+
+    # Parse curve: Model::val_1,val_2,val_3,val_4
+    fig, ax = plt.subplots()
+    models = []
+    values = []
+    for c in curve:
+        model, data = c.split("::")
+        models.append(model)
+        values.append([float(v) for v in data.split(",")])
+
+    x = [25, 50, 75, 100]
+
+    for model, vals in zip(models, values):
+        ax.plot(x, vals, marker="o", label=model, linewidth=2)
+
+    ax.set_xlabel("Percentage of Training Data")
+    ax.set_ylabel("Performance")
+    ax.set_title("Training Curve for Different Models")
+    ax.legend()
+    ax.set_xticks(x)
+    ax.set_xticklabels([f"{i}%" for i in x])
+
+    ax.spines["right"].set_visible(False)
+    ax.spines["top"].set_visible(False)
     fig.savefig(output_path, bbox_inches="tight")
 
 
