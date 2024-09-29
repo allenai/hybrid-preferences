@@ -477,7 +477,7 @@ def plot_train_curve(
 def plot_test_curve(
     input_path: Path,
     output_path: Path,
-    figsize: tuple[int, int] = (10, 10),
+    figsize: tuple[int, int] = (4, 4),
 ):
     df = (
         pd.read_csv(input_path)
