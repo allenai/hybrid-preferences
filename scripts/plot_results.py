@@ -486,41 +486,47 @@ def plot_test_curve(
     )
     fig, ax = plt.subplots(figsize=figsize)
 
-    models = [
-        # "linear",
-        # "lightgbm",
-        "quadratic",
-        "actual",
-    ]
-    colors = [
-        COLORS.get("pink"),
-        COLORS.get("green"),
-        COLORS.get("teal"),
-        COLORS.get("purple"),
-    ]
+    predicted = df["quadratic"] * 100  # scale same as others
+    actual = df["actual"] * 100  # scale same as others
+    ax.scatter(predicted, actual, color="k", marker="o", s=30, colors.get("teal"),)
 
-    x = np.arange(len(df))
-    print(root_mean_squared_error(df["actual"], df["quadratic"]))
-    for idx, model in enumerate(models):
-        ax.plot(
-            x,
-            df[model],
-            label=model,
-            color=colors[idx],
-            linestyle="",
-            marker="o",
-        )
+    # x = np.arange(len(df))
+    # rmse = root_mean_squared_error(df["actual"], df["quadratic"])
+    # # Plot the scatter plot of predicted vs actual performance
+    # ax.scatter(
+    #     df["quadratic"],
+    #     df["actual"],
+    #     color=colors[0],
+    #     marker="o",
+    #     s=30,
+    #     label="Performance",
+    # )
 
-    ax.set_xlabel("Unseen candidate dataset")
-    ax.set_ylabel("Score")
-    ax.set_title("Model Scores Comparison")
-    ax.set_xticklabels(x)
-    ax.set_xticks(x)
-    ax.legend(frameon=False)
+    # # Add a diagonal line for reference (perfect prediction)
+    min_val = min(predicted.min(), actual.min())
+    max_val = max(predicted.max(), actual.max())
+    ax.plot(
+        [min_val, max_val], [min_val, max_val], linestyle="--", color=COLORS.get("pink")
+    )
 
-    ax.spines["right"].set_visible(False)
-    ax.spines["top"].set_visible(False)
+    # # Set labels for axes
+    # ax.set_xlabel("Predicted Performance")
+    # ax.set_ylabel("Actual Performance")
 
+    # # Remove the title as it might be unnecessary
+    # # ax.set_title("Predicted vs Actual Performance")
+
+    # # Add legend
+
+    # # Set equal aspect ratio for the plot
+    # # ax.set_aspect("equal")
+    # ax.set_xticklabels([])
+    # ax.set_xticks(x)
+    # ax.legend(frameon=False)
+
+    # ax.spines["right"].set_visible(False)
+    # ax.spines["top"].set_visible(False)
+    # print(rmse)
     plt.tight_layout()
     fig.savefig(output_path, bbox_inches="tight")
 
