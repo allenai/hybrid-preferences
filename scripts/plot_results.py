@@ -16,6 +16,7 @@ import seaborn as sns
 from matplotlib import colors
 from matplotlib.ticker import MaxNLocator
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from sklearn.metrics import root_mean_squared_error
 
 from scripts.sample_best_subset import compute_gain_linear
 from scripts.sample_best_subset import compute_gain_quadratic
@@ -85,6 +86,12 @@ def get_args():
     parser_feat_distrib.add_argument("--feature", type=str, help="Feature (or field name) to plot.")
     parser_feat_distrib.add_argument("--feature_label", type=str, help="Feature (or field name) to use in xlabel.")
 
+    parser_train_curve = subparsers.add_parser("train_curve", help="Plot a training curve for different models.", parents=[shared_args])
+    parser_train_curve.add_argument("--curve", action="append", help="Train curve and its values (Linear::0.4324,0.6543,0.7888,0.8200).")
+
+    parser_test_curve = subparsers.add_parser("test_curve", help="Plot a test curve from an input file.", parents=[shared_args])
+    parser_test_curve.add_argument("--input_path", type=Path, required=False, help="Path to the results file.")
+
     # fmt: on
     return parser.parse_args()
 
@@ -100,6 +107,8 @@ def main():
         "tag_heatmap": plot_tag_heatmap,
         "gain_distrib": plot_gain_distrib,
         "feat_distrib": plot_feat_distrib,
+        "train_curve": plot_train_curve,
+        "test_curve": plot_test_curve,
     }
 
     def _filter_args(func, kwargs):
@@ -115,7 +124,9 @@ def main():
 
 
 def plot_rewardbench_line(
-    input_path: Path, output_path: Path, figsize: tuple[int, int]
+    input_path: Path,
+    output_path: Path,
+    figsize: tuple[int, int],
 ):
     with input_path.open("r") as f:
         data = json.load(f)
@@ -269,7 +280,7 @@ def plot_tag_heatmap(
         nrows=len(groups) + 1,
         figsize=figsize,
         gridspec_kw={"height_ratios": [4, 4, 4, 4, 2]},
-        sharex=True,
+        # sharex=True,
     )
     cbar_ax = fig.add_axes([1.05, 0.3, 0.03, 0.4])
     for idx, (ax, group) in enumerate(zip(axs[:-1], groups)):
@@ -293,15 +304,13 @@ def plot_tag_heatmap(
 
         if idx == 0:
             # Only add labels in the first heatmap
-            ax.set_xlabel(r"Candidate Dataset, $\hat{D}$", labelpad=20)
-            ax.set_xticklabels([f"$\hat{{d}}_{{{i}}}$" for i in range(n)], rotation=0)
+            ax.set_xlabel(r"Candidate Datasets, $\{\hat{D}$\}", labelpad=20)
+            ax.set_xticklabels([f"$\hat{{D}}_{{{i}}}$" for i in range(n)], rotation=0)
             ax.xaxis.set_label_position("top")
             ax.xaxis.tick_top()
             ax.tick_params(
                 axis="x",
                 which="both",
-                bottom=False,
-                top=False,
                 length=0,
                 labelbottom=False,
                 labeltop=True,
@@ -312,6 +321,7 @@ def plot_tag_heatmap(
             colorbar.ax.yaxis.set_label_coords(0.5, 1.05)
             colorbar.ax.yaxis.label.set_rotation(0)
         else:
+            ax.set_xticklabels([])
             ax.set_xticks([])
 
     score_df = df.copy(deep=True)
@@ -423,6 +433,94 @@ def plot_feat_distrib(
 
         ax.set_xlabel(feature_label if feature_label else feature)
 
+    plt.tight_layout()
+    fig.savefig(output_path, bbox_inches="tight")
+
+
+def plot_train_curve(
+    output_path: Path,
+    curve: list[str] = [],
+    figsize: tuple[int, int] = (16, 4),
+):
+
+    if len(curve) == 0:
+        raise ValueError("No value sent in '--curve'!")
+
+    # Parse curve: Model::val_1,val_2,val_3,val_4
+    fig, ax = plt.subplots()
+    models = []
+    values = []
+    for c in curve:
+        model, data = c.split("::")
+        models.append(model)
+        values.append([float(v) for v in data.split(",")])
+
+    x = [25, 50, 75, 100]
+
+    colors = [COLORS.get("pink"), COLORS.get("green"), COLORS.get("teal")]
+    for model, vals, color in zip(models, values, colors):
+        ax.plot(x, vals, marker="o", label=model, linewidth=2, color=color)
+
+    ax.set_xlabel("Percentage of Training Data")
+    ax.set_ylabel("Performance")
+    ax.set_title("Training Curve for Different Models")
+    ax.legend(loc="lower right", frameon=False)
+    ax.set_xticks(x)
+    ax.set_xticklabels([f"{i}%" for i in x])
+
+    ax.spines["right"].set_visible(False)
+    ax.spines["top"].set_visible(False)
+    fig.savefig(output_path, bbox_inches="tight")
+
+
+def plot_test_curve(
+    input_path: Path,
+    output_path: Path,
+    figsize: tuple[int, int] = (4, 4),
+):
+    df = (
+        pd.read_csv(input_path)
+        .sort_values(by="actual", ascending=True)
+        .reset_index(drop=True)
+    )
+    fig, ax = plt.subplots(figsize=figsize)
+
+    predicted = df["quadratic"] * 100  # scale same as others
+    actual = df["actual"] * 100  # scale same as others
+    ax.scatter(
+        predicted,
+        actual,
+        marker="o",
+        s=20,
+        color=COLORS.get("teal"),
+    )
+
+    rmse = root_mean_squared_error(actual, predicted)
+    ax.text(
+        0.95,
+        0.05,
+        f"RMSE: {rmse:.3f}",
+        transform=ax.transAxes,
+        ha="right",
+        va="bottom",
+        color=COLORS.get("pink"),
+    )
+
+    # # Add a diagonal line for reference (perfect prediction)
+    min_val = min(predicted.min(), actual.min())
+    max_val = max(predicted.max(), actual.max())
+    ax.plot(
+        [min_val, max_val],
+        [min_val, max_val],
+        linestyle="--",
+        color=COLORS.get("pink"),
+    )
+    ax.set_xlabel("Predicted")
+    ax.set_ylabel("Actual")
+    ax.set_aspect("equal")
+
+    ax.spines["right"].set_visible(False)
+    ax.spines["top"].set_visible(False)
     plt.tight_layout()
     fig.savefig(output_path, bbox_inches="tight")
 
