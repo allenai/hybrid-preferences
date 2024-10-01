@@ -280,7 +280,7 @@ def plot_tag_heatmap(
         nrows=len(groups) + 1,
         figsize=figsize,
         gridspec_kw={"height_ratios": [4, 4, 4, 4, 2]},
-        sharex=True,
+        # sharex=True,
     )
     cbar_ax = fig.add_axes([1.05, 0.3, 0.03, 0.4])
     for idx, (ax, group) in enumerate(zip(axs[:-1], groups)):
@@ -304,15 +304,13 @@ def plot_tag_heatmap(
 
         if idx == 0:
             # Only add labels in the first heatmap
-            ax.set_xlabel(r"Candidate Dataset, $\hat{D}$", labelpad=20)
-            ax.set_xticklabels([f"$\hat{{d}}_{{{i}}}$" for i in range(n)], rotation=0)
+            ax.set_xlabel(r"Candidate Datasets, $\{\hat{D}$\}", labelpad=20)
+            ax.set_xticklabels([f"$\hat{{D}}_{{{i}}}$" for i in range(n)], rotation=0)
             ax.xaxis.set_label_position("top")
             ax.xaxis.tick_top()
             ax.tick_params(
                 axis="x",
                 which="both",
-                bottom=False,
-                top=False,
                 length=0,
                 labelbottom=False,
                 labeltop=True,
@@ -323,6 +321,7 @@ def plot_tag_heatmap(
             colorbar.ax.yaxis.set_label_coords(0.5, 1.05)
             colorbar.ax.yaxis.label.set_rotation(0)
         else:
+            ax.set_xticklabels([])
             ax.set_xticks([])
 
     score_df = df.copy(deep=True)
