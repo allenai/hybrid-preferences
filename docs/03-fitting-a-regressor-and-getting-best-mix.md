@@ -47,7 +47,7 @@ You can also pass a whole number, but it's much easier to think in terms of prop
 These are the options you can pass to `--sampling_method`:
 
 - `topk`: compute the gain for each instance, sort them, and get the top-k best instances for swapping.
-- `simulated`: simulate 50 (default) different label combinations, predict their performance, and return the top 3 (default) subsets.
+- `simulated`: simulate 500 (default) different label combinations, predict their performance, and return the top 1 (default) subset/s.
 
 The output directory in `--output_dir` will contain the features and actual swapped subsets as we had when we're generating [proxy reward models in Step 1](https://github.com/allenai/human-pref-datamodel/blob/main/docs/01-training-proxy-reward-models.md#create-proxy-dpo-training-datasets).
 Similar to that step, you can should upload the swapped subsets to Google Cloud Storage and [run them in TPUs](https://github.com/allenai/human-pref-datamodel/blob/main/docs/01-training-proxy-reward-models.md#train-reward-models-on-a-tpu).
