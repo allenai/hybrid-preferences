@@ -1,4 +1,4 @@
-# Learning to Route Instances for Human vs. AI Feedback
+# Hybrid Preferences: Learning to Route Instances for Human vs. AI Feedback
 
 This repository is the source code for the paper, [_Hybrid Preferences: Learning to Route Instances for Human vs. AI Feedback_](), where we introduce a **routing framework that creates hybrid preferences** with both LLM and human preference annotations to maximize performance on a given evaluation metric (e.g., RewardBench).
 We release this codebase to improve reproducibility of our work, and to aid researchers in constructing preference datasets in their research.
