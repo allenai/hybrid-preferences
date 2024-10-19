@@ -1,0 +1,42 @@
+version: v2
+description: prompt_tagging_multipref 
+budget: ai2/oe-adapt
+tasks:
+  - name: prompt_tagging_multipref
+    image:
+      beaker: Yizhongw03/hybrid_preferences
+    command: [
+      '/bin/sh', '-c'
+    ]
+    arguments: ['python src/tagging.py
+        --dataset_name_or_path /data/OE-Adapt-MultiPref.jsonl
+        --dataset_split train
+        --model_name_or_path allenai/Llama-3-8B-Instruct-Analyzer
+        --output_path /output/multipref_tags.jsonl
+        --batch_size 512 
+    ']
+    envVars:
+      - name: CUDA_DEVICE_ORDER
+        value: PCI_BUS_ID
+      - name: TRANSFORMERS_CACHE
+        value: ./cache/
+      - name: HF_TOKEN
+        secret: HF_TOKEN
+    datasets:
+      - mountPath: /net/nfs.cirrascale
+        source:
+          hostPath: /net/nfs.cirrascale
+      - mountPath: /data
+        source:
+          beaker: 01J1AZAYH8DNXG2819MEWX9DCY
+    result:
+      # Beaker will capture anything that's written to this location and store it in the results
+      # dataset.
+      path: /output
+    resources:
+      gpuCount: 8
+    constraints:
+      cluster: ['ai2/allennlp-cirrascale', 'ai2/pluto-cirrascale']
+    context:
+      priority: normal
+      preemptible: false
