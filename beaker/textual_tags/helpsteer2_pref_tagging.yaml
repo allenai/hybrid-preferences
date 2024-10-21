@@ -1,0 +1,43 @@
+version: v2
+budget: ai2/oe-adapt
+description: "Get features using datamodel approach"
+tasks:
+  - name: get-all-features-helpsteer2-prefs
+    image:
+      beaker: ljm/human-datamodel
+    command: ["python", "-m", "scripts.get_lexical_features"]
+    arguments:
+      - --input_path
+      - /source/helpsteer2-prefs_human_vs_gpt4_custom.jsonl
+      - --output_dir
+      - /output/
+      - --features
+      - bertscore::min_val=0.33|max_val=0.67
+      - bertscore_length::min_val=0.33|max_val=0.67
+      - cosine_sim::min_val=0.33|max_val=0.67
+      - entity_sim::min_val=0.33|max_val=0.67
+      - len_longer::min_val=0.33|max_val=0.67
+      - len_shorter::min_val=0.33|max_val=0.67
+      - prompt_len::min_val=0.33|max_val=0.67
+      - rouge::min_val=0.33|max_val=0.67
+      - token_len_diff::min_val=0.33|max_val=0.67
+    datasets:
+      - mountPath: /source/
+        source:
+          beaker: 01JARBHXR9G6D42MA62N5GTZZ0
+    result:
+      path: /output
+    resources:
+      gpuCount: 1
+    context:
+      priority: normal
+      preemptible: true
+    constraints:
+      cluster:
+        - ai2/allennlp-cirrascale
+        - ai2/jupiter-cirrascale-2
+    envVars:
+      - name: OPENAI_API_KEY
+        secret: OPENAI_API_KEY
+      - name: TOKENIZERS_PARALLELISM
+        value: "false"
