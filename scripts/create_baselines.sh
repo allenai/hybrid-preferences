@@ -81,4 +81,16 @@ for random_seed in 42 10010 21; do
         --completion_b_col response_b \
         --random_seed $random_seed \
         --num_instances 7000
+
+    mkdir -p data/baselines/hs2p
+    python3 -m scripts.prepare_baselines \
+        --output_dir data/baselines/hs2p \
+        --prefix hs2p \
+        --id_col id \
+        --input_path data/hs2p_all_features/features.jsonl \
+        --prompt_col text \
+        --completion_a_col response_a \
+        --completion_b_col response_b \
+        --random_seed $random_seed \
+        --num_instances 7000
 done
