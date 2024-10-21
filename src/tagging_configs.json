@@ -1,0 +1,148 @@
+[
+    {
+        "dimension": "subject_of_expertise",
+        "tagging_instruction": "You are a data analyzer that inspects the given instruction-tuning data instance below. The instruction tuning data starts with [START] and ends with [END], while the role of each conversation is labeled as <|system|>, <|user|> or <|assistant|>.\nThe field to analyze is Subject of Expertise.\nThe field's definition is as follows: The required subject's knowledge to follow the user's instruction regardless of difficulty.\nPlease analyze this field based on the following question, taxonomy, and instructions below.\n\nQuestion:\nPlease select at most three subjects of expertise that are most relevant to the instruction.\n\nThe options are as follows:\n - Education\n - Anthropology\n - Earth sciences\n - Journalism, media studies and communication\n - Economics\n - Performing arts\n - Social work\n - Others\n - Visual arts\n - Geography\n - Business\n - Electrical engineering\n - Literature\n - Agriculture\n - History\n - Logic\n - System science\n - Computer sciences\n - Biology\n - Mechanical engineering\n - Library and museum studies\n - Environmental studies and forestry\n - Psychology\n - Mathematics\n - Public administration\n - Transportation\n - Chemical engineering\n - Military sciences\n - Divinity\n - Civil engineering\n - Physics\n - Family and consumer science\n - Linguistics and language\n - Religion\n - Space sciences\n - Architecture and design\n - Medicine and health\n - Sociology\n - Chemistry\n - Culinary arts\n - Philosophy\n - Political science\n - Human physical performance and recreation\n - Materials science and engineering\n - Law\n\nPlease reply with a JSON object whose key is \"subject_of_expertise\" and value is a list containing the corresponding values from the options given above.",
+        "options": [
+            "Agriculture",
+            "Anthropology",
+            "Architecture and design",
+            "Biology",
+            "Business",
+            "Chemical engineering",
+            "Chemistry",
+            "Civil engineering",
+            "Computer sciences",
+            "Culinary arts",
+            "Divinity",
+            "Earth sciences",
+            "Economics",
+            "Education",
+            "Electrical engineering",
+            "Environmental studies and forestry",
+            "Family and consumer science",
+            "Geography",
+            "History",
+            "Human physical performance and recreation",
+            "Journalism, media studies and communication",
+            "Law",
+            "Library and museum studies",
+            "Linguistics and language",
+            "Literature",
+            "Logic",
+            "Materials science and engineering",
+            "Mathematics",
+            "Mechanical engineering",
+            "Medicine and health",
+            "Military sciences",
+            "Performing arts",
+            "Philosophy",
+            "Physics",
+            "Political science",
+            "Psychology",
+            "Public administration",
+            "Religion",
+            "Social work",
+            "Sociology",
+            "Space sciences",
+            "System science",
+            "Transportation",
+            "Visual arts",
+            "Others"
+        ]
+    },
+    {
+        "dimension": "expertise_level",
+        "tagging_instruction": "You are a data analyzer that inspects the given instruction-tuning data instance below. The instruction tuning data starts with [START] and ends with [END], while the role of each conversation is labeled as <|system|>, <|user|> or <|assistant|>.\nThe field to analyze is Expertise Level.\nThe field's definition is as follows: The expertise level for an agent to follow the user's instruction.\nPlease analyze this field based on the following question, taxonomy, and instructions below.\n\nQuestion:\nWhat is the most relevant expertise level as given below?\n\nThe options and their definitions are as follows:\ngeneral public: The instrutction can be followed by anyone with basic general knowledge.\nbasic domain knowledge: The instruction requires basic knowledge in the domain where one should at least finished one college course to follow.\nexpert domain knowledge: The instruction requires expert knowledge in the domain where one should have graduated from a college major or above to follow.\n\nPlease reply with a JSON object whose key is \"expertise_level\" and value is a single string value from the options given above.",
+        "options": [
+            "general public",
+            "basic domain knowledge",
+            "expert domain knowledge"
+        ]
+    },
+    {
+        "dimension": "languages",
+        "tagging_instruction": "You are a data analyzer that inspects the given instruction-tuning data instance below. The instruction tuning data starts with [START] and ends with [END], while the role of each conversation is labeled as <|system|>, <|user|> or <|assistant|>.\nThe field to analyze is Languages.\nThe field's definition is as follows: The language being used in the instruction.\nPlease analyze this field based on the following question, taxonomy, and instructions below.\n\nQuestion:\nWhat are the languages used in the prompt?\nThe options are as follows:\n - Malay\n - Thai\n - Persian\n - Polish\n - Others\n - Norwegian\n - Turkish\n - Portuguese\n - Traditional Chinese\n - Hebrew\n - Simplified Chinese\n - German\n - Danish\n - Ukrainian\n - Arabic\n - Swedish\n - Spanish\n - Finish\n - Slovak\n - Hungarian\n - Latvian\n - Greek\n - Lithuanian\n - Romanian\n - Slovenian\n - English\n - Dutch\n - Russian\n - Vietnamese\n - Italian\n - Croatian\n - Estonian\n - Serbian\n - Japanese\n - Korean\n - Bulgarian\n - Hindi\n - Indonesian\n - French\n - Czech\n - Catalan\n\nPlease reply with a JSON object whose key is \"languages\" and value is a list containing the corresponding values from the options given above.",
+        "options": [
+            "Arabic",
+            "Bulgarian",
+            "Catalan",
+            "Croatian",
+            "Czech",
+            "Danish",
+            "Dutch",
+            "English",
+            "Estonian",
+            "Finish",
+            "French",
+            "German",
+            "Greek",
+            "Hebrew",
+            "Hindi",
+            "Hungarian",
+            "Indonesian",
+            "Italian",
+            "Japanese",
+            "Korean",
+            "Latvian",
+            "Lithuanian",
+            "Malay",
+            "Norwegian",
+            "Others",
+            "Persian",
+            "Polish",
+            "Portuguese",
+            "Romanian",
+            "Russian",
+            "Serbian",
+            "Simplified Chinese",
+            "Slovak",
+            "Slovenian",
+            "Spanish",
+            "Swedish",
+            "Thai",
+            "Traditional Chinese",
+            "Turkish",
+            "Ukrainian",
+            "Vietnamese"
+        ]
+    },
+    {
+        "dimension": "open_endedness",
+        "tagging_instruction": "You are a data analyzer that inspects the given instruction-tuning data instance below. The instruction tuning data starts with [START] and ends with [END], while the role of each conversation is labeled as <|system|>, <|user|> or <|assistant|>.\nThe field to analyze is Open Endedness.\nThe field's definition is as follows: The degree of open-endedness and freedom for the assistant to reply to the user's instruction.\nPlease analyze this field based on the following question, taxonomy, and instructions below.\n\nQuestion:\nHow open-ended is the instruction?\nThe options and their definitions are as follows:\nno: The reply is strictly constrained with only one correct answer (exact match).\nlow: The reply may have multiple aliases or synonyms but still has a single correct answer (e.g., question answering).\nmoderate: The reply may have multiple correct answers but still has a limited number of possibilities\nhigh: There is no exact correct answer, and the assistant has a high degree of freedom to decide the output (e.g., free-form writing).\n\nPlease reply with a JSON object whose key is open_endedness and value is a single string value from the options given above.",
+        "options": [
+            "no",
+            "low",
+            "moderate",
+            "high"
+        ]
+    },
+    {
+        "dimension": "safety_concern",
+        "tagging_instruction": "You are a data analyzer that inspects the given instruction-tuning data instance below. The instruction tuning data starts with [START] and ends with [END], while the role of each conversation is labeled as <|system|>, <|user|> or <|assistant|>.\nThe field to analyze is Safety Concern.\nThe field's definition is as follows: The degree of an instruction that causes discomfort, harm, or damage to human beings, animals, property, or the environment.\nPlease analyze this field based on the following question, taxonomy, and instructions below.\n\nQuestion:\nHow much potential harm or risk does the instruction have?\nThe options and their definitions are as follows:\nsafe: The instruction is safe and does not cause any harm or risk for anyone or anything.\nlow: The instruction may cause minor discomfort, harm, or damage to limited audiences or objects.\nmoderate: The instruction may cause moderate discomfort, harm, or damage to a broader audience or objects.\nhigh: The instruction may cause severe discomfort, harm, or damage to almost everyone or everything.\n\nPlease reply with a JSON object whose key is safety_concern and value is a single string value from the options given above.",
+        "options": [
+            "safe",
+            "low",
+            "moderate",
+            "high"
+        ]
+    },
+    {
+        "dimension": "complexity_of_intents",
+        "tagging_instruction": "You are a data analyzer that inspects the given instruction-tuning data instance below. The instruction tuning data starts with [START] and ends with [END], while the role of each conversation is labeled as <|system|>, <|user|> or <|assistant|>.\nThe field to analyze is Complexity of Intents.\nThe field's definition is as follows: The complexity of the user's intents in the instruction, measured by how many different goals, targets, or requirements are included in the instruction.\nPlease analyze this field based on the following question, taxonomy, and instructions below.\n\nQuestion:\nHow many different goals, targets, or requirements are included in the instruction?\nThe options and their definitions are as follows:\nsimple: The instruction is straightforward with only a single goal, target, or requirement.\nmoderate: The instruction contains more than one goal, target, or requirement, but they are not too difficult to follow.\ncomplex: The instruction contains multiple complex goals, targets, or requirements that are difficult to follow.\n\nPlease reply with a JSON object whose key is complexity_of_intents and value is a single string value from the options given above.",
+        "options": [
+            "simple",
+            "moderate",
+            "complex"
+        ]
+    },
+    {
+        "dimension": "type_of_in_context_material",
+        "tagging_instruction": "You are a data analyzer that inspects the given instruction-tuning data instance below. The instruction tuning data starts with [START] and ends with [END], while the role of each conversation is labeled as <|system|>, <|user|> or <|assistant|>.\nThe field to analyze is Type of In-context Material.\nThe field's definition is as follows: The type of special-formatted contents provided in the user's instruction or conversation history.\nPlease analyze this field based on the following question, taxonomy, and instructions below.\n\nQuestion:\nWhat special input types are included in the user's query (e.g., table, html, JSON, etc.)?\nPlease reply with a JSON object whose key is type_of_in_context_material and value is a list of generated values.",
+        "options": null
+    },
+    {
+        "dimension": "format_constraints",
+        "tagging_instruction": "You are a data analyzer that inspects the given instruction-tuning data instance below. The instruction tuning data starts with [START] and ends with [END], while the role of each conversation is labeled as <|system|>, <|user|> or <|assistant|>.\nThe field to analyze is Format Constraints.\nThe field's definition is as follows: the user's format requirement for the assistant's output. Please only consider the requirement explicitly raised by the user in their last message (the last piece of message after the special token <|user|>), without considering the conversation history. In detail, we want to identify the constraints including the model's content type\n(by saying \"content = python code\", \"content = story\", etc.), format (by saying \"format = json\", \"format = table\", etc.), or word limitation (by saying \"#words < 100\", \"#sentences = 3\", etc.), include specific content (by saying \"include:\\ python code\", \"include:\\ outline\", etc.), or exclude specific content (by saying \"exclude:\\ 'I am sorry'\", \"exclude:\\ explanation\", etc\n.), and so on.\nPlease analyze this field based on the following question, taxonomy, and instructions below.\n\nQuestion:\nWhat is the format requirement explicitly mentioned in the user's last message?\n\nPlease reply with a JSON object whose key is format_constraints and value is a list of generated values.",
+        "options": null
+    }
+]

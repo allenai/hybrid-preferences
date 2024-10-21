@@ -1,0 +1,39 @@
+version: v2
+description: prompt_tagging_chatarena
+budget: ai2/oe-adapt
+tasks:
+  - name: prompt_tagging_chatarena
+    image:
+      beaker: Yizhongw03/hybrid_preferences
+    command: [
+      '/bin/sh', '-c'
+    ]
+    arguments: ['python src/tagging.py
+        --dataset_name_or_path allenai/tulu-2.5-preference-data
+        --dataset_split chatbot_arena_2023
+        --model_name_or_path allenai/Llama-3-8B-Instruct-Analyzer
+        --output_path /output/chatbot_arena_2023_tags.jsonl
+        --batch_size 512 
+    ']
+    envVars:
+      - name: CUDA_DEVICE_ORDER
+        value: PCI_BUS_ID
+      - name: TRANSFORMERS_CACHE
+        value: ./cache/
+      - name: HF_TOKEN
+        secret: HF_TOKEN
+    datasets:
+      - mountPath: /net/nfs.cirrascale
+        source:
+          hostPath: /net/nfs.cirrascale
+    result:
+      # Beaker will capture anything that's written to this location and store it in the results
+      # dataset.
+      path: /output
+    resources:
+      gpuCount: 8
+    constraints:
+      cluster: ['ai2/allennlp-cirrascale', 'ai2/pluto-cirrascale']
+    context:
+      priority: normal
+      preemptible: false
