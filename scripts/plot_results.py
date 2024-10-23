@@ -240,11 +240,14 @@ def plot_rewardbench_line(
     fig.legend(
         handles[::-1],
         labels[::-1],
-        loc="upper center",
         frameon=False,
-        ncol=3,
-        bbox_to_anchor=(0.5, 1.20),
         fontsize=25,
+        # I really don't want to parametrize the plotting
+        # function too much. Manually update this so that
+        # the legends fit nicely.
+        loc="upper center",
+        ncol=3,  # ncol = 3
+        bbox_to_anchor=(0.5, 1.2),  # bbox_to_anchor= (0.5, 1.20)
     )
 
     plt.tight_layout()
