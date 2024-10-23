@@ -231,7 +231,7 @@ def plot_rewardbench_line(
         ax.set_ylim([current_ylim[0], current_ylim[1] + 2])
         return ax
 
-    fig, axs = plt.subplots(1, 4, figsize=figsize)
+    fig, axs = plt.subplots(1, len(data), figsize=figsize)
     datasets = list(data.keys())
     for ax, dataset in zip(np.ravel(axs), datasets):
         plot(ax, dataset)
