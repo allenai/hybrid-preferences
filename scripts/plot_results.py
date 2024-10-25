@@ -251,7 +251,7 @@ def plot_rewardbench_line(
     )
 
     plt.tight_layout()
-    fig.savefig(output_path, bbox_inches="tight")
+    fig.savefig(output_path, bbox_inches="tight", dpi=300)
 
 
 def plot_tag_heatmap(
