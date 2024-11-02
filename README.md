@@ -28,3 +28,14 @@ pip install -r requirements.txt
 Running the full pipeline involves several steps, some might need to be run on a TPU machine.
 Nevertheless, we wrote scripts to automate different parts of the pipeline.
 **Please head over the [docs](https://github.com/allenai/human-pref-datamodel/tree/main/docs) directory for more information.**
+
+## Citation
+
+```
+@article{miranda2024hybrid,
+  title={{Hybrid Preferences: Learning to Route Instances for Human vs. AI Feedback}},
+  author={Miranda, Lester James V and Wang, Yizhong and Elazar, Yanai and Kumar, Sachin and Pyatkin, Valentina and Brahman, Faeze and Smith, Noah A and Hajishirzi, Hannaneh and Dasigi, Pradeep},
+  journal={arXiv preprint arXiv:2410.19133},
+  year={2024}
+}
+```
