@@ -73,7 +73,7 @@ RM_JOB_TEMPLATE = (
     "--logger.project=ljm-dev "
     "--logger.entity=rlhf-llm-dev "
     "--logger.prefix_to_id=True "
-    "--logger.prefix=tulu2_13b_rm_{experiment_name} "
+    "--logger.prefix=llama3.1_8b_rm_{experiment_name} "
     "--logger.output_dir='{output_gcs_path}/rm_checkpoints/{dataset_name}'"
 )
 
