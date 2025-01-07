@@ -125,7 +125,10 @@ def main():
         )
         pytorch_dir = Path(args.pytorch_dir)
         for params_path in params_paths:
-            experiment_name = params_path.parent.stem.split("--")[0]
+            if "llama" in str(params_path):
+                experiment_name = params_path.parts[-2].replace(".", "-").split("--")[0]
+            else:
+                experiment_name = params_path.parent.stem.split("--")[0]
             if args.prefix:
                 experiment_name = f"{args.prefix}-{experiment_name}"
             output_dir = pytorch_dir / experiment_name
