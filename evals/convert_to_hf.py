@@ -256,8 +256,9 @@ def create_beaker_experiment_spec(
                 image=ImageSource(beaker="nathanl/rewardbench_auto"),
                 constraints=Constraints(
                     cluster=[
-                        "ai2/allennlp-cirrascale",
-                        # "ai2/jupiter-cirrascale-2",
+                        "ai2/saturn-cirrascale",
+                        "ai2/ceres-cirrascale",
+                        "ai2/jupiter-cirrascale-2",
                     ]
                 ),
                 context=TaskContext(priority="normal", preemptible=True),
@@ -271,10 +272,10 @@ def create_beaker_experiment_spec(
                         source=DataSource(beaker=dataset_name),
                         mount_path="/reward_model",
                     ),
-                    DataMount(
-                        source=DataSource(host_path="/net/nfs.cirrascale"),
-                        mount_path="/net/nfs.cirrascale",
-                    ),
+                    # DataMount(
+                    #     source=DataSource(host_path="/net/nfs.cirrascale"),
+                    #     mount_path="/net/nfs.cirrascale",
+                    # ),
                 ],
                 resources=TaskResources(gpu_count=1),
                 env_vars=[

@@ -24,7 +24,8 @@ tasks:
       preemptible: true
     constraints:
       cluster:
-        - ai2/allennlp-cirrascale
+        - ai2/ceres-cirrascale
+        - ai2/saturn-cirrascale
         - ai2/jupiter-cirrascale-2
     envVars:
       - name: OPENAI_API_KEY
