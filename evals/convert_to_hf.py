@@ -264,7 +264,7 @@ def create_beaker_experiment_spec(
                 result=ResultSpec(path="/output"),
                 command=["/bin/sh", "-c"],
                 arguments=[
-                    "python scripts/run_rm.py --model /reward_model --tokenizer /reward_model --batch_size 8 --chat_template tulu --trust_remote_code --do_not_save"
+                    "python scripts/run_rm.py --model /reward_model --tokenizer /reward_model --batch_size 8 --chat_template meta-llama-3.1 --trust_remote_code --do_not_save"
                 ],
                 datasets=[
                     DataMount(
