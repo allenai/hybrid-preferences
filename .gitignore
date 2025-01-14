@@ -166,3 +166,4 @@ plots/*
 results/*
 .vscode/*
 licenses/*
+scripts/adhoc_scripts/*
