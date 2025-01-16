@@ -1,6 +1,7 @@
 import argparse
 import json
 import logging
+import os
 import random
 import sys
 import uuid
@@ -153,13 +154,17 @@ def generate_instances(
         # Save the tag file to create the experiments.txt later
         return f"{swaps_outfile.stem}::{counts_outfile.stem}"
 
-    with ThreadPoolExecutor() as executor:
-        futures = {
-            executor.submit(process_budget, id, budget): id
-            for id, budget in zip(uuids, budgets)
-        }
-        for future in tqdm(as_completed(futures), total=len(budgets)):
-            tags.append(future.result())
+    with tqdm(total=len(budgets)) as pbar:
+        with ThreadPoolExecutor(max_workers=None) as executor:
+            n_workers = executor._max_workers
+            logging.info(f"Running simulation on {n_workers} workers")
+            futures = {
+                executor.submit(process_budget, id, budget): id
+                for id, budget in zip(uuids, budgets)
+            }
+            for future in as_completed(futures):
+                tags.append(future.result())
+                pbar.update(1)
 
     experiments_file = output_dir / "experiments.txt"
     with experiments_file.open("w") as f:
