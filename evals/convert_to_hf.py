@@ -272,6 +272,7 @@ def create_beaker_experiment_spec(
                         source=DataSource(beaker=dataset_name),
                         mount_path="/reward_model",
                     ),
+                    # There's no more NFS but we'll keep this here for posterity
                     # DataMount(
                     #     source=DataSource(host_path="/net/nfs.cirrascale"),
                     #     mount_path="/net/nfs.cirrascale",
