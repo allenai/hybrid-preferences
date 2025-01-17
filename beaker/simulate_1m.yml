@@ -1,0 +1,188 @@
+version: v2
+budget: ai2/oe-adapt
+description: "Get features using datamodel approach given many simulations"
+tasks:
+  - name: simulate-large-1e6
+    image:
+      beaker: ljm/human-datamodel
+    command: ["python", "-m", "scripts.sample_best_subset"]
+    arguments:
+      - --input_path
+      - /source/features.jsonl
+      - --output_dir
+      - /output/
+      - --model_path
+      - /model/model.pkl
+      - --sampling_method
+      - optimal_simulated
+      - --budgets
+      - 0.25
+      - 0.50
+      - 0.75
+      - --n_simulations
+      - 1000000
+      - --response_a_col
+      - response_a
+      - --response_b_col
+      - response_b
+    datasets:
+      - mountPath: /source/
+        source:
+          beaker: ljm/helpsteer2-pref-feats
+      - mountPath: /model/
+        source:
+          beaker: ljm/hybrid-prefs-multipref-quad-model
+    result:
+      path: /output
+    resources:
+      gpuCount: 2
+    context:
+      priority: normal
+      preemptible: true
+    constraints:
+      cluster:
+        - ai2/ceres-cirrascale
+        # - ai2/saturn-cirrascale
+    envVars:
+      - name: OPENAI_API_KEY
+        secret: OPENAI_API_KEY
+      - name: TOKENIZERS_PARALLELISM
+        value: false
+  - name: simulate-large-1e5
+    image:
+      beaker: ljm/human-datamodel
+    command: ["python", "-m", "scripts.sample_best_subset"]
+    arguments:
+      - --input_path
+      - /source/features.jsonl
+      - --output_dir
+      - /output/
+      - --model_path
+      - /model/model.pkl
+      - --sampling_method
+      - optimal_simulated
+      - --budgets
+      - 0.25
+      - 0.50
+      - 0.75
+      - --n_simulations
+      - 100000
+      - --response_a_col
+      - response_a
+      - --response_b_col
+      - response_b
+    datasets:
+      - mountPath: /source/
+        source:
+          beaker: ljm/helpsteer2-pref-feats
+      - mountPath: /model/
+        source:
+          beaker: ljm/hybrid-prefs-multipref-quad-model
+    result:
+      path: /output
+    resources:
+      gpuCount: 1
+    context:
+      priority: normal
+      preemptible: true
+    constraints:
+      cluster:
+        - ai2/ceres-cirrascale
+        # - ai2/saturn-cirrascale
+    envVars:
+      - name: OPENAI_API_KEY
+        secret: OPENAI_API_KEY
+      - name: TOKENIZERS_PARALLELISM
+        value: false
+  - name: simulate-large-1e4
+    image:
+      beaker: ljm/human-datamodel
+    command: ["python", "-m", "scripts.sample_best_subset"]
+    arguments:
+      - --input_path
+      - /source/features.jsonl
+      - --output_dir
+      - /output/
+      - --model_path
+      - /model/model.pkl
+      - --sampling_method
+      - optimal_simulated
+      - --budgets
+      - 0.25
+      - 0.50
+      - 0.75
+      - --n_simulations
+      - 10000
+      - --response_a_col
+      - response_a
+      - --response_b_col
+      - response_b
+    datasets:
+      - mountPath: /source/
+        source:
+          beaker: ljm/helpsteer2-pref-feats
+      - mountPath: /model/
+        source:
+          beaker: ljm/hybrid-prefs-multipref-quad-model
+    result:
+      path: /output
+    resources:
+      gpuCount: 1
+    context:
+      priority: normal
+      preemptible: true
+    constraints:
+      cluster:
+        - ai2/ceres-cirrascale
+        # - ai2/saturn-cirrascale
+    envVars:
+      - name: OPENAI_API_KEY
+        secret: OPENAI_API_KEY
+      - name: TOKENIZERS_PARALLELISM
+        value: false
+  - name: simulate-large-1e3
+    image:
+      beaker: ljm/human-datamodel
+    command: ["python", "-m", "scripts.sample_best_subset"]
+    arguments:
+      - --input_path
+      - /source/features.jsonl
+      - --output_dir
+      - /output/
+      - --model_path
+      - /model/model.pkl
+      - --sampling_method
+      - optimal_simulated
+      - --budgets
+      - 0.25
+      - 0.50
+      - 0.75
+      - --n_simulations
+      - 1000
+      - --response_a_col
+      - response_a
+      - --response_b_col
+      - response_b
+    datasets:
+      - mountPath: /source/
+        source:
+          beaker: ljm/helpsteer2-pref-feats
+      - mountPath: /model/
+        source:
+          beaker: ljm/hybrid-prefs-multipref-quad-model
+    result:
+      path: /output
+    resources:
+      gpuCount: 1
+    context:
+      priority: normal
+      preemptible: true
+    constraints:
+      cluster:
+        - ai2/ceres-cirrascale
+        # - ai2/saturn-cirrascale
+    envVars:
+      - name: OPENAI_API_KEY
+        secret: OPENAI_API_KEY
+      - name: TOKENIZERS_PARALLELISM
+        value: false

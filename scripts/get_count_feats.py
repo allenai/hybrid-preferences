@@ -1,14 +1,17 @@
 import argparse
 import json
 import logging
+import os
 import random
 import sys
 import uuid
 from pathlib import Path
 from typing import Optional
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pandas as pd
 from tqdm import tqdm
+
 
 from scripts.apply_data_model import convert_to_dpo_format
 from src.feature_extractor import FeatureExtractor, get_all_features
@@ -94,7 +97,8 @@ def generate_instances(
     tags = []
     uuids = [uuid.uuid4().hex for _ in range(len(budgets))]
     budget_instances: dict[str, dict[str, int]] = {}
-    for id, budget in tqdm(zip(uuids, budgets), total=len(budgets)):
+
+    def process_budget(id: str, budget: int) -> str:
         instances_to_swap = run_knapsack(capacity=budget, items=feat_instance_map)
 
         tag = f"ID__{id}__SWAPS_{budget}"
@@ -111,7 +115,7 @@ def generate_instances(
         )
         df_swapped["is_swapped"] = df["id"].apply(lambda x: x in instances_to_swap)
         annotations = df_swapped.to_dict(orient="records")
-        converted_annotations = []
+        converted_annotations: list[dict[str, Optional[str]]] = []
         for annotation in annotations:
             if "model_a" not in annotation:
                 annotation["model_a"] = ""
@@ -134,7 +138,7 @@ def generate_instances(
                 f.write(json.dumps(annotation) + "\n")
 
         # Save the budget
-        budget_instance_map = {}
+        budget_instance_map: dict[str, int] = {}
         swapped_ids = [eg["id"] for eg in converted_annotations if eg["is_swapped"]]
         swapped_df = df[df["id"].isin(swapped_ids)].reset_index(drop=True)
         for feature_str in all_features:
@@ -148,7 +152,19 @@ def generate_instances(
         budget_instances[tag] = budget_instance_map
 
         # Save the tag file to create the experiments.txt later
-        tags.append(f"{swaps_outfile.stem}::{counts_outfile.stem}")
+        return f"{swaps_outfile.stem}::{counts_outfile.stem}"
+
+    with tqdm(total=len(budgets)) as pbar:
+        with ThreadPoolExecutor(max_workers=None) as executor:
+            n_workers = executor._max_workers
+            logging.info(f"Running simulation on {n_workers} workers")
+            futures = {
+                executor.submit(process_budget, id, budget): id
+                for id, budget in zip(uuids, budgets)
+            }
+            for future in as_completed(futures):
+                tags.append(future.result())
+                pbar.update(1)
 
     experiments_file = output_dir / "experiments.txt"
     with experiments_file.open("w") as f:
