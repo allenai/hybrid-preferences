@@ -5,13 +5,12 @@ import os
 import random
 import sys
 import uuid
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Optional
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pandas as pd
 from tqdm import tqdm
-
 
 from scripts.apply_data_model import convert_to_dpo_format
 from src.feature_extractor import FeatureExtractor, get_all_features
