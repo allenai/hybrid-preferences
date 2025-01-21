@@ -558,18 +558,20 @@ def plot_scaling_curve(
             values[1:],
             label=f"Scale {scale}",
             s=40,
-            color=COLORS.get("teal"),
+            color=COLORS.get("pink"),
             alpha=0.8,
         )
         ax.scatter(
             x=x_values[0],
             y=values[0],
-            s=60,
+            s=120,
             marker="*",
-            color=COLORS.get("pink"),
+            color=COLORS.get("green"),
         )
 
-    ax.set_xlabel("Scale")
+    ax.set_xlabel(
+        "Number of simulations given a fixed budget (67.7\%) on Helpsteer2-Preferences"
+    )
     ax.set_ylabel("Overall Score")
     ax.spines["right"].set_visible(False)
     ax.spines["top"].set_visible(False)
