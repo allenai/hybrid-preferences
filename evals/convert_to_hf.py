@@ -137,7 +137,7 @@ def main():
             convert_command = [
                 "python",
                 "-m",
-                "EasyLM.models.llama.convert_easylm_to_hf",
+                "EasyLM.models.olmo.convert_easylm_to_hf",
                 f"--load_checkpoint=params::{params_path}",
                 f"--tokenizer_path={args.tokenizer_path}",
                 f"--model_size={args.model_size}",
