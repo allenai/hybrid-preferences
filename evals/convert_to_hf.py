@@ -125,7 +125,10 @@ def main():
         )
         pytorch_dir = Path(args.pytorch_dir)
         for params_path in params_paths:
-            experiment_name = params_path.parent.stem.split("--")[0]
+            if "llama" in str(params_path):
+                experiment_name = params_path.parts[-2].replace(".", "-").split("--")[0]
+            else:
+                experiment_name = params_path.parent.stem.split("--")[0]
             if args.prefix:
                 experiment_name = f"{args.prefix}-{experiment_name}"
             output_dir = pytorch_dir / experiment_name
@@ -250,28 +253,30 @@ def create_beaker_experiment_spec(
         tasks=[
             TaskSpec(
                 name=f"evaluate-{experiment_name}",
-                image=ImageSource(beaker="nathanl/rb_v16"),
+                image=ImageSource(beaker="nathanl/rewardbench_auto"),
                 constraints=Constraints(
                     cluster=[
-                        "ai2/allennlp-cirrascale",
-                        # "ai2/jupiter-cirrascale-2",
+                        "ai2/saturn-cirrascale",
+                        "ai2/ceres-cirrascale",
+                        "ai2/jupiter-cirrascale-2",
                     ]
                 ),
                 context=TaskContext(priority="normal", preemptible=True),
                 result=ResultSpec(path="/output"),
                 command=["/bin/sh", "-c"],
                 arguments=[
-                    "python scripts/run_rm.py --model /reward_model --tokenizer /reward_model --batch_size 8 --chat_template tulu --trust_remote_code --do_not_save"
+                    "python scripts/run_rm.py --model /reward_model --tokenizer /reward_model --batch_size 8 --trust_remote_code --do_not_save"
                 ],
                 datasets=[
                     DataMount(
                         source=DataSource(beaker=dataset_name),
                         mount_path="/reward_model",
                     ),
-                    DataMount(
-                        source=DataSource(host_path="/net/nfs.cirrascale"),
-                        mount_path="/net/nfs.cirrascale",
-                    ),
+                    # There's no more NFS but we'll keep this here for posterity
+                    # DataMount(
+                    #     source=DataSource(host_path="/net/nfs.cirrascale"),
+                    #     mount_path="/net/nfs.cirrascale",
+                    # ),
                 ],
                 resources=TaskResources(gpu_count=1),
                 env_vars=[

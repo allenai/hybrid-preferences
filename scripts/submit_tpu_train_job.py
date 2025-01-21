@@ -52,11 +52,11 @@ RM_JOB_TEMPLATE = (
     "--log_freq=50 "
     "--save_model_freq=1000 "
     "--save_milestone_freq=0 "
-    "--load_llama_config=13b "
+    "--load_llama_config=8b31 "
     "--update_llama_config='' "
     "--load_dataset_state='' "
     "--load_checkpoint='params::{ckpt_gcs_path}' "
-    "--tokenizer.vocab_file='{vocab_gcs_path}' "
+    "--tokenizer='meta-llama/Llama-3.1-8B' "
     "--optimizer.type=adamw "
     "--optimizer.adamw_optimizer.weight_decay=0.0 "
     "--optimizer.adamw_optimizer.lr=1e-5 "
@@ -73,7 +73,7 @@ RM_JOB_TEMPLATE = (
     "--logger.project=ljm-dev "
     "--logger.entity=rlhf-llm-dev "
     "--logger.prefix_to_id=True "
-    "--logger.prefix=tulu2_13b_rm_{experiment_name} "
+    "--logger.prefix=llama3.1_8b_rm_{experiment_name} "
     "--logger.output_dir='{output_gcs_path}/rm_checkpoints/{dataset_name}'"
 )
 
@@ -92,7 +92,7 @@ It is recommended that the name of the dataset is the name of your experiment, s
     parser.add_argument("--dataset_name", type=str, required=True, help="Dataset name for managing IO paths.")
     parser.add_argument("--input_gcs_path", type=str, default="gs://ljm-dev/human-preferences/train_data", help="Path to the GCS bucket containing the datasets.")
     parser.add_argument("--output_gcs_path", type=str, default="gs://ljm-dev/human-preferences", help="Path to the GCS bucket to save the models. Will create subdirectories for DPO or RM runs.")
-    parser.add_argument("--ckpt_gcs_path", type=str, default="gs://hamishi-east1/easylm/llama2/tulu2_13b_fixed/tulu2_13b_fixed/455af914503740be9664497dae996762/streaming_params", help="GCS filepath containing the parameter checkpoint for training.")
+    parser.add_argument("--ckpt_gcs_path", type=str, default="gs://hamishi-east1/easylm/llama31/llama_3_1_8b", help="GCS filepath containing the parameter checkpoint for training.")
     parser.add_argument("--vocab_gcs_path", type=str, default="gs://hamishi-east1/easylm/llama/tokenizer.model", help="GCS filepath containing the tokenizer.")
     parser.add_argument("--train_dpo", action="store_true", default=False, help="If set, will train a DPO model instead of a Sequence Regression RM.")
     parser.add_argument("--timeout", type=int, default=300, help="Set timeout (in seconds) in between training runs.")
@@ -141,7 +141,7 @@ def main():
                 input_gcs_path=args.input_gcs_path,
                 output_gcs_path=args.output_gcs_path,
                 ckpt_gcs_path=args.ckpt_gcs_path,
-                vocab_gcs_path=args.vocab_gcs_path,
+                # vocab_gcs_path=args.vocab_gcs_path,
                 log_to_wandb="True" if args.log_to_wandb else "False",
             )
 

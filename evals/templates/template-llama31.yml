@@ -1,0 +1,40 @@
+version: v2
+budget: ai2/oe-adapt
+description: "Convert model to pytorch and launch a rewardbench eval job"
+tasks:
+  - name: template
+    image:
+      beaker: ljm/easylm-convert-llama
+    command: ["python", "convert_to_hf.py"]
+    arguments:
+      - --gcs_bucket
+      - ljm-dev
+      - --batch_size
+      - 1
+      - --tokenizer_path
+      - meta-llama/Llama-3.1-8B
+      - --model_size
+      - 8b31
+    result:
+      path: /output
+    resources:
+      gpuCount: 1
+    context:
+      priority: normal
+      preemptible: true
+    constraints:
+      cluster:
+        - ai2/ceres-cirrascale
+        - ai2/saturn-cirrascale
+        - ai2/jupiter-cirrascale-2
+    envVars:
+      - name: OPENAI_API_KEY
+        secret: OPENAI_API_KEY
+      - name: GOOGLE_SERVICE_ACCOUNT
+        secret: GOOGLE_SERVICE_ACCOUNT
+      - name: BEAKER_TOKEN
+        secret: BEAKER_TOKEN
+      - name: TOKENIZERS_PARALLELISM
+        value: "false"
+      - name: HF_TOKEN
+        secret: HF_TOKEN

@@ -54,7 +54,8 @@ ENV PATH="/usr/local/google-cloud-sdk/bin:${PATH}"
 
 # Clone EasyLM repository
 RUN git clone https://github.com/hamishivi/EasyLM.git  . && \
-    git checkout bc241782b67bbe926e148ec9d2046d76b7ba58c8
+    # git checkout bc241782b67bbe926e148ec9d2046d76b7ba58c8
+    git checkout dbf2212c1775b2762f7108d62c8c8b01b52ea4aa
 
 COPY ai2-allennlp-79f5e3a8e95a.json /root/.config/gcloud/application_default_credentials.json
 # Set environment variable for Google Cloud

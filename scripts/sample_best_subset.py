@@ -35,6 +35,7 @@ def get_args():
     parser.add_argument("--sampling_method", default="topk", choices=["topk", "simulated", "optimal_simulated", "optimal_pos", "optimal_grad"], help="Type of sampling technique to use at inference time.")
     parser.add_argument("--budgets", nargs="*", type=float, required=False, help="Budget: percentage of the dataset to be routed to humans.")
     parser.add_argument("--n_samples", type=int, default=7000, help="Number of instances per proxy dataset.")
+    parser.add_argument("--n_simulations", type=int, default=500, help="Number of simulations for a given budget.")
     parser.add_argument("--id_col", type=str, default="id", help="Name of the id column.")
     parser.add_argument("--text_col", type=str, default="text", help="Name of the text column.")
     parser.add_argument("--response_a_col", type=str, default="completion_a", help="Name of the response A column.")
@@ -89,14 +90,18 @@ def main():
 
     if args.sampling_method == "optimal_simulated":
         logging.info("*** Using 'optimal_simulated' approach")
-        budgets = [random.randint(1, len(input_df)) for _ in range(500)]
+        if not args.budgets:
+            logging.info("No budgets provided, using default budgets.")
+            budgets = [random.randint(1, len(input_df)) for _ in range(500)]
+        else:
+            budgets = args.budgets
         simulated_sampling(
             input_df,
             model,
             feat_ext=feat_ext,
             budgets=budgets,
             n_samples=args.n_samples,
-            n_instances_per_budget=1,
+            n_instances_per_budget=args.n_simulations,
             output_dir=Path(args.output_dir),
         )
 

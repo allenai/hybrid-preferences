@@ -92,6 +92,10 @@ def get_args():
     parser_test_curve = subparsers.add_parser("test_curve", help="Plot a test curve from an input file.", parents=[shared_args])
     parser_test_curve.add_argument("--input_path", type=Path, required=False, help="Path to the results file.")
 
+    parser_scaling =subparsers.add_parser("scaling", help="Plot a scaling chart", parents=[shared_args])
+    parser_scaling.add_argument("--input_dir", type=Path, required=True, help="Path to the directory containing the scaling files (filename should be DIRECTORY/hs2p-SCALE-results-llama.csv)")
+    parser_scaling.add_argument("--topk", type=int, default=1, help="Plot the top-k points per simulation.")
+
     # fmt: on
     return parser.parse_args()
 
@@ -109,6 +113,7 @@ def main():
         "feat_distrib": plot_feat_distrib,
         "train_curve": plot_train_curve,
         "test_curve": plot_test_curve,
+        "scaling": plot_scaling_curve,
     }
 
     def _filter_args(func, kwargs):
@@ -526,6 +531,55 @@ def plot_test_curve(
     ax.spines["top"].set_visible(False)
     plt.tight_layout()
     fig.savefig(output_path, bbox_inches="tight")
+
+
+def plot_scaling_curve(
+    input_dir: Path,
+    topk: int,
+    output_path: Path,
+    figsize: tuple[int, int] = (12, 8),
+):
+    csv_files = list(input_dir.glob("*.csv"))
+    logging.info(f"Found {len(csv_files)} files in {input_dir}")
+    scaling_dict: dict[int, list[float]] = {
+        int(file.stem.split("-")[1]): pd.read_csv(file)
+        .sort_values(by="Overall", ascending=False)
+        .head(topk)["Overall"]
+        .to_list()
+        for file in csv_files
+    }
+
+    fig, ax = plt.subplots(figsize=figsize)
+
+    for scale, values in scaling_dict.items():
+        x_values = [scale] * len(values)
+        ax.scatter(
+            x_values[1:],
+            values[1:],
+            label=f"Scale {scale}",
+            s=40,
+            color=COLORS.get("pink"),
+            alpha=0.8,
+        )
+        ax.scatter(
+            x=x_values[0],
+            y=values[0],
+            s=120,
+            marker="*",
+            color=COLORS.get("green"),
+        )
+
+    ax.set_xlabel(
+        "Number of simulations given a fixed budget (67.7\%) on Helpsteer2-Preferences"
+    )
+    ax.set_ylabel("Overall Score")
+    ax.spines["right"].set_visible(False)
+    ax.spines["top"].set_visible(False)
+    ax.set_xticks([256, 512, 1024, 2048, 4096, 8192])
+    ax.set_xticklabels([str(x) for x in [256, 512, 1024, 2048, 4096, 8192]])
+
+    plt.tight_layout()
+    fig.savefig(output_path, bbox_inches="tight", dpi=300)
 
 
 if __name__ == "__main__":
