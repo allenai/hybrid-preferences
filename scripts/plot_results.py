@@ -92,7 +92,7 @@ def get_args():
     parser_test_curve = subparsers.add_parser("test_curve", help="Plot a test curve from an input file.", parents=[shared_args])
     parser_test_curve.add_argument("--input_path", type=Path, required=False, help="Path to the results file.")
 
-    parser_scaling =subparsers.add_parser("scaling", help="Plot a scaling chart")
+    parser_scaling =subparsers.add_parser("scaling", help="Plot a scaling chart", parents=[shared_args])
     parser_scaling.add_argument("--input_dir", type=Path, required=True, help="Path to the directory containing the scaling files (filename should be DIRECTORY/hs2p-SCALE-results-llama.csv)")
     parser_scaling.add_argument("--topk", type=int, default=1, help="Plot the top-k points per simulation.")
 
@@ -532,8 +532,15 @@ def plot_test_curve(
     plt.tight_layout()
     fig.savefig(output_path, bbox_inches="tight")
 
-def plot_scaling_curve(input_dir: Path, output_path: Path, topk: int):
+
+def plot_scaling_curve(
+    input_dir: Path,
+    topk: int,
+    output_path: Path,
+    figsize: tuple[int, int],
+):
     breakpoint()
+
 
 if __name__ == "__main__":
     main()
