@@ -537,9 +537,47 @@ def plot_scaling_curve(
     input_dir: Path,
     topk: int,
     output_path: Path,
-    figsize: tuple[int, int],
+    figsize: tuple[int, int] = (12, 8),
 ):
-    breakpoint()
+    csv_files = list(input_dir.glob("*.csv"))
+    logging.info(f"Found {len(csv_files)} files in {input_dir}")
+    scaling_dict: dict[int, list[float]] = {
+        int(file.stem.split("-")[1]): pd.read_csv(file)
+        .sort_values(by="Overall", ascending=False)
+        .head(topk)["Overall"]
+        .to_list()
+        for file in csv_files
+    }
+
+    fig, ax = plt.subplots(figsize=figsize)
+
+    for scale, values in scaling_dict.items():
+        x_values = [scale] * len(values)
+        ax.scatter(
+            x_values[1:],
+            values[1:],
+            label=f"Scale {scale}",
+            s=40,
+            color=COLORS.get("teal"),
+            alpha=0.8,
+        )
+        ax.scatter(
+            x=x_values[0],
+            y=values[0],
+            s=60,
+            marker="*",
+            color=COLORS.get("pink"),
+        )
+
+    ax.set_xlabel("Scale")
+    ax.set_ylabel("Overall Score")
+    ax.spines["right"].set_visible(False)
+    ax.spines["top"].set_visible(False)
+    ax.set_xticks([256, 512, 1024, 2048, 4096, 8192])
+    ax.set_xticklabels([str(x) for x in [256, 512, 1024, 2048, 4096, 8192]])
+
+    plt.tight_layout()
+    fig.savefig(output_path, bbox_inches="tight", dpi=300)
 
 
 if __name__ == "__main__":
