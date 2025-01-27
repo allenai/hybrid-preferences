@@ -125,7 +125,7 @@ def main():
         )
         pytorch_dir = Path(args.pytorch_dir)
         for params_path in params_paths:
-            if "llama" in str(params_path):
+            if "llama" in str(params_path) or "olmo" in str(params_path):
                 experiment_name = params_path.parts[-2].replace(".", "-").split("--")[0]
             else:
                 experiment_name = params_path.parent.stem.split("--")[0]
