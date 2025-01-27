@@ -87,6 +87,7 @@ def main():
     ]
     logging.info(f"Found {len(src_files) - len(diff)} datasets already done!")
     src_files = diff
+    src_files = [file for file in src_files if "2625" in file]
     logging.info(f"Generating experiment file for {len(src_files)} experiments.")
 
     spec = ExperimentSpec.from_file(args.template)

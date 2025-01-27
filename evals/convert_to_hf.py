@@ -121,7 +121,7 @@ def main():
         # Convert output from GCS to HuggingFace format
         logging.info("Converting to HF format")
         params_paths: list[Path] = find_dirs_with_files(
-            download_dir, "*streaming_params*"
+            download_dir, "*streaming_params_2625"
         )
         pytorch_dir = Path(args.pytorch_dir)
         for params_path in params_paths:
