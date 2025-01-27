@@ -34,7 +34,7 @@ def get_args():
     parser.add_argument("--gcs_bucket", type=str, help="GCS bucket where the models are stored (NO need for gs:// prefix).")
     parser.add_argument("--gcs_dir_path", type=str, help="The directory path (or prefix) of models (e.g., human-preferences/rm_checkpoints/tulu2_13b_rm_human_datamodel_).")
     parser.add_argument("--prefix", type=str, help="Prefix to append to the eval runs.")
-    parser.add_argument("--is_reward_model", action="store_true", default="If set, will train a reward model.")
+    parser.add_argument("--is_reward_model", default=False, action="store_true", help="If set, will train a reward model.")
     parser.add_argument("--beaker_workspace", default="ai2/ljm-oe-adapt", help="Beaker workspace to upload datasets.")
     parser.add_argument("--cleanup", action="store_true", default=False, help="If set, will delete uncommitted datasets (make sure no other jobs are running!)")
     # fmt: on
@@ -101,6 +101,7 @@ def main():
         task.arguments.extend(["--gcs_dir_path"] + [src_file])
         task.arguments.extend(["--prefix"] + [args.prefix])
         if args.is_reward_model:
+            # logging.info("Adding --is_reward_model flag")
             task.arguments.extend(["--is_reward_model"])
         new_tasks.append(task)
 
