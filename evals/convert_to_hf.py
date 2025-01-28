@@ -266,7 +266,7 @@ def create_beaker_experiment_spec(
                 command=["/bin/sh", "-c"],
                 arguments=[
                     # "python scripts/run_rm.py --model /reward_model --tokenizer /reward_model --batch_size 8 --trust_remote_code --do_not_save"
-                    "python scripts/run_dpo.py --model /reward_model --tokenizer /reward_model --ref_model /reward_model --batch_size 8 --trust_remote_code --do_not_save"
+                    "python scripts/run_dpo.py --model /reward_model --tokenizer /reward_model --ref_model allenai/OLMo-7B-0424-hf --batch_size 8 --trust_remote_code --do_not_save"
                 ],
                 datasets=[
                     DataMount(
