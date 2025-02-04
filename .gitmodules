@@ -1,0 +1,3 @@
+[submodule "open-instruct"]
+	path = open-instruct
+	url = git@github.com:allenai/open-instruct.git
